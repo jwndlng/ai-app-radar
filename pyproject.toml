@@ -1,0 +1,29 @@
+[project]
+name = "agentic-application-tracker"
+version = "0.1.0"
+description = "Agentic Application Tracker — automated job discovery, enrichment, and fit scoring pipeline with a web dashboard."
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "beautifulsoup4>=4.14.3",
+    "google-adk[extensions]>=0.5.0",
+    "google-genai>=1.47.0",
+    "httpx>=0.28.1",
+    "jsonpickle>=4.1.1",
+    "playwright>=1.58.0",
+    "pydantic-ai>=0.8.1",
+    "pyyaml>=6.0.3",
+    "fastapi[standard]>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4.2",
+    "pytest-asyncio>=1.2.0",
+    "pytest-mock>=3.15.1",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]

@@ -1,0 +1,128 @@
+{
+  "companies": [
+    {
+      "name": "Anthropic",
+      "careers_url": "https://job-boards.greenhouse.io/anthropic",
+      "scan_method": "greenhouse_api",
+      "scan_method_config": {
+        "api_base": "https://boards-api.greenhouse.io/v1/boards/anthropic/jobs"
+      },
+      "enabled": true,
+      "category": "AI/ML"
+    },
+    {
+      "name": "Vercel",
+      "careers_url": "https://job-boards.greenhouse.io/vercel",
+      "scan_method": "greenhouse_api",
+      "scan_method_config": {
+        "api_base": "https://boards-api.greenhouse.io/v1/boards/vercel/jobs"
+      },
+      "enabled": true,
+      "category": "Cloud"
+    },
+    {
+      "name": "Airtable",
+      "careers_url": "https://job-boards.greenhouse.io/airtable",
+      "scan_method": "greenhouse_api",
+      "scan_method_config": {
+        "api_base": "https://boards-api.greenhouse.io/v1/boards/airtable/jobs"
+      },
+      "enabled": true,
+      "category": "Enterprise"
+    },
+    {
+      "name": "OpenAI",
+      "careers_url": "https://jobs.ashbyhq.com/openai",
+      "scan_method": "ashby_api",
+      "scan_method_config": {
+        "slug": "openai"
+      },
+      "enabled": true,
+      "category": "AI/ML"
+    },
+    {
+      "name": "Langfuse",
+      "careers_url": "https://jobs.ashbyhq.com/langfuse",
+      "scan_method": "ashby_api",
+      "scan_method_config": {
+        "slug": "langfuse"
+      },
+      "enabled": true,
+      "category": "AI/ML"
+    },
+    {
+      "name": "Linear",
+      "careers_url": "https://jobs.ashbyhq.com/linear",
+      "scan_method": "ashby_api",
+      "scan_method_config": {
+        "slug": "linear"
+      },
+      "enabled": true,
+      "category": "Developer Tools"
+    },
+    {
+      "name": "Mistral AI",
+      "careers_url": "https://jobs.lever.co/mistral",
+      "scan_method": "lever_api",
+      "scan_method_config": {
+        "slug": "mistral"
+      },
+      "enabled": true,
+      "category": "AI/ML"
+    },
+    {
+      "name": "Palantir",
+      "careers_url": "https://jobs.lever.co/palantir",
+      "scan_method": "lever_api",
+      "scan_method_config": {
+        "slug": "palantir"
+      },
+      "enabled": true,
+      "category": "Enterprise"
+    },
+    {
+      "name": "Qonto",
+      "careers_url": "https://jobs.lever.co/qonto",
+      "scan_method": "lever_api",
+      "scan_method_config": {
+        "slug": "qonto"
+      },
+      "enabled": true,
+      "category": "Fintech"
+    },
+    {
+      "name": "Travelperk",
+      "careers_url": "https://apply.workable.com/travelperk",
+      "scan_method": "workable_api",
+      "scan_method_config": {
+        "slug": "travelperk"
+      },
+      "enabled": true,
+      "category": "Travel"
+    },
+    {
+      "name": "Factorial",
+      "careers_url": "https://apply.workable.com/factorial",
+      "scan_method": "workable_api",
+      "scan_method_config": {
+        "slug": "factorial"
+      },
+      "enabled": true,
+      "category": "HR Tech"
+    },
+    {
+      "name": "Logitech",
+      "careers_url": "https://logitech.wd5.myworkdayjobs.com/Logitech",
+      "scan_method": "workday_api",
+      "enabled": true,
+      "category": "Hardware"
+    },
+    {
+      "name": "Genesys",
+      "careers_url": "https://genesys.wd1.myworkdayjobs.com/Genesys",
+      "scan_method": "workday_api",
+      "enabled": true,
+      "category": "Enterprise"
+    }
+  ]
+}

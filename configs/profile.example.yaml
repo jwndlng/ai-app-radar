@@ -1,0 +1,152 @@
+# Example candidate profile — copy to configs/profile.yaml and fill in your own details.
+# Or run the setup wizard: uv run python -m main setup
+
+identity:
+  name: Alex Chen
+  email: alex.chen@example.com
+  location: Berlin, Germany
+  linkedin: linkedin.com/in/alex-chen-example
+  github: github.com/alex-chen-example
+
+targets:
+  primary_roles:
+    - Senior Platform Engineer
+    - Staff Engineer
+    - Infrastructure Engineer
+  archetypes:
+    - name: Senior Platform Engineer
+      level: Senior
+      fit: primary
+    - name: Staff Infrastructure Engineer
+      level: Staff
+      fit: secondary
+
+narrative:
+  headline: Senior Platform Engineer specializing in Kubernetes, Terraform, and distributed systems
+  exit_story: Senior Platform Engineer at Example Corp looking for the next challenge in cloud-native infrastructure.
+
+experience:
+  - company: Example Corp
+    role: Senior Platform Engineer
+    location: Berlin, Germany
+    period: 01/2022 -- PRESENT
+    highlights:
+      - Led migration of monolithic services to Kubernetes, reducing deployment time by 60%
+      - Designed and implemented self-service infrastructure platform using Terraform and GitHub Actions
+      - Reduced cloud spend by 35% through rightsizing and spot instance automation
+    tech_stack:
+      - Kubernetes
+      - Terraform
+      - AWS
+      - Python
+      - Go
+      - GitHub Actions
+      - Prometheus
+      - Grafana
+  - company: StartupCo
+    role: Platform Engineer
+    location: Amsterdam, Netherlands
+    period: 03/2019 -- 12/2021
+    highlights:
+      - Built CI/CD pipelines for 15+ microservices using GitHub Actions and ArgoCD
+      - Implemented observability stack (Prometheus, Grafana, Loki) from scratch
+    tech_stack:
+      - Docker
+      - Kubernetes
+      - PostgreSQL
+      - Python
+      - Ansible
+
+education:
+  - degree: B.Sc. in Computer Science
+    school: Technical University of Berlin
+    period: Oct 2015 - Mar 2019
+
+logistics:
+  availability: Remote preferred, occasional on-site possible
+  preferred_locations:
+    - Remote Europe
+    - Berlin, Germany
+    - Amsterdam, Netherlands
+  visa_status: EU citizen, no sponsorship needed
+  timezone: CET
+
+scout_filters:
+  positive:
+    - Platform
+    - Infrastructure
+    - DevOps
+    - SRE
+    - Site Reliability
+    - Cloud
+    - Kubernetes
+    - Distributed Systems
+    - Backend
+  negative:
+    - Sales
+    - Marketing
+  seniority_boost:
+    - Senior
+    - Staff
+    - Principal
+    - Lead
+
+compensation:
+  currency: EUR
+  minimum: 100
+  target_range: 120-160
+
+location_preferences:
+  accepted:
+    - Berlin
+    - Amsterdam
+    - Remote Europe
+    - EMEA
+    - Global
+  remote_eligible: true
+
+mission_domains:
+  cloud_infrastructure: 10
+  developer_tooling: 9
+  distributed_systems: 8
+  fintech: 6
+  other: 4
+
+skill_tiers:
+  super_power:
+    - Kubernetes
+    - Terraform
+    - AWS
+    - Python
+    - CI/CD
+    - GitHub Actions
+    - Infrastructure-as-code
+  strong:
+    - Go
+    - Docker
+    - Prometheus
+    - Grafana
+    - PostgreSQL
+    - Ansible
+  low:
+    - Java
+    - MySQL
+    - Redis
+
+skills:
+  matrix:
+    languages:
+      - name: Python
+        level: 5
+      - name: Go
+        level: 3
+      - name: Bash
+        level: 4
+    infrastructure:
+      - Terraform
+      - Kubernetes
+      - AWS
+      - Docker
+      - GitHub Actions
+      - ArgoCD
+      - Ansible

@@ -1,0 +1,10 @@
+company: Google
+careers_url: https://careers.google.com/jobs/results/?q=security
+scan_method_config: {}
+expected_pages: 3
+jobs_min: 20
+jobs_max: 120
+url_coverage_min: 0.95
+models:
+  - gemini/gemini-2.5-flash
+  - claude-haiku-4-5

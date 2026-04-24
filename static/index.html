@@ -1,0 +1,3390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Agentic Application Tracker</title>
+  <script>(function(){document.documentElement.setAttribute('data-theme',localStorage.getItem('theme')||'light')})()</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Outfit:wght@600;700&display=swap" rel="stylesheet">
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
+  <style>
+    /* ── Design Tokens ─────────────────────────────────────────────────────── */
+    :root {
+      --padding-sm: 12px;
+      --padding-md: 20px;
+      --padding-lg: 32px;
+      --radius-sm: 8px;
+      --radius-md: 16px;
+      --radius-lg: 24px;
+
+      --bg-main: hsl(210, 20%, 98%);
+      --bg-card: hsl(0, 0%, 100%);
+      --bg-sidebar: hsla(210, 20%, 95%, 0.8);
+      --border-color: hsla(210, 20%, 10%, 0.08);
+      --text-primary: hsl(210, 20%, 15%);
+      --text-secondary: hsl(210, 15%, 35%);
+      --accent-primary: hsl(250, 60%, 55%);
+      --accent-glow: hsla(250, 60%, 55%, 0.1);
+      --expandable-bg: hsl(210, 20%, 96%);
+
+      --status-discovered-bg: hsl(45, 100%, 94%);
+      --status-discovered-text: hsl(35, 90%, 30%);
+      --status-parsed-bg: hsl(210, 60%, 94%);
+      --status-parsed-text: hsl(210, 70%, 35%);
+      --status-match-bg: hsl(140, 60%, 93%);
+      --status-match-text: hsl(140, 55%, 28%);
+      --status-review-bg: hsl(30, 100%, 93%);
+      --status-review-text: hsl(30, 80%, 30%);
+      --status-rejected-bg: hsl(0, 80%, 95%);
+      --status-rejected-text: hsl(0, 70%, 38%);
+      --status-archived-bg: hsl(0, 0%, 94%);
+      --status-archived-text: hsl(0, 0%, 35%);
+      --status-applied-bg: hsl(250, 80%, 95%);
+      --status-applied-text: hsl(250, 60%, 40%);
+      --status-failed-bg: hsl(0, 100%, 95%);
+      --status-failed-text: hsl(0, 70%, 40%);
+
+      --glass-blur: 12px;
+      --transition-speed: 0.25s;
+      --nav-height: 52px;
+    }
+
+    [data-theme="dark"] {
+      --bg-main: hsl(220, 25%, 8%);
+      --bg-card: hsl(220, 25%, 12%);
+      --bg-sidebar: hsla(220, 25%, 10%, 0.8);
+      --border-color: hsla(0, 0%, 100%, 0.08);
+      --text-primary: hsl(210, 20%, 95%);
+      --text-secondary: hsl(210, 10%, 70%);
+      --accent-primary: hsl(250, 70%, 70%);
+      --accent-glow: hsla(250, 70%, 70%, 0.15);
+      --expandable-bg: hsl(220, 25%, 16%);
+
+      --status-discovered-bg: hsla(45, 100%, 50%, 0.15);
+      --status-discovered-text: hsl(45, 100%, 70%);
+      --status-parsed-bg: hsla(210, 60%, 50%, 0.15);
+      --status-parsed-text: hsl(210, 80%, 70%);
+      --status-match-bg: hsla(140, 60%, 50%, 0.15);
+      --status-match-text: hsl(140, 60%, 65%);
+      --status-review-bg: hsla(30, 100%, 50%, 0.15);
+      --status-review-text: hsl(30, 100%, 70%);
+      --status-rejected-bg: hsla(0, 80%, 50%, 0.15);
+      --status-rejected-text: hsl(0, 100%, 72%);
+      --status-archived-bg: hsla(0, 0%, 50%, 0.15);
+      --status-archived-text: hsl(0, 0%, 70%);
+      --status-applied-bg: hsla(250, 80%, 60%, 0.15);
+      --status-applied-text: hsl(250, 70%, 75%);
+      --status-failed-bg: hsla(0, 100%, 50%, 0.15);
+      --status-failed-text: hsl(0, 100%, 70%);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--bg-main);
+      color: var(--text-primary);
+      overflow-x: hidden;
+      line-height: 1.5;
+      display: flex;
+      min-height: 100vh;
+    }
+
+    h1, h2, h3, h4 { font-family: 'Outfit', sans-serif; font-weight: 700; }
+
+    /* ── Layout ────────────────────────────────────────────────────────────── */
+    .sidebar {
+      width: 300px;
+      height: calc(100vh - var(--nav-height));
+      position: fixed;
+      left: 0; top: var(--nav-height);
+      background: var(--bg-sidebar);
+      backdrop-filter: blur(var(--glass-blur));
+      border-right: 1px solid var(--border-color);
+      padding: var(--padding-lg);
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      gap: var(--padding-md);
+      overflow-y: auto;
+      transition: transform 0.25s ease, width 0.25s ease;
+    }
+
+    .sidebar.collapsed {
+      transform: translateX(-100%);
+    }
+
+    .main-content {
+      flex: 1;
+      margin-left: 300px;
+      padding: calc(var(--nav-height) + var(--padding-lg)) var(--padding-lg) var(--padding-lg);
+      max-width: 1400px;
+      transition: margin-left 0.25s ease;
+    }
+
+    .main-content.sidebar-collapsed { margin-left: 0; }
+
+    .main-content.full-width { margin-left: 0; max-width: none; }
+
+    .nav-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      border: none;
+      background: transparent;
+      color: var(--text-secondary);
+      cursor: pointer;
+      border-radius: var(--radius-sm);
+      font-size: 1.1rem;
+      transition: background 0.15s, color 0.15s;
+      flex-shrink: 0;
+    }
+
+    .nav-toggle:hover { background: var(--bg-sidebar); color: var(--text-primary); }
+
+    /* ── Companies Sidebar ──────────────────────────────────────────────────── */
+    .company-cat-link {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      padding: 5px 8px;
+      border-radius: var(--radius-sm);
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      text-align: left;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .company-cat-link:hover { background: var(--bg-card); color: var(--text-primary); }
+    .company-cat-link.active { background: var(--accent-primary); color: #fff; }
+    .company-cat-link.active .company-cat-count { background: rgba(255,255,255,0.2); border-color: rgba(255,255,255,0.3); color: #fff; }
+
+    .company-cat-count {
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      background: var(--bg-sidebar);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 1px 7px;
+      min-width: 26px;
+      text-align: center;
+    }
+
+    .scan-filter-btn {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      width: 100%;
+      padding: 7px 8px;
+      border-radius: var(--radius-sm);
+      border: none;
+      cursor: pointer;
+      text-align: left;
+      background: transparent;
+      transition: background 0.15s, color 0.15s;
+    }
+    .scan-filter-btn:hover { background: var(--bg-card); }
+    .scan-filter-btn.active { background: var(--accent-primary); color: #fff; }
+    .scan-filter-btn .scan-filter-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .scan-filter-btn.active .company-cat-count { background: rgba(255,255,255,0.2); border-color: rgba(255,255,255,0.3); color: #fff; }
+    .scan-filter-desc {
+      font-size: 0.7rem;
+      color: var(--text-secondary);
+      line-height: 1.3;
+    }
+    .scan-filter-btn.active .scan-filter-desc { color: rgba(255,255,255,0.75); }
+
+    /* ── Pipeline Flow ─────────────────────────────────────────────────────── */
+    .pipeline-flow {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .pf-all {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 12px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-color);
+      background: var(--bg-card);
+      cursor: pointer;
+      font-size: 0.74rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      transition: all var(--transition-speed);
+      margin-bottom: 10px;
+      user-select: none;
+    }
+    .pf-all:hover { border-color: var(--accent-primary); color: var(--accent-primary); }
+    .pf-all.active { background: var(--accent-primary); color: white; border-color: var(--accent-primary); }
+    .pf-all .pf-all-count {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 700;
+      font-size: 1.1rem;
+    }
+    .pf-all.active .pf-all-count { color: white; }
+
+    .pf-node {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 9px 12px;
+      border-radius: var(--radius-sm);
+      border: 2px solid transparent;
+      cursor: pointer;
+      transition: all var(--transition-speed);
+      user-select: none;
+    }
+    .pf-node:hover { filter: brightness(0.93); }
+    .pf-node.active {
+      border-color: var(--accent-primary) !important;
+      box-shadow: 0 0 0 3px var(--accent-glow);
+      filter: none;
+    }
+
+    .pf-branch {
+      display: flex;
+      gap: 6px;
+      width: 100%;
+    }
+    .pf-branch .pf-node {
+      flex: 1;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      gap: 4px;
+      padding: 10px 6px;
+    }
+
+    .pf-label {
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      opacity: 0.8;
+    }
+    .pf-node.active .pf-label { opacity: 1; }
+
+    .pf-count {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 700;
+      line-height: 1;
+      transition: font-size 0.2s;
+    }
+
+    .pf-state-discovered { background: var(--status-discovered-bg); color: var(--status-discovered-text); }
+    .pf-state-parsed     { background: var(--status-parsed-bg);     color: var(--status-parsed-text); }
+    .pf-state-match      { background: var(--status-match-bg);      color: var(--status-match-text); }
+    .pf-state-review     { background: var(--status-review-bg);     color: var(--status-review-text); }
+    .pf-state-applied    { background: var(--status-applied-bg);    color: var(--status-applied-text); }
+    .pf-state-rejected   { background: var(--status-rejected-bg);   color: var(--status-rejected-text); }
+    .pf-state-archived   { background: var(--status-archived-bg);   color: var(--status-archived-text); }
+    .pf-state-failed     { background: var(--status-failed-bg);     color: var(--status-failed-text); }
+
+    .pf-arrow {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 16px;
+      color: var(--text-secondary);
+      opacity: 0.5;
+      font-size: 13px;
+      flex-shrink: 0;
+    }
+
+    .pf-fork {
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      height: 16px;
+      opacity: 0.5;
+      font-size: 13px;
+      padding: 0 12%;
+      flex-shrink: 0;
+    }
+
+    .pf-fork3 {
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      height: 16px;
+      opacity: 0.5;
+      font-size: 13px;
+      flex-shrink: 0;
+    }
+
+    /* wraps cross-arrows + Applied/Rejected, sized to Match+Review columns only */
+    .pf-outcomes {
+      width: 66%;
+    }
+
+    .pf-branch-arrows {
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      height: 16px;
+      opacity: 0.5;
+      font-size: 13px;
+      flex-shrink: 0;
+    }
+
+    .pf-cross {
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      height: 16px;
+      opacity: 0.5;
+      font-size: 13px;
+      flex-shrink: 0;
+    }
+
+    .pf-applied-note {
+      font-size: 0.62rem;
+      color: var(--text-secondary);
+      opacity: 0.55;
+      text-align: center;
+      letter-spacing: 0.03em;
+    }
+
+    .pf-applied-note span { opacity: 0.8; }
+
+    .pf-separator {
+      height: 1px;
+      background: var(--border-color);
+      margin: 10px 0 6px;
+    }
+
+    .pf-terminal { opacity: 0.7; }
+    .pf-terminal.active { opacity: 1; }
+
+    /* ── Filters ───────────────────────────────────────────────────────────── */
+    .filter-group { display: flex; flex-direction: column; gap: 8px; }
+    .filter-group label { font-size: 0.82rem; font-weight: 700; color: var(--text-primary); margin-top: 4px; }
+
+    .sidebar-heading {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: var(--text-primary);
+      margin: var(--padding-md) 0 6px;
+    }
+
+    input[type="search"], input[type="text"] {
+      width: 100%;
+      padding: 10px 12px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      color: var(--text-primary);
+      font-size: 0.88rem;
+      outline: none;
+      transition: border-color var(--transition-speed);
+    }
+
+    input[type="search"]:focus, input[type="text"]:focus {
+      border-color: var(--accent-primary);
+      box-shadow: 0 0 0 4px var(--accent-glow);
+    }
+
+    .pf-total {
+      margin-top: 8px;
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      text-align: center;
+      font-weight: 500;
+    }
+
+    /* ── Theme Toggle ──────────────────────────────────────────────────────── */
+    .theme-switch {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-top: auto;
+      padding-top: var(--padding-sm);
+    }
+
+    .switch-track {
+      width: 40px; height: 22px;
+      background: var(--border-color);
+      border-radius: 11px;
+      position: relative;
+      transition: background var(--transition-speed);
+      flex-shrink: 0;
+    }
+
+    .switch-thumb {
+      width: 18px; height: 18px;
+      background: white;
+      border-radius: 9px;
+      position: absolute;
+      top: 2px; left: 2px;
+      transition: transform var(--transition-speed);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+    }
+
+    [data-theme="dark"] .switch-track { background: var(--accent-primary); }
+    [data-theme="dark"] .switch-thumb { transform: translateX(18px); }
+    [data-theme="dark"] .btn-danger {
+      background: hsla(0, 65%, 50%, 0.12);
+      color: hsl(0, 80%, 68%);
+      border-color: hsla(0, 65%, 50%, 0.35);
+    }
+    [data-theme="dark"] .btn-danger:hover { background: hsl(0, 65%, 50%); color: white; border-color: hsl(0, 65%, 40%); }
+
+    /* ── Action Bar ────────────────────────────────────────────────────────── */
+    .action-bar {
+      display: flex;
+      gap: var(--padding-md);
+      align-items: center;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 14px var(--padding-md);
+      margin-bottom: var(--padding-md);
+      flex-wrap: wrap;
+    }
+
+    .action-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .action-group > label {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      white-space: nowrap;
+    }
+
+    .action-divider {
+      width: 1px;
+      height: 28px;
+      background: var(--border-color);
+      flex-shrink: 0;
+    }
+
+    .action-group input[type="text"] {
+      width: 160px;
+      padding: 7px 10px;
+      font-size: 0.82rem;
+    }
+
+    select.action-select {
+      padding: 7px 10px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      color: var(--text-primary);
+      font-size: 0.82rem;
+      outline: none;
+      cursor: pointer;
+      transition: border-color var(--transition-speed);
+    }
+
+    select.action-select:focus { border-color: var(--accent-primary); }
+
+    /* ── Buttons ───────────────────────────────────────────────────────────── */
+    .btn {
+      padding: 7px 14px;
+      border-radius: var(--radius-sm);
+      border: 1px solid transparent;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all var(--transition-speed);
+      white-space: nowrap;
+    }
+
+    .btn-primary {
+      background: var(--accent-primary);
+      color: white;
+      border-color: color-mix(in srgb, var(--accent-primary) 70%, black);
+    }
+    .btn-primary:hover { opacity: 0.9; }
+
+    .btn-secondary {
+      background: var(--bg-main);
+      color: var(--text-primary);
+      border-color: var(--border-color);
+    }
+    .btn-secondary:hover { border-color: var(--accent-primary); color: var(--accent-primary); }
+
+    .btn-sm { padding: 4px 10px; font-size: 0.75rem; }
+
+    .btn-success {
+      background: hsl(140, 50%, 38%);
+      color: white;
+      border-color: hsl(140, 50%, 28%);
+    }
+    .btn-success:hover { background: hsl(140, 50%, 32%); border-color: hsl(140, 50%, 22%); }
+
+    .btn-danger {
+      background: hsl(0, 65%, 97%);
+      color: hsl(0, 65%, 45%);
+      border-color: hsl(0, 65%, 80%);
+    }
+    .btn-danger:hover { background: hsl(0, 65%, 50%); color: white; border-color: hsl(0, 65%, 40%); }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-secondary);
+      border-color: var(--border-color);
+    }
+    .btn-ghost:hover { color: var(--text-primary); border-color: color-mix(in srgb, var(--border-color) 60%, currentColor); }
+
+    /* ── Running Tasks Panel ───────────────────────────────────────────────── */
+    .tasks-panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: var(--padding-md);
+      margin-bottom: var(--padding-md);
+    }
+
+    .tasks-panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .tasks-panel-header h4 { font-size: 0.9rem; }
+
+    .task-list { display: flex; flex-direction: column; gap: 5px; }
+
+    .task-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.82rem;
+      padding: 6px 10px;
+      background: var(--expandable-bg);
+      border-radius: var(--radius-sm);
+    }
+
+    .task-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .task-dot-running { background: hsl(45, 100%, 50%); animation: pulse 1.2s ease-in-out infinite; }
+    .task-dot-done { background: hsl(140, 60%, 45%); }
+    .task-dot-failed { background: hsl(0, 70%, 50%); }
+
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+    .task-name { flex: 1; color: var(--text-primary); }
+    .task-elapsed { color: var(--text-secondary); font-size: 0.75rem; white-space: nowrap; }
+    .task-progress-wrap { width: 100%; margin-top: 4px; }
+    .task-progress-bar {
+      height: 3px;
+      border-radius: 2px;
+      background: var(--border-color);
+      overflow: hidden;
+    }
+    .task-progress-fill {
+      height: 100%;
+      border-radius: 2px;
+      background: var(--accent-primary);
+      transition: width 0.4s ease;
+    }
+    .task-progress-label { font-size: 0.7rem; color: var(--text-secondary); margin-top: 2px; }
+
+    /* ── Job Cards ─────────────────────────────────────────────────────────── */
+    .results-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--padding-sm);
+    }
+
+    .sort-btn {
+      cursor: pointer;
+      font-size: 0.78rem;
+      padding: 3px 8px;
+      border-radius: 12px;
+      border: 1px solid var(--border-color);
+      color: var(--text-secondary);
+      user-select: none;
+    }
+    .sort-btn:hover, .sort-btn.active { border-color: var(--accent-primary); color: var(--accent-primary); }
+
+    .job-list { display: flex; flex-direction: column; gap: var(--padding-sm); container-type: inline-size; }
+
+    .job-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: var(--padding-md);
+      cursor: pointer;
+      transition: all var(--transition-speed);
+      animation: fadeIn 0.3s ease forwards;
+    }
+
+    .job-card:hover { border-color: var(--accent-primary); }
+
+    .job-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .job-title { font-size: 1rem; font-weight: 700; color: var(--text-primary); }
+
+    .job-meta {
+      display: flex;
+      gap: 10px;
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+      margin-top: 3px;
+    }
+
+    /* ── Badges ────────────────────────────────────────────────────────────── */
+    .badge {
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .badge-discovered { background: var(--status-discovered-bg); color: var(--status-discovered-text); }
+    .badge-parsed { background: var(--status-parsed-bg); color: var(--status-parsed-text); }
+    .badge-match { background: var(--status-match-bg); color: var(--status-match-text); }
+    .badge-review { background: var(--status-review-bg); color: var(--status-review-text); }
+    .badge-rejected { background: var(--status-rejected-bg); color: var(--status-rejected-text); }
+    .badge-archived { background: var(--status-archived-bg); color: var(--status-archived-text); }
+    .badge-applied { background: var(--status-applied-bg); color: var(--status-applied-text); }
+    .badge-failed { background: var(--status-failed-bg); color: var(--status-failed-text); }
+
+    .score-badge {
+      background: var(--accent-glow);
+      color: var(--accent-primary);
+      font-family: 'Outfit', sans-serif;
+      font-weight: 700;
+    }
+
+    /* ── Job Actions ───────────────────────────────────────────────────────── */
+    .job-actions {
+      display: flex;
+      gap: 6px;
+      margin-top: 10px;
+      justify-content: flex-end;
+    }
+
+    .reject-prompt {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 8px;
+      padding: 10px 12px;
+      background: var(--status-rejected-bg);
+      border: 1px solid var(--status-rejected-text);
+      border-radius: var(--radius-sm);
+      flex-wrap: wrap;
+    }
+
+    .reject-prompt input {
+      flex: 1;
+      min-width: 160px;
+      padding: 6px 10px;
+      font-size: 0.82rem;
+      border: 1px solid var(--status-rejected-text);
+      border-radius: var(--radius-sm);
+      background: transparent;
+      color: var(--text-primary);
+      outline: none;
+    }
+
+    .reject-prompt input::placeholder { color: var(--text-secondary); opacity: 0.7; }
+    .reject-prompt input:focus { border-color: var(--status-rejected-text); box-shadow: 0 0 0 2px var(--status-rejected-bg); }
+
+    /* ── Job Card Container Queries ───────────────────────────────────────── */
+    @container (max-width: 640px) {
+      .job-card { padding: 12px 14px; }
+      .job-header { flex-wrap: wrap; gap: 6px; }
+      .job-title { font-size: 0.88rem; }
+      .job-meta { font-size: 0.76rem; gap: 6px; flex-wrap: wrap; }
+      .job-actions { justify-content: flex-start; flex-wrap: wrap; }
+      .job-details { grid-template-columns: 1fr; gap: var(--padding-md); }
+      .detail-grid { grid-template-columns: 100px 1fr; font-size: 0.79rem; }
+      .pros-cons { grid-template-columns: 1fr; grid-column: span 1; }
+    }
+
+    @container (max-width: 420px) {
+      .job-card { padding: 10px 12px; }
+      .job-title { font-size: 0.83rem; }
+      .job-meta { font-size: 0.72rem; }
+      .badge { font-size: 0.62rem; padding: 2px 6px; }
+      .score-tag { font-size: 0.68rem; padding: 2px 7px; }
+      .detail-grid { grid-template-columns: 1fr; }
+      .detail-label { color: var(--text-secondary); font-size: 0.7rem; margin-bottom: -4px; }
+    }
+
+    /* ── Job Detail Panel ──────────────────────────────────────────────────── */
+    .job-details {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--padding-lg);
+      margin-top: var(--padding-md);
+      padding-top: var(--padding-md);
+      border-top: 1px solid var(--border-color);
+    }
+
+    .detail-section h4 {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-secondary);
+      margin-bottom: 10px;
+    }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: 130px 1fr;
+      gap: 7px;
+      font-size: 0.83rem;
+    }
+
+    .detail-label { color: var(--text-secondary); font-weight: 500; }
+    .detail-value { color: var(--text-primary); }
+
+    .strategic-fit {
+      background: var(--accent-glow);
+      padding: var(--padding-sm);
+      border-radius: var(--radius-sm);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    .score-large {
+      font-size: 1.4rem;
+      font-family: 'Outfit', sans-serif;
+      color: var(--accent-primary);
+      font-weight: 700;
+    }
+
+    .pros-cons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--padding-md);
+      grid-column: span 2;
+    }
+
+    .pros-list, .cons-list { font-size: 0.82rem; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; }
+    .pros-list li::before { content: "→ "; color: hsl(140, 60%, 45%); font-weight: 800; }
+    .cons-list li::before { content: "✕ "; color: hsl(0, 70%, 50%); font-weight: 800; }
+
+    .tag-row { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 4px; }
+
+    .tag {
+      display: inline-block;
+      padding: 3px 9px;
+      border-radius: 20px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      background: var(--bg-sidebar);
+      color: var(--text-secondary);
+      border: 1px solid var(--border-color);
+    }
+
+    .tag-matched { background: var(--accent-primary); color: white; border-color: var(--accent-primary); }
+
+    .score-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 9px;
+      border-radius: 20px;
+      font-size: 0.7rem;
+      font-weight: 500;
+      background: var(--bg-sidebar);
+      color: var(--text-secondary);
+      border: 1px solid var(--border-color);
+    }
+    .score-tag strong { color: var(--sc); font-weight: 700; }
+
+    .expandable-block {
+      max-height: 68px;
+      overflow: hidden;
+      position: relative;
+      transition: max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      background: var(--expandable-bg);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      padding: 9px 12px;
+      font-size: 0.83rem;
+      color: var(--text-secondary);
+    }
+
+    .expandable-block::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 32px;
+      background: linear-gradient(transparent, var(--expandable-bg));
+      pointer-events: none;
+      transition: opacity 0.3s;
+    }
+
+    .expandable-block.open { max-height: 2000px; }
+    .expandable-block.open::after { opacity: 0; }
+
+    .expand-btn {
+      background: none; border: none;
+      color: var(--accent-primary);
+      font-size: 0.72rem; font-weight: 600;
+      cursor: pointer; padding: 4px 0 0;
+      display: block;
+    }
+
+    .expand-btn:hover { text-decoration: underline; }
+
+    .links-container { display: flex; gap: 8px; margin-top: 10px; align-items: center; }
+
+    .btn-link {
+      padding: 5px 12px;
+      background: var(--accent-primary);
+      color: white;
+      border-radius: var(--radius-sm);
+      text-decoration: none;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+
+    .hash-chip {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 0.68rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      background: var(--bg-sidebar);
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      padding: 2px 7px;
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.15s;
+    }
+
+    .hash-chip:hover { color: var(--accent-primary); border-color: var(--accent-primary); }
+    .hash-chip.copied { color: hsl(140,60%,35%); border-color: hsl(140,60%,35%); background: hsl(140,60%,95%); }
+
+    .btn-delete {
+      padding: 1px 6px; border-radius: 4px; font-size: 0.72rem; font-weight: 600; line-height: 1.6;
+      border: 1px solid var(--border-color); background: transparent;
+      color: var(--text-secondary); cursor: pointer; transition: all 0.15s; flex-shrink: 0;
+    }
+    .btn-delete:hover { border-color: hsl(0,70%,55%); color: hsl(0,70%,55%); }
+    .btn-delete.armed { background: hsl(0,70%,55%); border-color: hsl(0,70%,55%); color: #fff; }
+    .btn-delete.armed:hover { background: hsl(0,70%,45%); }
+    @keyframes deleteError { 0%,100% { background: transparent; } 50% { background: hsl(0,70%,90%); border-color: hsl(0,70%,55%); color: hsl(0,70%,40%); } }
+    .btn-delete.error { animation: deleteError 0.4s ease 2; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 900px) {
+      .action-divider { display: none; }
+      .sort-bar { flex-wrap: wrap; gap: 4px; }
+    }
+
+    /* ── Top Navigation ────────────────────────────────────────────────────── */
+    .top-nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: var(--nav-height);
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      background: var(--bg-card);
+      backdrop-filter: blur(var(--glass-blur));
+      border-bottom: 1px solid var(--border-color);
+      padding: 0 var(--padding-lg);
+      gap: var(--padding-sm);
+    }
+
+    .nav-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-right: var(--padding-md);
+    }
+
+    .nav-tab {
+      padding: 0 16px;
+      height: var(--nav-height);
+      border: none;
+      background: transparent;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: color var(--transition-speed), border-color var(--transition-speed);
+    }
+
+    .nav-tab:hover { color: var(--text-primary); }
+    .nav-tab.active { color: var(--accent-primary); border-bottom-color: var(--accent-primary); }
+    .nav-gear {
+      margin-left: auto;
+      padding: 0 16px;
+      height: var(--nav-height);
+      border: none;
+      border-bottom: 2px solid transparent;
+      background: transparent;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: color 0.15s;
+    }
+    .nav-gear:hover { color: var(--text-primary); }
+    .nav-gear.active { color: var(--accent-primary); border-bottom-color: var(--accent-primary); }
+
+    /* ── Companies View ────────────────────────────────────────────────────── */
+    .company-group { margin-bottom: var(--padding-lg); }
+
+    .company-group-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 6px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .company-group-heading:hover { color: var(--text-primary); }
+
+    .company-group-chevron {
+      font-size: 0.7rem;
+      transition: transform 0.2s;
+      flex-shrink: 0;
+    }
+
+    .company-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+      gap: 8px;
+    }
+
+    .company-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 12px var(--padding-md);
+      transition: border-color var(--transition-speed);
+    }
+
+    .company-card:hover { border-color: var(--accent-primary); }
+
+    .company-name { font-weight: 700; font-size: 0.9rem; color: var(--text-primary); }
+
+    .scan-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.68rem;
+      background: var(--bg-sidebar);
+      border: 1px solid var(--border-color);
+      color: var(--text-secondary);
+    }
+
+    .scan-label span {
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .company-desc {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      margin-top: 4px;
+      line-height: 1.4;
+    }
+
+    .company-meta {
+      display: flex;
+      gap: 8px;
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      margin-top: 3px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .company-error {
+      background: var(--status-failed-bg);
+      color: var(--status-failed-text);
+      border: 1px solid currentColor;
+      border-radius: var(--radius-sm);
+      padding: 8px 14px;
+      font-size: 0.82rem;
+      margin-bottom: var(--padding-md);
+    }
+
+    /* ── Profile View ──────────────────────────────────────────────────── */
+    .profile-view { max-width: 860px; }
+
+    .profile-view-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--padding-lg);
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .profile-section {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      margin-bottom: var(--padding-md);
+      overflow: hidden;
+    }
+
+    .profile-section-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: var(--padding-md);
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.15s;
+    }
+
+    .profile-section-head:hover { background: var(--expandable-bg); }
+
+    .profile-section-head h3 {
+      font-size: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .profile-section-chevron {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      transition: transform 0.2s;
+      flex-shrink: 0;
+    }
+
+    .profile-section-body {
+      padding: 0 var(--padding-md) var(--padding-md);
+      border-top: 1px solid var(--border-color);
+    }
+
+    .profile-subsection { margin-top: var(--padding-md); }
+
+    .profile-subsection-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+    }
+
+    /* ── Chips ─────────────────────────────────────────────────────────── */
+    .chip-group { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      border: 1.5px solid;
+      transition: opacity 0.15s;
+    }
+
+    .chip-super { background: var(--accent-glow); color: var(--accent-primary); border-color: var(--accent-primary); cursor: pointer; }
+    .chip-strong { background: hsl(140,50%,93%); color: hsl(140,55%,28%); border-color: hsl(140,50%,60%); cursor: pointer; }
+    .chip-low { background: var(--bg-sidebar); color: var(--text-secondary); border-color: var(--border-color); cursor: pointer; }
+    .chip-neutral { background: var(--bg-sidebar); color: var(--text-secondary); border-color: var(--border-color); }
+    .chip-cycle:hover { opacity: 0.7; }
+
+    [data-theme="dark"] .chip-strong { background: hsla(140,50%,40%,0.2); color: hsl(140,60%,65%); border-color: hsl(140,50%,50%); }
+
+    .chip-remove-btn {
+      background: none; border: none; cursor: pointer;
+      color: currentColor; opacity: 0.5; font-size: 0.9rem;
+      padding: 0; line-height: 1; margin-left: 2px;
+    }
+    .chip-remove-btn:hover { opacity: 1; }
+
+    .chip-add-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      background: transparent;
+      border: 1.5px dashed var(--border-color);
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .chip-add-btn:hover { border-color: var(--accent-primary); color: var(--accent-primary); }
+
+    .chip-add-input {
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      border: 1.5px solid var(--accent-primary);
+      background: var(--bg-card);
+      color: var(--text-primary);
+      outline: none;
+      width: 140px;
+    }
+
+    /* ── Domain rows ────────────────────────────────────────────────────── */
+    .domain-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 5px 0;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .domain-row:last-child { border-bottom: none; }
+    .domain-name { font-size: 0.85rem; font-weight: 600; min-width: 150px; color: var(--text-primary); }
+    .domain-range { flex: 1; accent-color: var(--accent-primary); cursor: pointer; }
+    .domain-weight { font-size: 0.82rem; font-weight: 700; color: var(--accent-primary); min-width: 20px; text-align: right; }
+
+    /* ── Profile fields ─────────────────────────────────────────────────── */
+    .profile-field { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 10px; }
+
+    .profile-field-label {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      min-width: 130px;
+      padding-top: 9px;
+    }
+
+    .profile-field-value { flex: 1; }
+
+    input[type="number"].profile-number {
+      width: 140px;
+      padding: 8px 10px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      color: var(--text-primary);
+      font-size: 0.88rem;
+      outline: none;
+    }
+
+    input[type="text"].profile-input {
+      width: 100%;
+      padding: 8px 10px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      color: var(--text-primary);
+      font-size: 0.88rem;
+      outline: none;
+    }
+
+    input[type="number"].profile-number:focus,
+    input[type="text"].profile-input:focus {
+      border-color: var(--accent-primary);
+      box-shadow: 0 0 0 4px var(--accent-glow);
+    }
+
+    textarea.profile-textarea {
+      width: 100%;
+      padding: 10px 12px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      color: var(--text-primary);
+      font-size: 0.88rem;
+      font-family: inherit;
+      resize: vertical;
+      min-height: 80px;
+      outline: none;
+      transition: border-color var(--transition-speed);
+    }
+    textarea.profile-textarea:focus {
+      border-color: var(--accent-primary);
+      box-shadow: 0 0 0 4px var(--accent-glow);
+    }
+
+    /* ── Section footer ─────────────────────────────────────────────────── */
+    .section-footer {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding-top: var(--padding-sm);
+      border-top: 1px solid var(--border-color);
+      margin-top: var(--padding-md);
+    }
+
+    .unsaved-badge {
+      font-size: 0.72rem;
+      color: var(--status-review-text);
+      background: var(--status-review-bg);
+      border: 1px solid currentColor;
+      border-radius: 6px;
+      padding: 2px 8px;
+      font-weight: 600;
+    }
+
+    .save-toast {
+      font-size: 0.78rem;
+      color: hsl(140,55%,35%);
+      font-weight: 600;
+    }
+    [data-theme="dark"] .save-toast { color: hsl(140,60%,65%); }
+
+    /* ── Experience accordion ───────────────────────────────────────────── */
+    .exp-card {
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      margin-bottom: 10px;
+      overflow: hidden;
+    }
+
+    .exp-card-head {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: var(--padding-sm) var(--padding-md);
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.15s;
+    }
+    .exp-card-head:hover { background: var(--expandable-bg); }
+
+    .exp-card-title { font-size: 0.9rem; font-weight: 700; color: var(--text-primary); }
+    .exp-card-subtitle { font-size: 0.78rem; color: var(--text-secondary); }
+
+    .exp-card-body { padding: var(--padding-md); border-top: 1px solid var(--border-color); }
+
+    .exp-card-reorder { display: flex; gap: 3px; }
+
+    .reorder-btn {
+      background: none;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      cursor: pointer;
+      color: var(--text-secondary);
+      padding: 1px 6px;
+      font-size: 0.75rem;
+      line-height: 1.5;
+      transition: all 0.15s;
+    }
+    .reorder-btn:hover:not(:disabled) { border-color: var(--accent-primary); color: var(--accent-primary); }
+    .reorder-btn:disabled { opacity: 0.25; cursor: default; }
+
+    .highlight-item { display: flex; gap: 6px; align-items: flex-start; margin-bottom: 6px; }
+    .highlight-item textarea { flex: 1; }
+
+    /* ── Backup panel ───────────────────────────────────────────────────── */
+    .backup-panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: var(--padding-md);
+      margin-bottom: var(--padding-md);
+    }
+
+    .backup-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 7px 0;
+      border-bottom: 1px solid var(--border-color);
+      font-size: 0.82rem;
+    }
+    .backup-row:last-child { border-bottom: none; }
+    /* ── Settings view ─────────────────────────────────────────────────── */
+    .settings-view { max-width: 680px; }
+    .settings-section {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: var(--padding-lg);
+      margin-bottom: var(--padding-lg);
+    }
+    .settings-section-title {
+      font-size: 1rem;
+      font-weight: 700;
+      margin: 0 0 var(--padding-md) 0;
+      color: var(--text-primary);
+    }
+    .settings-subsection-title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin: var(--padding-md) 0 var(--padding-sm) 0;
+      color: var(--text-secondary);
+    }
+    .settings-grid {
+      display: grid;
+      grid-template-columns: 200px 1fr;
+      gap: 10px 16px;
+      align-items: center;
+      margin-bottom: var(--padding-md);
+    }
+    .settings-grid label { font-size: 0.85rem; color: var(--text-secondary); }
+    .settings-input {
+      background: var(--bg-input, var(--bg-sidebar));
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 5px 10px;
+      color: var(--text-primary);
+      font-size: 0.85rem;
+      width: 100%;
+      max-width: 220px;
+    }
+    .settings-input:focus { outline: 1px solid var(--accent-primary); }
+    .settings-save-btn {
+      padding: 7px 18px;
+      border-radius: 6px;
+      border: 1px solid var(--accent-primary);
+      background: transparent;
+      color: var(--accent-primary);
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+    .settings-save-btn:hover { background: var(--accent-primary); color: #fff; }
+    .settings-save-btn.saved { background: var(--accent-primary); color: #fff; }
+    .toggle-btn {
+      padding: 4px 14px;
+      border-radius: 20px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-sidebar);
+      color: var(--text-secondary);
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+    .toggle-btn.active { background: var(--accent-primary); color: #fff; border-color: var(--accent-primary); }
+    .weights-sum { font-size: 0.78rem; font-weight: 400; margin-left: 8px; }
+    .weights-ok { color: var(--accent-secondary, #4caf50); }
+    .weights-warn { color: #e57373; }
+    .settings-presets {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: var(--padding-lg);
+    }
+    .settings-presets-label {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-right: 4px;
+    }
+    .preset-btn {
+      padding: 6px 16px;
+      border-radius: 20px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-card);
+      color: var(--text-primary);
+      font-size: 0.82rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .preset-btn:hover { border-color: var(--accent-primary); background: var(--bg-sidebar); }
+
+  </style>
+</head>
+<body x-data="appData()" x-init="init()">
+
+  <!-- ── Top Navigation ───────────────────────────────────────────────── -->
+  <nav class="top-nav">
+    <button class="nav-toggle" @click="sidebarOpen = !sidebarOpen" :title="sidebarOpen ? 'Hide sidebar' : 'Show sidebar'">☰</button>
+    <span class="nav-title">Agentic Application Tracker</span>
+    <button class="nav-tab" :class="{active: currentView === 'jobs'}" @click="currentView = 'jobs'">Jobs</button>
+    <button class="nav-tab" :class="{active: currentView === 'companies'}" @click="currentView = 'companies'; loadCompanies()">Companies</button>
+    <button class="nav-tab" :class="{active: currentView === 'profile'}" @click="currentView = 'profile'; loadProfile()">Profile</button>
+    <button class="nav-gear" :class="{active: currentView === 'settings'}" @click="currentView = (currentView === 'settings' ? 'jobs' : 'settings')">⚙ Settings</button>
+  </nav>
+
+  <!-- ── Sidebar ────────────────────────────────────────────────────────── -->
+  <aside class="sidebar" :class="{'collapsed': !sidebarOpen}" x-show="currentView !== 'settings'">
+
+    <!-- Jobs sidebar -->
+    <div x-show="currentView === 'jobs'" style="display:contents;">
+      <div>
+        <h3 style="font-size:1.1rem;">Pipeline</h3>
+        <p style="font-size:0.78rem; color:var(--text-secondary); margin-top:2px;">Discovery Mission Control</p>
+      </div>
+
+      <div class="pipeline-flow">
+
+        <!-- All / reset -->
+        <div class="pf-all" :class="{active: statusFilter === 'all'}" @click="statusFilter = 'all'">
+          <span>All Jobs</span>
+          <span class="pf-all-count" x-text="stats.total"></span>
+        </div>
+
+        <!-- Discovered -->
+        <div class="pf-node pf-state-discovered"
+             :class="{active: statusFilter === 'discovered'}"
+             @click="statusFilter = 'discovered'">
+          <span class="pf-label">Discovered</span>
+          <span class="pf-count" :style="pipelineCountStyle(stats.discovered)" x-text="stats.discovered"></span>
+        </div>
+
+        <div class="pf-arrow">↓</div>
+
+        <!-- Parsed / Enriched -->
+        <div class="pf-node pf-state-parsed"
+             :class="{active: statusFilter === 'parsed'}"
+             @click="statusFilter = 'parsed'">
+          <span class="pf-label">Enriched</span>
+          <span class="pf-count" :style="pipelineCountStyle(stats.parsed)" x-text="stats.parsed"></span>
+        </div>
+
+        <!-- 3-way fork: evaluate routes to Match, Review, or Auto-rej -->
+        <div class="pf-fork3"><span>↙</span><span>↓</span><span>↘</span></div>
+
+        <!-- Match | Review | Auto-rej (all from evaluate on enriched jobs) -->
+        <div class="pf-branch">
+          <div class="pf-node pf-state-match"
+               :class="{active: statusFilter === 'match'}"
+               @click="statusFilter = 'match'">
+            <span class="pf-label">Match</span>
+            <span class="pf-count" :style="pipelineCountStyle(stats.match)" x-text="stats.match"></span>
+          </div>
+          <div class="pf-node pf-state-review"
+               :class="{active: statusFilter === 'review'}"
+               @click="statusFilter = 'review'">
+            <span class="pf-label">Review</span>
+            <span class="pf-count" :style="pipelineCountStyle(stats.review)" x-text="stats.review"></span>
+          </div>
+          <div class="pf-node pf-state-archived pf-terminal"
+               :class="{active: statusFilter === 'archived'}"
+               @click="statusFilter = 'archived'">
+            <span class="pf-label">Auto-rej</span>
+            <span class="pf-count" :style="pipelineCountStyle(stats.archived)" x-text="stats.archived"></span>
+          </div>
+        </div>
+
+        <!-- Applied + Rejected only reachable from Match or Review (first 2/3) -->
+        <div class="pf-outcomes">
+          <div class="pf-cross"><span>↙</span><span>↘</span><span>↙</span><span>↘</span></div>
+          <div class="pf-branch">
+            <div class="pf-node pf-state-applied"
+                 :class="{active: statusFilter === 'applied'}"
+                 @click="statusFilter = 'applied'">
+              <span class="pf-label">Applied</span>
+              <span class="pf-count" :style="pipelineCountStyle(stats.applied)" x-text="stats.applied"></span>
+            </div>
+            <div class="pf-node pf-state-rejected"
+                 :class="{active: statusFilter === 'rejected'}"
+                 @click="statusFilter = 'rejected'">
+              <span class="pf-label">Rejected</span>
+              <span class="pf-count" :style="pipelineCountStyle(stats.rejected)" x-text="stats.rejected"></span>
+            </div>
+          </div>
+          <div class="pf-applied-note">applied <span>→</span> rejected</div>
+        </div>
+
+        <!-- Failed: can happen at any pipeline step -->
+        <div class="pf-separator"></div>
+        <div class="pf-node pf-state-failed pf-terminal"
+             :class="{active: statusFilter === 'failed'}"
+             @click="statusFilter = 'failed'">
+          <span class="pf-label">Failed</span>
+          <span class="pf-count" :style="pipelineCountStyle(stats.failed)" x-text="stats.failed"></span>
+        </div>
+
+      </div>
+
+      <div class="filter-group">
+        <label>Search</label>
+        <input type="search" x-model="search" placeholder="Role, company…" />
+      </div>
+    </div>
+
+    <!-- Companies sidebar -->
+    <div x-show="currentView === 'companies'" style="display:contents;">
+      <div>
+        <h3 style="font-size:1.1rem;">Companies</h3>
+        <p style="font-size:0.78rem; color:var(--text-secondary); margin-top:2px;"
+           x-text="companies.length + ' tracked'"></p>
+      </div>
+
+      <div class="filter-group">
+        <label>Search</label>
+        <input type="search" x-model="companySearch" placeholder="Name or category…" />
+      </div>
+
+      <div x-show="companiesLoaded">
+        <p class="sidebar-heading">Categories</p>
+        <template x-for="group in groupedCompanies" :key="group.category">
+          <button class="company-cat-link" @click="scrollToCategory(group.category)">
+            <span x-text="group.category"></span>
+            <span class="company-cat-count" x-text="group.companies.length"></span>
+          </button>
+        </template>
+      </div>
+
+      <div x-show="companiesLoaded">
+        <p class="sidebar-heading">Scan Types</p>
+        <template x-for="item in scanTypeCounts" :key="item.method">
+          <button class="scan-filter-btn"
+                  :class="{active: scanFilter === item.method}"
+                  @click="scanFilter = (scanFilter === item.method ? null : item.method)">
+            <div class="scan-filter-row">
+              <span style="font-size:0.78rem; font-weight:600; color:var(--text-primary);" x-text="item.method"></span>
+              <span class="company-cat-count" x-text="item.count"></span>
+            </div>
+            <span class="scan-filter-desc" x-text="item.desc"></span>
+          </button>
+        </template>
+      </div>
+    </div>
+
+    <!-- Profile sidebar -->
+    <div x-show="currentView === 'profile'" style="display:contents;">
+      <p class="sidebar-heading">Sections</p>
+      <button class="company-cat-link" @click="scrollToProfileSection('pf-skills')">⚡ Skills &amp; Domains</button>
+      <button class="company-cat-link" @click="scrollToProfileSection('pf-targets')">🎯 Job Targets</button>
+      <button class="company-cat-link" @click="scrollToProfileSection('pf-logistics')">📍 Logistics</button>
+      <button class="company-cat-link" @click="scrollToProfileSection('pf-narrative')">📝 Narrative</button>
+      <button class="company-cat-link" @click="scrollToProfileSection('pf-experience')">💼 Experience</button>
+      <button class="company-cat-link" @click="scrollToProfileSection('pf-education')">🎓 Education</button>
+    </div>
+
+    <!-- Shared: theme toggle -->
+    <div style="margin-top:auto;">
+      <div class="theme-switch" @click="toggleDark()">
+        <div class="switch-track"><div class="switch-thumb"></div></div>
+        <span>Dark Mode</span>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- ── Main ───────────────────────────────────────────────────────────── -->
+  <main class="main-content" :class="{'sidebar-collapsed': !sidebarOpen}">
+
+    <!-- Jobs View -->
+    <div x-show="currentView === 'jobs'">
+    <header style="margin-bottom: var(--padding-md);">
+      <h1 style="font-size:1.6rem;">Jobs</h1>
+      <p style="color:var(--text-secondary); font-size:0.88rem;">Agentic Discovery Pipeline</p>
+    </header>
+
+    <!-- Pipeline steps + actions -->
+    <div style="display:flex; gap:0; margin-bottom:8px; background:var(--bg-card); border:1px solid var(--border-color); border-radius:var(--radius-md); overflow:hidden;">
+      <div style="flex:1; padding:14px 18px; border-right:1px solid var(--border-color); display:flex; flex-direction:column; gap:8px;">
+        <div>
+          <div style="font-size:0.72rem; font-weight:700; color:var(--accent-primary); letter-spacing:0.05em; text-transform:uppercase; margin-bottom:4px;">① Scout</div>
+          <div style="font-size:0.82rem; font-weight:600; color:var(--text-primary); margin-bottom:3px;">Discover roles</div>
+          <div style="font-size:0.75rem; color:var(--text-secondary); line-height:1.4;">Scans company career pages and ATS APIs for new postings that match your title filters.</div>
+        </div>
+        <div style="display:flex; gap:6px; margin-top:auto;">
+          <select class="action-select" x-model="scoutCompany" style="flex:1;">
+            <option value="all">All companies</option>
+            <template x-for="c in companies.filter(c => c.enabled)" :key="c.name">
+              <option :value="c.name" x-text="c.name"></option>
+            </template>
+          </select>
+          <select class="action-select" x-show="scoutCompany === 'all'" x-model="scoutMode">
+            <option value="all">All</option>
+            <option value="5">5</option>
+            <option value="10">10</option>
+            <option value="50">50</option>
+          </select>
+          <button class="btn btn-primary" @click="triggerScout()">Run</button>
+        </div>
+      </div>
+      <div style="flex:1; padding:14px 18px; border-right:1px solid var(--border-color); display:flex; flex-direction:column; gap:8px;">
+        <div>
+          <div style="font-size:0.72rem; font-weight:700; color:var(--accent-primary); letter-spacing:0.05em; text-transform:uppercase; margin-bottom:4px;">② Enrich</div>
+          <div style="font-size:0.82rem; font-weight:600; color:var(--text-primary); margin-bottom:3px;">Extract details</div>
+          <div style="font-size:0.75rem; color:var(--text-secondary); line-height:1.4;">Opens each listing and uses an LLM to extract location, salary, tech stack, and responsibilities.</div>
+        </div>
+        <div style="display:flex; gap:6px; margin-top:auto;">
+          <select class="action-select" x-model="enrichMode" style="flex:1;">
+            <option value="all">All</option>
+            <option value="5">5</option>
+            <option value="10">10</option>
+            <option value="50">50</option>
+          </select>
+          <button class="btn btn-primary" @click="triggerEnrich()">Run</button>
+        </div>
+      </div>
+      <div style="flex:1; padding:14px 18px; display:flex; flex-direction:column; gap:8px;">
+        <div>
+          <div style="font-size:0.72rem; font-weight:700; color:var(--accent-primary); letter-spacing:0.05em; text-transform:uppercase; margin-bottom:4px;">③ Evaluate</div>
+          <div style="font-size:0.82rem; font-weight:600; color:var(--text-primary); margin-bottom:3px;">Score &amp; triage</div>
+          <div style="font-size:0.75rem; color:var(--text-secondary); line-height:1.4;">Scores each role against your profile across fit, location, seniority, and compensation. Auto-matches or rejects based on thresholds.</div>
+        </div>
+        <div style="display:flex; gap:6px; margin-top:auto;">
+          <select class="action-select" x-model="evaluateMode" style="flex:1;">
+            <option value="all">All</option>
+            <option value="5">5</option>
+            <option value="10">10</option>
+            <option value="50">50</option>
+          </select>
+          <button class="btn btn-primary" @click="triggerEvaluate()">Run</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Undo row -->
+    <div style="display:flex; justify-content:flex-end; align-items:center; gap:6px; margin-bottom:var(--padding-md);">
+      <span style="font-size:0.75rem; color:var(--text-secondary);">Undo all</span>
+      <select class="action-select" x-model="undoState">
+        <option value="review">Review</option>
+        <option value="match">Match</option>
+        <option value="rejected">Rejected</option>
+        <option value="archived">Archived</option>
+        <option value="applied">Applied</option>
+        <option value="parsed">Enriched</option>
+      </select>
+      <button class="btn btn-ghost" @click="undoByState(undoState)">Undo</button>
+    </div>
+
+    <!-- Running Tasks Panel -->
+    <div class="tasks-panel" x-show="activeTasks.length > 0">
+      <div class="tasks-panel-header">
+        <h4>Running Tasks</h4>
+        <span style="font-size:0.75rem; color:var(--text-secondary);"
+              x-text="activeTasks.filter(t => t.status === 'running').length + ' active'"></span>
+      </div>
+      <div class="task-list">
+        <template x-for="task in activeTasks" :key="task.id">
+          <div :style="'opacity:' + taskOpacity(task) + '; transition: opacity 1s ease'">
+            <div class="task-item">
+              <div class="task-dot" :class="'task-dot-' + task.status"></div>
+              <span class="task-name" x-text="formatOperation(task.operation)"></span>
+              <span class="task-elapsed" x-text="formatElapsed(task, now)"></span>
+            </div>
+            <template x-if="task.progress_total != null && task.progress_total > 0">
+              <div class="task-progress-wrap">
+                <div class="task-progress-bar">
+                  <div class="task-progress-fill"
+                       :style="'width:' + Math.round(((task.progress_current || 0) / task.progress_total) * 100) + '%'">
+                  </div>
+                </div>
+                <div class="task-progress-label"
+                     x-text="(task.progress_current || 0) + ' / ' + task.progress_total + ' items'">
+                </div>
+              </div>
+            </template>
+          </div>
+        </template>
+      </div>
+    </div>
+
+    <!-- Job List -->
+    <div class="results-header">
+      <h3 style="font-size:1rem;"
+          x-text="filteredJobs.length + ' Roles' + (visibleCount < filteredJobs.length ? ' (showing ' + visibleCount + ')' : '')"></h3>
+      <div class="sort-bar" style="display:flex; gap:8px; align-items:center;">
+        <span style="font-size:0.8rem; color:var(--text-secondary);">Sort:</span>
+        <span class="sort-btn" :class="{active: sortKey==='updated_at'}" @click="setSort('updated_at')">Last updated</span>
+        <span class="sort-btn" :class="{active: sortKey==='score'}"     @click="setSort('score')">Score</span>
+        <span class="sort-btn" :class="{active: sortKey==='title'}"     @click="setSort('title')">Title</span>
+        <span class="sort-btn" :class="{active: sortKey==='company'}"   @click="setSort('company')">Company</span>
+        <span class="sort-btn" x-text="sortAsc ? '↑' : '↓'" @click="sortAsc = !sortAsc" style="min-width:18px;"></span>
+      </div>
+    </div>
+
+    <div class="job-list">
+      <template x-if="jobs.length === 0">
+        <div style="text-align:center; padding:3rem; color:var(--text-secondary);">
+          Loading jobs…
+        </div>
+      </template>
+      <template x-if="jobs.length > 0 && filteredJobs.length === 0">
+        <div style="text-align:center; padding:3rem; color:var(--text-secondary);">
+          No jobs match the current filter.
+        </div>
+      </template>
+
+      <template x-for="job in visibleJobs" :key="job.id">
+        <div class="job-card" @click="toggleExpand(job.id)">
+
+          <!-- Card header -->
+          <div class="job-header">
+            <div style="flex:1; min-width:0;">
+              <div style="display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; min-width:0;">
+                <div class="job-title" x-text="job.title"></div>
+                <span x-show="job.updated_at" x-text="timeAgo(job.updated_at)"
+                      style="font-size:0.72rem; color:var(--text-secondary); white-space:nowrap; flex-shrink:0;"></span>
+              </div>
+              <div class="job-meta">
+                <span x-text="job.company"></span>
+                <span x-show="job.location && !job.location.includes('BLANK')" x-text="'• ' + job.location"></span>
+                <span x-show="job.salary_range" class="badge badge-salary" x-text="job.salary_range"></span>
+              </div>
+            </div>
+            <div style="display:flex; gap:5px; align-items:flex-start; flex-shrink:0;">
+              <span class="hash-chip"
+                    x-text="job.hash_id || job.id.slice(0,8)"
+                    @click.stop="copyId($event, job.hash_id || job.id)"
+                    title="Click to copy ID"></span>
+              <span class="badge badge-failed" x-show="job.status === 'failed'">err</span>
+              <span class="badge" :class="'badge-' + (job.state || 'discovered')" x-text="stateLabel(job.state)"></span>
+              <span class="badge score-badge"
+                    x-show="(job.final_score ?? job.score) != null"
+                    x-text="((job.final_score ?? job.score) != null) ? (job.final_score ?? job.score).toFixed(1) + '/10' : ''"></span>
+              <button class="btn-delete"
+                      :class="{ armed: job._armedDelete, error: job._deleteError }"
+                      @click.stop="job._armedDelete ? confirmDelete(job, $event) : armDelete(job, $event)"
+                      @click.outside="job._armedDelete = false"
+                      :title="job._armedDelete ? 'Click again to permanently delete' : 'Remove this job'"
+                      x-text="job._armedDelete ? 'Confirm?' : '×'"></button>
+            </div>
+          </div>
+
+          <!-- Sub-scores row -->
+          <div x-show="job.score != null || job.location_score != null"
+               style="display:flex; gap:5px; margin-top:6px; flex-wrap:wrap;">
+            <template x-if="job.score != null">
+              <span class="score-tag" :style="'--sc:' + subScoreColor(job.score)">
+                Fit Score <strong x-text="job.score"></strong>
+              </span>
+            </template>
+            <template x-if="job.location_score != null">
+              <span class="score-tag" :style="'--sc:' + subScoreColor(job.location_score)">
+                Location <strong x-text="job.location_score"></strong>
+              </span>
+            </template>
+            <template x-if="job.seniority_score != null">
+              <span class="score-tag" :style="'--sc:' + subScoreColor(job.seniority_score)">
+                Seniority <strong x-text="job.seniority_score"></strong>
+              </span>
+            </template>
+            <template x-if="job.compensation_score != null">
+              <span class="score-tag" :style="'--sc:' + subScoreColor(job.compensation_score)">
+                Compensation <strong x-text="job.compensation_score"></strong>
+              </span>
+            </template>
+          </div>
+
+          <!-- Card actions -->
+          <div class="job-actions" @click.stop>
+            <button class="btn btn-secondary btn-sm"
+                    x-show="job.state === 'discovered'"
+                    @click="enrichJob(job.id)">Enrich</button>
+            <button class="btn btn-secondary btn-sm"
+                    x-show="job.state === 'parsed'"
+                    @click="evaluateJob(job.id)">Evaluate</button>
+            <button class="btn btn-primary btn-sm"
+                    x-show="job.state === 'discovered' || job.state === 'parsed'"
+                    @click="runJob(job.id)">Run All</button>
+            <button class="btn btn-success btn-sm"
+                    x-show="job.state === 'match' || job.state === 'review'"
+                    @click="setJobState(job.id, 'applied')">Apply</button>
+            <button class="btn btn-danger btn-sm"
+                    x-show="job.state !== 'rejected'"
+                    @click.stop="openRejectPrompt(job.id)">Reject</button>
+            <button class="btn btn-ghost btn-sm"
+                    x-show="job.state !== 'discovered'"
+                    @click="undoJob(job.id)">Undo</button>
+          </div>
+
+          <!-- Reject prompt -->
+          <div class="reject-prompt" x-show="rejectPrompt.jobId === job.id" x-transition @click.stop>
+            <span style="font-size:0.78rem; font-weight:600; color:var(--status-rejected-text); white-space:nowrap;">Why reject?</span>
+            <input type="text" x-model="rejectPrompt.reason" placeholder="optional reason…"
+                   x-ref="rejectInput"
+                   @keydown.enter.stop="confirmReject(job.id)"
+                   @keydown.escape.stop="rejectPrompt = { jobId: null, reason: '' }" />
+            <button class="btn btn-danger btn-sm" @click.stop="confirmReject(job.id)">Confirm</button>
+            <button class="btn btn-ghost btn-sm" @click.stop="rejectPrompt = { jobId: null, reason: '' }">Cancel</button>
+          </div>
+
+          <!-- Expanded detail -->
+          <div class="job-details" x-show="expandedJobId === job.id" @click.stop>
+
+            <!-- Details + links -->
+            <div class="detail-section">
+              <h4>Role Details</h4>
+              <div class="detail-grid">
+                <template x-if="job.location && !job.location.includes('BLANK')">
+                  <><span class="detail-label">Location</span><span class="detail-value" x-text="job.location"></span></>
+                </template>
+                <template x-if="job.remote_policy">
+                  <><span class="detail-label">Remote Policy</span><span class="detail-value" x-text="job.remote_policy"></span></>
+                </template>
+                <template x-if="job.salary_range">
+                  <><span class="detail-label">Salary</span><span class="detail-value" x-text="job.salary_range"></span></>
+                </template>
+                <template x-if="job.team">
+                  <><span class="detail-label">Team</span><span class="detail-value" x-text="job.team"></span></>
+                </template>
+                <template x-if="job.rejection_reason">
+                  <><span class="detail-label" style="color:var(--status-rejected-text);">Rejected</span><span class="detail-value" x-text="job.rejection_reason"></span></>
+                </template>
+              </div>
+              <div class="links-container" style="margin-top:10px;">
+                <a class="btn-link" :href="job.url" target="_blank" rel="noopener" @click.stop>Listing</a>
+                <template x-if="job.sources && job.sources.length > 1">
+                  <span style="font-size:0.72rem; color:var(--text-secondary);"
+                        x-text="'re-posted ' + job.sources.length + '×'"></span>
+                </template>
+              </div>
+            </div>
+
+            <!-- Score + archetype + sub-score boxes -->
+            <div class="detail-section" x-show="(job.final_score ?? job.score) != null" style="grid-column: span 2;">
+              <h4>Strategic Fit</h4>
+              <div style="display:flex; align-items:baseline; gap:10px; margin-bottom:10px;">
+                <span style="font-size:1.3rem; font-weight:700; color:var(--accent-primary);"
+                      x-text="((job.final_score ?? job.score) != null ? (job.final_score ?? job.score).toFixed(1) : 'N/A') + '/10'"></span>
+                <span x-show="job.archetype" style="font-size:0.8rem; color:var(--text-secondary);" x-text="job.archetype"></span>
+              </div>
+              <template x-if="job.location_score != null || job.seniority_score != null || job.compensation_score != null">
+                <div style="display:flex; gap:0; background:var(--bg-card); border:1px solid var(--border-color); border-radius:var(--radius-md); overflow:hidden;">
+                  <template x-if="job.location_score != null">
+                    <div style="flex:1; padding:10px 14px; border-right:1px solid var(--border-color);">
+                      <div style="font-size:0.72rem; font-weight:700; color:var(--accent-primary); letter-spacing:0.05em; text-transform:uppercase; margin-bottom:4px;">Location</div>
+                      <div style="font-size:0.88rem; font-weight:600; color:var(--text-primary); margin-bottom:4px;" x-text="job.location_score.toFixed(1) + '/10'"></div>
+                      <div style="font-size:0.75rem; color:var(--text-secondary); line-height:1.4;" x-text="job.location_reason || ''"></div>
+                    </div>
+                  </template>
+                  <template x-if="job.seniority_score != null">
+                    <div style="flex:1; padding:10px 14px; border-right:1px solid var(--border-color);">
+                      <div style="font-size:0.72rem; font-weight:700; color:var(--accent-primary); letter-spacing:0.05em; text-transform:uppercase; margin-bottom:4px;">Seniority</div>
+                      <div style="font-size:0.88rem; font-weight:600; color:var(--text-primary); margin-bottom:4px;" x-text="job.seniority_score.toFixed(1) + '/10'"></div>
+                      <div style="font-size:0.75rem; color:var(--text-secondary); line-height:1.4;" x-text="job.seniority_reason || ''"></div>
+                    </div>
+                  </template>
+                  <template x-if="job.compensation_score != null">
+                    <div style="flex:1; padding:10px 14px;">
+                      <div style="font-size:0.72rem; font-weight:700; color:var(--accent-primary); letter-spacing:0.05em; text-transform:uppercase; margin-bottom:4px;">Compensation</div>
+                      <div style="font-size:0.88rem; font-weight:600; color:var(--text-primary); margin-bottom:4px;" x-text="job.compensation_score.toFixed(1) + '/10'"></div>
+                      <div style="font-size:0.75rem; color:var(--text-secondary); line-height:1.4;" x-text="job.compensation_reason || ''"></div>
+                    </div>
+                  </template>
+                </div>
+              </template>
+            </div>
+
+            <!-- Fit Reasons -->
+            <div class="detail-section" x-show="job.reasons && job.reasons.length" style="grid-column: span 2;">
+              <h4>Fit Reasons</h4>
+              <div class="expandable-block" :id="'fit-' + job.id">
+                <ul style="font-size:0.85rem; padding-left:16px; margin:0;">
+                  <template x-for="r in (job.reasons || [])"><li x-text="r"></li></template>
+                </ul>
+              </div>
+              <button class="expand-btn" @click.stop="toggleBlock('fit-' + job.id)">▼ Show more</button>
+            </div>
+
+            <!-- Description / Summary -->
+            <div class="detail-section" x-show="job.description" style="grid-column: span 2;">
+              <h4>Summary</h4>
+              <div class="expandable-block" :id="'sum-' + job.id" x-text="job.description"></div>
+              <button class="expand-btn" @click.stop="toggleSummary(job.id)">▼ Show more</button>
+            </div>
+
+            <!-- Responsibilities -->
+            <div class="detail-section" x-show="job.key_responsibilities && job.key_responsibilities.length">
+              <h4>Responsibilities</h4>
+              <div class="expandable-block" :id="'resp-' + job.id">
+                <ul style="font-size:0.85rem; padding-left:16px; margin:0;">
+                  <template x-for="r in (job.key_responsibilities || [])"><li x-text="r"></li></template>
+                </ul>
+              </div>
+              <button class="expand-btn" @click.stop="toggleBlock('resp-' + job.id)">▼ Show more</button>
+            </div>
+
+            <!-- Qualifications -->
+            <div class="detail-section" x-show="job.required_qualifications && job.required_qualifications.length">
+              <h4>Qualifications</h4>
+              <div class="expandable-block" :id="'qual-' + job.id">
+                <ul style="font-size:0.85rem; padding-left:16px; margin:0;">
+                  <template x-for="q in (job.required_qualifications || [])"><li x-text="q"></li></template>
+                </ul>
+              </div>
+              <button class="expand-btn" @click.stop="toggleBlock('qual-' + job.id)">▼ Show more</button>
+            </div>
+
+            <!-- Tech Stack (with matched skill highlighting) -->
+            <div class="detail-section" x-show="job.tech_stack && job.tech_stack.length" style="grid-column: span 2;">
+              <h4>Tech Stack</h4>
+              <div class="tag-row">
+                <template x-for="s in (job.tech_stack || [])">
+                  <span class="tag"
+                        :class="(job.matched_skills || []).map(m => m.toLowerCase()).includes(s.toLowerCase()) ? 'tag-matched' : ''"
+                        x-text="s"></span>
+                </template>
+              </div>
+            </div>
+
+            <!-- Focus Areas -->
+            <div class="detail-section" x-show="job.focus_areas && job.focus_areas.length">
+              <h4>Focus Areas</h4>
+              <div class="tag-row">
+                <template x-for="f in (job.focus_areas || [])">
+                  <span class="tag" x-text="f"></span>
+                </template>
+              </div>
+            </div>
+
+            <!-- Domains -->
+            <div class="detail-section" x-show="job.domains && job.domains.length">
+              <h4>Domains</h4>
+              <div class="tag-row">
+                <template x-for="d in (job.domains || [])">
+                  <span class="tag" x-text="d"></span>
+                </template>
+              </div>
+            </div>
+
+            <!-- Pros / Cons -->
+            <div class="pros-cons" x-show="(job.pros && job.pros.length) || (job.cons && job.cons.length)">
+              <div x-show="job.pros && job.pros.length">
+                <h4>Pros</h4>
+                <ul class="pros-list">
+                  <template x-for="pro in (job.pros || [])"><li x-text="pro"></li></template>
+                </ul>
+              </div>
+              <div x-show="job.cons && job.cons.length">
+                <h4>Cons</h4>
+                <ul class="cons-list">
+                  <template x-for="con in (job.cons || [])"><li x-text="con"></li></template>
+                </ul>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </template>
+
+      <template x-if="visibleCount < filteredJobs.length">
+        <div style="text-align:center; padding:var(--padding-md) 0;">
+          <button class="btn btn-ghost"
+                  @click="visibleCount += 50"
+                  x-text="'Load more (' + (filteredJobs.length - visibleCount) + ' remaining)'">
+          </button>
+        </div>
+      </template>
+    </div>
+    </div> <!-- end jobs view -->
+
+    <!-- Companies View -->
+    <div x-show="currentView === 'companies'">
+      <header style="margin-bottom: var(--padding-md);">
+        <h1 style="font-size:1.6rem;">Companies</h1>
+      </header>
+
+      <div x-show="companyToggleError" class="company-error" x-text="companyToggleError"></div>
+
+      <template x-if="!companiesLoaded">
+        <div style="text-align:center; padding:3rem; color:var(--text-secondary);">Loading companies…</div>
+      </template>
+
+      <template x-if="companiesLoaded && groupedCompanies.length === 0">
+        <div style="text-align:center; padding:3rem; color:var(--text-secondary);">No companies match your search.</div>
+      </template>
+
+      <template x-for="group in groupedCompanies" :key="group.category">
+        <div class="company-group" :id="'cat-' + group.category.toLowerCase().replace(/[^a-z0-9]+/g, '-')">
+          <div class="company-group-heading" @click="expandedCategories[group.category] = !expandedCategories[group.category]">
+            <span x-text="group.category + ' · ' + group.companies.length"></span>
+            <span class="company-group-chevron"
+                  :style="expandedCategories[group.category] ? 'transform:rotate(90deg)' : ''">›</span>
+          </div>
+          <div class="company-list" x-show="expandedCategories[group.category]" x-collapse>
+            <template x-for="company in group.companies" :key="company.name">
+              <div class="company-card">
+                <div style="flex:1; min-width:0;">
+                  <div class="company-name" x-text="company.name"></div>
+                  <div class="company-meta">
+                    <span class="scan-label">scan type <span x-text="company.scan_method"></span></span>
+                    <a :href="company.careers_url" target="_blank" rel="noopener" @click.stop
+                       style="color:var(--accent-primary); text-decoration:none; font-weight:600;">↗</a>
+                  </div>
+                  <div x-show="company.description" class="company-desc" x-text="company.description"></div>
+                </div>
+                <button class="btn btn-sm"
+                        :class="company.enabled ? 'btn-success' : 'btn-ghost'"
+                        @click="toggleCompany(company)"
+                        x-text="company.enabled ? 'Enabled' : 'Disabled'">
+                </button>
+              </div>
+            </template>
+          </div>
+        </div>
+      </template>
+    </div> <!-- end companies view -->
+
+    <!-- Profile View -->
+    <div x-show="currentView === 'profile'" class="profile-view">
+
+      <div class="profile-view-header">
+        <div>
+          <h1 style="font-size:1.6rem;">Profile</h1>
+          <p style="color:var(--text-secondary); font-size:0.88rem;">Manage your preferences and background</p>
+        </div>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <span class="save-toast" x-show="profileSaveMsg" x-text="profileSaveMsg"></span>
+          <button class="btn btn-secondary btn-sm" @click="loadBackups(); showBackups = !showBackups">🕐 History</button>
+        </div>
+      </div>
+
+      <!-- Backup History Panel -->
+      <div class="backup-panel" x-show="showBackups" x-transition>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+          <h4 style="font-size:0.9rem;">Backup History</h4>
+          <button class="btn btn-ghost btn-sm" @click="showBackups = false">✕ Close</button>
+        </div>
+        <template x-if="backups.length === 0">
+          <p style="color:var(--text-secondary); font-size:0.82rem; padding:8px 0;">No backups yet.</p>
+        </template>
+        <template x-for="b in backups" :key="b.filename">
+          <div class="backup-row">
+            <span x-text="formatBackupDate(b.created_at)" style="color:var(--text-secondary);"></span>
+            <button class="btn btn-ghost btn-sm" @click="restoreBackup(b.filename)">Restore</button>
+          </div>
+        </template>
+      </div>
+
+      <template x-if="!profileLoaded">
+        <div style="text-align:center; padding:3rem; color:var(--text-secondary);">Loading profile…</div>
+      </template>
+
+      <div x-show="profileLoaded">
+
+        <!-- ── Skills & Domains ──────────────────────────────────── -->
+        <div class="profile-section" id="pf-skills">
+          <div class="profile-section-head" @click="pfSections.skills = !pfSections.skills">
+            <h3>⚡ Skills &amp; Domains</h3>
+            <span class="profile-section-chevron" :style="pfSections.skills ? 'transform:rotate(90deg)' : ''">›</span>
+          </div>
+          <div class="profile-section-body" x-show="pfSections.skills">
+
+            <div class="profile-subsection">
+              <div class="profile-subsection-label">Superpower</div>
+              <div class="chip-group">
+                <template x-for="(skill, i) in (profile.skill_tiers && profile.skill_tiers.super_power || [])" :key="i">
+                  <span class="chip chip-super chip-cycle" @click="cycleSkillTier(skill, 'super_power')" title="Click to downgrade to Strong">
+                    <span x-text="skill"></span>
+                    <button class="chip-remove-btn" @click.stop="removeChip('skill_tiers.super_power', i)">×</button>
+                  </span>
+                </template>
+                <template x-if="!addingChip['ssp']">
+                  <button class="chip-add-btn" @click="startAddChip('ssp')">+ add</button>
+                </template>
+                <template x-if="addingChip['ssp']">
+                  <input class="chip-add-input" id="chip-input-ssp"
+                         x-model="newChipVal['ssp']"
+                         placeholder="skill name"
+                         @keydown.enter="commitAddChip('skill_tiers.super_power', 'ssp')"
+                         @keydown.escape="cancelAddChip('ssp')" />
+                </template>
+              </div>
+            </div>
+
+            <div class="profile-subsection">
+              <div class="profile-subsection-label">Strong</div>
+              <div class="chip-group">
+                <template x-for="(skill, i) in (profile.skill_tiers && profile.skill_tiers.strong || [])" :key="i">
+                  <span class="chip chip-strong chip-cycle" @click="cycleSkillTier(skill, 'strong')" title="Click to downgrade to Familiar">
+                    <span x-text="skill"></span>
+                    <button class="chip-remove-btn" @click.stop="removeChip('skill_tiers.strong', i)">×</button>
+                  </span>
+                </template>
+                <template x-if="!addingChip['sst']">
+                  <button class="chip-add-btn" @click="startAddChip('sst')">+ add</button>
+                </template>
+                <template x-if="addingChip['sst']">
+                  <input class="chip-add-input" id="chip-input-sst"
+                         x-model="newChipVal['sst']"
+                         placeholder="skill name"
+                         @keydown.enter="commitAddChip('skill_tiers.strong', 'sst')"
+                         @keydown.escape="cancelAddChip('sst')" />
+                </template>
+              </div>
+            </div>
+
+            <div class="profile-subsection">
+              <div class="profile-subsection-label">Familiar</div>
+              <div class="chip-group">
+                <template x-for="(skill, i) in (profile.skill_tiers && profile.skill_tiers.low || [])" :key="i">
+                  <span class="chip chip-low chip-cycle" @click="cycleSkillTier(skill, 'low')" title="Click to remove">
+                    <span x-text="skill"></span>
+                    <button class="chip-remove-btn" @click.stop="removeChip('skill_tiers.low', i)">×</button>
+                  </span>
+                </template>
+                <template x-if="!addingChip['ssl']">
+                  <button class="chip-add-btn" @click="startAddChip('ssl')">+ add</button>
+                </template>
+                <template x-if="addingChip['ssl']">
+                  <input class="chip-add-input" id="chip-input-ssl"
+                         x-model="newChipVal['ssl']"
+                         placeholder="skill name"
+                         @keydown.enter="commitAddChip('skill_tiers.low', 'ssl')"
+                         @keydown.escape="cancelAddChip('ssl')" />
+                </template>
+              </div>
+            </div>
+
+            <div class="profile-subsection">
+              <div class="profile-subsection-label">Mission Domains</div>
+              <template x-for="(weight, name) in (profile.mission_domains || {})">
+                <div class="domain-row">
+                  <span class="domain-name" x-text="name.replace(/_/g, ' ')"></span>
+                  <input type="range" class="domain-range" min="1" max="10"
+                         :value="profile.mission_domains[name]"
+                         @input="profile.mission_domains[name] = parseInt($event.target.value); debouncedSaveDomain()" />
+                  <span class="domain-weight" x-text="profile.mission_domains[name]"></span>
+                  <button class="chip-remove-btn" style="font-size:1rem;" @click="removeDomain(name)">×</button>
+                </div>
+              </template>
+              <template x-if="!addingDomain">
+                <button class="chip-add-btn" style="border-radius:var(--radius-sm); margin-top:8px;" @click="addingDomain = true">+ add domain</button>
+              </template>
+              <template x-if="addingDomain">
+                <div style="display:flex; gap:8px; align-items:center; margin-top:8px; flex-wrap:wrap;">
+                  <input class="chip-add-input" style="width:180px; border-radius:var(--radius-sm);"
+                         x-model="newDomainName" placeholder="Domain name"
+                         @keydown.escape="addingDomain = false" />
+                  <input type="range" min="1" max="10" x-model.number="newDomainWeight" style="width:100px; accent-color:var(--accent-primary);" />
+                  <span style="font-size:0.82rem; font-weight:700; color:var(--accent-primary); min-width:20px;" x-text="newDomainWeight"></span>
+                  <button class="btn btn-primary btn-sm" @click="addDomain()">Add</button>
+                  <button class="btn btn-ghost btn-sm" @click="addingDomain = false">Cancel</button>
+                </div>
+              </template>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- ── Job Targets ──────────────────────────────────────── -->
+        <div class="profile-section" id="pf-targets">
+          <div class="profile-section-head" @click="pfSections.targets = !pfSections.targets">
+            <h3>🎯 Job Targets</h3>
+            <span class="profile-section-chevron" :style="pfSections.targets ? 'transform:rotate(90deg)' : ''">›</span>
+          </div>
+          <div class="profile-section-body" x-show="pfSections.targets">
+
+            <div class="profile-subsection">
+              <div class="profile-subsection-label">Primary Roles</div>
+              <div class="chip-group">
+                <template x-for="(role, i) in (profile.targets && profile.targets.primary_roles || [])" :key="i">
+                  <span class="chip chip-neutral">
+                    <span x-text="role"></span>
+                    <button class="chip-remove-btn" @click.stop="removeChip('targets.primary_roles', i)">×</button>
+                  </span>
+                </template>
+                <template x-if="!addingChip['tpr']">
+                  <button class="chip-add-btn" @click="startAddChip('tpr')">+ add</button>
+                </template>
+                <template x-if="addingChip['tpr']">
+                  <input class="chip-add-input" id="chip-input-tpr"
+                         x-model="newChipVal['tpr']" placeholder="role title"
+                         @keydown.enter="commitAddChip('targets.primary_roles', 'tpr')"
+                         @keydown.escape="cancelAddChip('tpr')" />
+                </template>
+              </div>
+            </div>
+
+            <div class="profile-subsection">
+              <div class="profile-subsection-label">Scout Positive Filters</div>
+              <div class="chip-group">
+                <template x-for="(kw, i) in (profile.scout_filters && profile.scout_filters.positive || [])" :key="i">
+                  <span class="chip chip-neutral">
+                    <span x-text="kw"></span>
+                    <button class="chip-remove-btn" @click.stop="removeChip('scout_filters.positive', i)">×</button>
+                  </span>
+                </template>
+                <template x-if="!addingChip['sfp']">
+                  <button class="chip-add-btn" @click="startAddChip('sfp')">+ add</button>
+                </template>
+                <template x-if="addingChip['sfp']">
+                  <input class="chip-add-input" id="chip-input-sfp"
+                         x-model="newChipVal['sfp']" placeholder="keyword"
+                         @keydown.enter="commitAddChip('scout_filters.positive', 'sfp')"
+                         @keydown.escape="cancelAddChip('sfp')" />
+                </template>
+              </div>
+            </div>
+
+            <div class="profile-subsection">
+              <div class="profile-subsection-label">Seniority Boost</div>
+              <div class="chip-group">
+                <template x-for="(kw, i) in (profile.scout_filters && profile.scout_filters.seniority_boost || [])" :key="i">
+                  <span class="chip chip-neutral">
+                    <span x-text="kw"></span>
+                    <button class="chip-remove-btn" @click.stop="removeChip('scout_filters.seniority_boost', i)">×</button>
+                  </span>
+                </template>
+                <template x-if="!addingChip['sfsb']">
+                  <button class="chip-add-btn" @click="startAddChip('sfsb')">+ add</button>
+                </template>
+                <template x-if="addingChip['sfsb']">
+                  <input class="chip-add-input" id="chip-input-sfsb"
+                         x-model="newChipVal['sfsb']" placeholder="keyword"
+                         @keydown.enter="commitAddChip('scout_filters.seniority_boost', 'sfsb')"
+                         @keydown.escape="cancelAddChip('sfsb')" />
+                </template>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- ── Logistics ────────────────────────────────────────── -->
+        <div class="profile-section" id="pf-logistics">
+          <div class="profile-section-head" @click="pfSections.logistics = !pfSections.logistics">
+            <h3>📍 Logistics
+              <span class="unsaved-badge" x-show="profileDirty.logistics" style="font-family:'Inter',sans-serif; font-size:0.68rem;">unsaved</span>
+            </h3>
+            <span class="profile-section-chevron" :style="pfSections.logistics ? 'transform:rotate(90deg)' : ''">›</span>
+          </div>
+          <div class="profile-section-body" x-show="pfSections.logistics">
+
+            <div class="profile-subsection">
+              <div class="profile-subsection-label">Accepted Locations</div>
+              <div class="chip-group">
+                <template x-for="(loc, i) in (profile.location_preferences && profile.location_preferences.accepted || [])" :key="i">
+                  <span class="chip chip-neutral">
+                    <span x-text="loc"></span>
+                    <button class="chip-remove-btn" @click.stop="removeChip('location_preferences.accepted', i)">×</button>
+                  </span>
+                </template>
+                <template x-if="!addingChip['lpa']">
+                  <button class="chip-add-btn" @click="startAddChip('lpa')">+ add</button>
+                </template>
+                <template x-if="addingChip['lpa']">
+                  <input class="chip-add-input" id="chip-input-lpa"
+                         x-model="newChipVal['lpa']" placeholder="location"
+                         @keydown.enter="commitAddChip('location_preferences.accepted', 'lpa')"
+                         @keydown.escape="cancelAddChip('lpa')" />
+                </template>
+              </div>
+            </div>
+
+            <div class="profile-subsection">
+              <div class="profile-field">
+                <span class="profile-field-label">Min. Salary</span>
+                <div class="profile-field-value">
+                  <input type="number" class="profile-number"
+                         :value="profile.compensation && profile.compensation.minimum"
+                         @input="if (!profile.compensation) profile.compensation = {}; profile.compensation.minimum = parseInt($event.target.value) || 0; markDirty('logistics')" />
+                </div>
+              </div>
+              <div class="profile-field">
+                <span class="profile-field-label">Target Range</span>
+                <div class="profile-field-value">
+                  <input type="text" class="profile-input"
+                         :value="profile.compensation && profile.compensation.target_range"
+                         @input="if (!profile.compensation) profile.compensation = {}; profile.compensation.target_range = $event.target.value; markDirty('logistics')" />
+                </div>
+              </div>
+              <div class="profile-field">
+                <span class="profile-field-label">Availability</span>
+                <div class="profile-field-value">
+                  <input type="text" class="profile-input"
+                         :value="profile.logistics && profile.logistics.availability"
+                         @input="if (!profile.logistics) profile.logistics = {}; profile.logistics.availability = $event.target.value; markDirty('logistics')" />
+                </div>
+              </div>
+            </div>
+
+            <div class="section-footer">
+              <button class="btn btn-primary btn-sm" @click="saveSection('logistics')">Save</button>
+              <span class="unsaved-badge" x-show="profileDirty.logistics">unsaved changes</span>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- ── Narrative ────────────────────────────────────────── -->
+        <div class="profile-section" id="pf-narrative">
+          <div class="profile-section-head" @click="pfSections.narrative = !pfSections.narrative">
+            <h3>📝 Narrative
+              <span class="unsaved-badge" x-show="profileDirty.narrative" style="font-family:'Inter',sans-serif; font-size:0.68rem;">unsaved</span>
+            </h3>
+            <span class="profile-section-chevron" :style="pfSections.narrative ? 'transform:rotate(90deg)' : ''">›</span>
+          </div>
+          <div class="profile-section-body" x-show="pfSections.narrative">
+
+            <div class="profile-field" style="margin-top:var(--padding-sm);">
+              <span class="profile-field-label">Headline</span>
+              <div class="profile-field-value">
+                <input type="text" class="profile-input"
+                       :value="profile.narrative && profile.narrative.headline"
+                       @input="if (!profile.narrative) profile.narrative = {}; profile.narrative.headline = $event.target.value; markDirty('narrative')" />
+              </div>
+            </div>
+            <div class="profile-field">
+              <span class="profile-field-label">Intro</span>
+              <div class="profile-field-value">
+                <textarea class="profile-textarea"
+                          :value="profile.narrative && profile.narrative.intro"
+                          @input="if (!profile.narrative) profile.narrative = {}; profile.narrative.intro = $event.target.value; markDirty('narrative')"></textarea>
+              </div>
+            </div>
+            <div class="profile-field">
+              <span class="profile-field-label">Exit Story</span>
+              <div class="profile-field-value">
+                <textarea class="profile-textarea"
+                          :value="profile.narrative && profile.narrative.exit_story"
+                          @input="if (!profile.narrative) profile.narrative = {}; profile.narrative.exit_story = $event.target.value; markDirty('narrative')"></textarea>
+              </div>
+            </div>
+
+            <div class="profile-subsection">
+              <div class="profile-subsection-label">Superpowers</div>
+              <div class="chip-group">
+                <template x-for="(sp, i) in (profile.narrative && profile.narrative.superpowers || [])" :key="i">
+                  <span class="chip chip-super">
+                    <span x-text="sp"></span>
+                    <button class="chip-remove-btn" @click.stop="removeChip('narrative.superpowers', i)">×</button>
+                  </span>
+                </template>
+                <template x-if="!addingChip['nsp']">
+                  <button class="chip-add-btn" @click="startAddChip('nsp')">+ add</button>
+                </template>
+                <template x-if="addingChip['nsp']">
+                  <input class="chip-add-input" id="chip-input-nsp"
+                         x-model="newChipVal['nsp']" placeholder="superpower"
+                         @keydown.enter="commitAddChip('narrative.superpowers', 'nsp')"
+                         @keydown.escape="cancelAddChip('nsp')" />
+                </template>
+              </div>
+            </div>
+
+            <div class="section-footer">
+              <button class="btn btn-primary btn-sm" @click="saveSection('narrative')">Save</button>
+              <span class="unsaved-badge" x-show="profileDirty.narrative">unsaved changes</span>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- ── Experience ───────────────────────────────────────── -->
+        <div class="profile-section" id="pf-experience">
+          <div class="profile-section-head" @click="pfSections.experience = !pfSections.experience">
+            <h3>💼 Experience</h3>
+            <span class="profile-section-chevron" :style="pfSections.experience ? 'transform:rotate(90deg)' : ''">›</span>
+          </div>
+          <div class="profile-section-body" x-show="pfSections.experience">
+
+            <button class="btn btn-secondary btn-sm" style="margin-bottom:12px;" @click="addExperience()">+ Add Experience</button>
+
+            <template x-for="(exp, i) in (profile.experience || [])" :key="i">
+              <div class="exp-card">
+                <div class="exp-card-head" @click="expandedExpIdx = (expandedExpIdx === i ? null : i)">
+                  <div class="exp-card-reorder">
+                    <button class="reorder-btn" :disabled="i === 0"
+                            @click.stop="reorderExp(i, -1)">↑</button>
+                    <button class="reorder-btn" :disabled="i === (profile.experience || []).length - 1"
+                            @click.stop="reorderExp(i, 1)">↓</button>
+                  </div>
+                  <div style="flex:1; min-width:0; margin-left:4px;">
+                    <div class="exp-card-title" x-text="exp.role || 'New role'"></div>
+                    <div class="exp-card-subtitle" x-text="(exp.company || '') + (exp.period ? ' · ' + exp.period : '')"></div>
+                  </div>
+                  <span class="unsaved-badge" x-show="profileDirty['exp_' + i]" style="font-size:0.65rem;">unsaved</span>
+                  <span class="profile-section-chevron" :style="expandedExpIdx === i ? 'transform:rotate(90deg)' : ''">›</span>
+                </div>
+
+                <div class="exp-card-body" x-show="expandedExpIdx === i">
+                  <div class="profile-field">
+                    <span class="profile-field-label">Company</span>
+                    <div class="profile-field-value">
+                      <input type="text" class="profile-input" x-model="exp.company" @input="markDirty('exp_' + i)" />
+                    </div>
+                  </div>
+                  <div class="profile-field">
+                    <span class="profile-field-label">Role</span>
+                    <div class="profile-field-value">
+                      <input type="text" class="profile-input" x-model="exp.role" @input="markDirty('exp_' + i)" />
+                    </div>
+                  </div>
+                  <div class="profile-field">
+                    <span class="profile-field-label">Location</span>
+                    <div class="profile-field-value">
+                      <input type="text" class="profile-input" x-model="exp.location" @input="markDirty('exp_' + i)" />
+                    </div>
+                  </div>
+                  <div class="profile-field">
+                    <span class="profile-field-label">Period</span>
+                    <div class="profile-field-value">
+                      <input type="text" class="profile-input" x-model="exp.period" @input="markDirty('exp_' + i)" />
+                    </div>
+                  </div>
+
+                  <div class="profile-subsection">
+                    <div class="profile-subsection-label">Highlights</div>
+                    <template x-for="(hl, hi) in (exp.highlights || [])" :key="hi">
+                      <div class="highlight-item">
+                        <div class="exp-card-reorder" style="flex-direction:column; padding-top:2px;">
+                          <button class="reorder-btn" :disabled="hi === 0"
+                                  @click="reorderHighlight(i, hi, -1)">↑</button>
+                          <button class="reorder-btn" :disabled="hi === (exp.highlights || []).length - 1"
+                                  @click="reorderHighlight(i, hi, 1)">↓</button>
+                        </div>
+                        <textarea class="profile-textarea" style="min-height:54px;"
+                                  x-model="exp.highlights[hi]"
+                                  @input="markDirty('exp_' + i)"></textarea>
+                        <button class="chip-remove-btn" style="font-size:1.1rem; padding:4px; margin-top:2px;"
+                                @click="removeHighlight(i, hi)">×</button>
+                      </div>
+                    </template>
+                    <button class="btn btn-ghost btn-sm" style="margin-top:4px;"
+                            @click="addHighlight(i)">+ add highlight</button>
+                  </div>
+
+                  <div class="profile-subsection">
+                    <div class="profile-subsection-label">Tech Stack</div>
+                    <div class="chip-group">
+                      <template x-for="(tech, ti) in (exp.tech_stack || [])" :key="ti">
+                        <span class="chip chip-neutral">
+                          <span x-text="tech"></span>
+                          <button class="chip-remove-btn" @click.stop="exp.tech_stack.splice(ti, 1); saveProfile()">×</button>
+                        </span>
+                      </template>
+                      <template x-if="!addingChip['ets_' + i]">
+                        <button class="chip-add-btn" @click="startAddChip('ets_' + i)">+ add</button>
+                      </template>
+                      <template x-if="addingChip['ets_' + i]">
+                        <input class="chip-add-input"
+                               :id="'chip-input-ets_' + i"
+                               x-model="newChipVal['ets_' + i]"
+                               placeholder="technology"
+                               @keydown.enter="if (!exp.tech_stack) exp.tech_stack = []; if (newChipVal['ets_' + i].trim()) exp.tech_stack.push(newChipVal['ets_' + i].trim()); cancelAddChip('ets_' + i); saveProfile()"
+                               @keydown.escape="cancelAddChip('ets_' + i)" />
+                      </template>
+                    </div>
+                  </div>
+
+                  <div class="section-footer">
+                    <button class="btn btn-primary btn-sm" @click="saveSection('exp_' + i)">Save</button>
+                    <span class="unsaved-badge" x-show="profileDirty['exp_' + i]">unsaved changes</span>
+                    <button class="btn btn-danger btn-sm" style="margin-left:auto;"
+                            @click="removeExperience(i)">Delete</button>
+                  </div>
+                </div>
+              </div>
+            </template>
+
+          </div>
+        </div>
+
+        <!-- ── Education & Certifications ───────────────────────── -->
+        <div class="profile-section" id="pf-education">
+          <div class="profile-section-head" @click="pfSections.education = !pfSections.education">
+            <h3>🎓 Education &amp; Certifications</h3>
+            <span class="profile-section-chevron" :style="pfSections.education ? 'transform:rotate(90deg)' : ''">›</span>
+          </div>
+          <div class="profile-section-body" x-show="pfSections.education">
+
+            <div style="margin-bottom:var(--padding-lg);">
+              <div class="profile-subsection-label" style="margin-bottom:10px;">Education</div>
+              <template x-for="(edu, i) in (profile.education || [])" :key="i">
+                <div class="exp-card">
+                  <div class="exp-card-head" @click="expandedEduIdx = (expandedEduIdx === i ? null : i)">
+                    <div style="flex:1; min-width:0;">
+                      <div class="exp-card-title" x-text="edu.degree || 'New degree'"></div>
+                      <div class="exp-card-subtitle" x-text="(edu.school || '') + (edu.period ? ' · ' + edu.period : '')"></div>
+                    </div>
+                    <span class="unsaved-badge" x-show="profileDirty['edu_' + i]" style="font-size:0.65rem;">unsaved</span>
+                    <span class="profile-section-chevron" :style="expandedEduIdx === i ? 'transform:rotate(90deg)' : ''">›</span>
+                  </div>
+                  <div class="exp-card-body" x-show="expandedEduIdx === i">
+                    <div class="profile-field">
+                      <span class="profile-field-label">Degree</span>
+                      <div class="profile-field-value">
+                        <input type="text" class="profile-input" x-model="edu.degree" @input="markDirty('edu_' + i)" />
+                      </div>
+                    </div>
+                    <div class="profile-field">
+                      <span class="profile-field-label">School</span>
+                      <div class="profile-field-value">
+                        <input type="text" class="profile-input" x-model="edu.school" @input="markDirty('edu_' + i)" />
+                      </div>
+                    </div>
+                    <div class="profile-field">
+                      <span class="profile-field-label">Period</span>
+                      <div class="profile-field-value">
+                        <input type="text" class="profile-input" x-model="edu.period" @input="markDirty('edu_' + i)" />
+                      </div>
+                    </div>
+                    <div class="section-footer">
+                      <button class="btn btn-primary btn-sm" @click="saveSection('edu_' + i)">Save</button>
+                      <span class="unsaved-badge" x-show="profileDirty['edu_' + i]">unsaved changes</span>
+                      <button class="btn btn-danger btn-sm" style="margin-left:auto;" @click="removeEducation(i)">Delete</button>
+                    </div>
+                  </div>
+                </div>
+              </template>
+              <button class="btn btn-secondary btn-sm" @click="addEducation()">+ Add Education</button>
+            </div>
+
+            <div>
+              <div class="profile-subsection-label" style="margin-bottom:10px;">Certifications</div>
+              <template x-for="(cert, i) in (profile.certifications || [])" :key="i">
+                <div class="exp-card">
+                  <div class="exp-card-head" @click="expandedCertIdx = (expandedCertIdx === i ? null : i)">
+                    <div style="flex:1; min-width:0;">
+                      <div class="exp-card-title" x-text="cert.name || 'New certification'"></div>
+                      <div class="exp-card-subtitle" x-text="cert.date || ''"></div>
+                    </div>
+                    <span class="unsaved-badge" x-show="profileDirty['cert_' + i]" style="font-size:0.65rem;">unsaved</span>
+                    <span class="profile-section-chevron" :style="expandedCertIdx === i ? 'transform:rotate(90deg)' : ''">›</span>
+                  </div>
+                  <div class="exp-card-body" x-show="expandedCertIdx === i">
+                    <div class="profile-field">
+                      <span class="profile-field-label">Name</span>
+                      <div class="profile-field-value">
+                        <input type="text" class="profile-input" x-model="cert.name" @input="markDirty('cert_' + i)" />
+                      </div>
+                    </div>
+                    <div class="profile-field">
+                      <span class="profile-field-label">Date</span>
+                      <div class="profile-field-value">
+                        <input type="text" class="profile-input" x-model="cert.date" @input="markDirty('cert_' + i)" />
+                      </div>
+                    </div>
+                    <div class="section-footer">
+                      <button class="btn btn-primary btn-sm" @click="saveSection('cert_' + i)">Save</button>
+                      <span class="unsaved-badge" x-show="profileDirty['cert_' + i]">unsaved changes</span>
+                      <button class="btn btn-danger btn-sm" style="margin-left:auto;" @click="removeCertification(i)">Delete</button>
+                    </div>
+                  </div>
+                </div>
+              </template>
+              <button class="btn btn-secondary btn-sm" @click="addCertification()">+ Add Certification</button>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </div> <!-- end profile view -->
+
+    <!-- Settings View -->
+    <div x-show="currentView === 'settings'" class="settings-view">
+      <header style="margin-bottom: var(--padding-lg);">
+        <h1 style="font-size:1.6rem;">Settings</h1>
+        <p style="color:var(--text-secondary); font-size:0.88rem;">Pipeline configuration</p>
+      </header>
+
+      <!-- Presets -->
+      <div class="settings-presets">
+        <span class="settings-presets-label">Presets</span>
+        <button class="preset-btn" @click="applyPreset('aggressive')" title="workers=20, pages=15, concurrency=10 — no robots check">⚡ Aggressive</button>
+        <button class="preset-btn" @click="applyPreset('normal')"     title="workers=10, pages=10, concurrency=5">⚖ Normal</button>
+        <button class="preset-btn" @click="applyPreset('slow')"       title="workers=3, pages=5, concurrency=2 — respects robots.txt">🐢 Slow</button>
+      </div>
+
+      <!-- Scout -->
+      <div class="settings-section">
+        <h2 class="settings-section-title">Scout</h2>
+        <div class="settings-grid">
+          <label>Respect robots.txt</label>
+          <div>
+            <button class="toggle-btn" :class="{active: settings.scout.respect_robots}"
+              @click="settings.scout.respect_robots = !settings.scout.respect_robots">
+              <span x-text="settings.scout.respect_robots ? 'ON' : 'OFF'"></span>
+            </button>
+          </div>
+          <label>Max pages per site</label>
+          <input type="number" min="1" max="50" x-model.number="settings.scout.max_pages" class="settings-input">
+          <label>Worker count</label>
+          <input type="number" min="1" max="50" x-model.number="settings.scout.worker_count" class="settings-input">
+          <label>Model</label>
+          <select x-model="settings.scout.model" class="settings-input">
+            <option :value="null">Default (env / SCOUT_MODEL)</option>
+            <option value="gemini-2.5-flash">gemini-2.5-flash</option>
+            <option value="gemini-2.5-pro">gemini-2.5-pro</option>
+            <option value="claude-sonnet-4-6">claude-sonnet-4-6</option>
+            <option value="claude-haiku-4-5-20251001">claude-haiku-4-5-20251001</option>
+          </select>
+        </div>
+        <button class="settings-save-btn" @click="saveSettings()" :class="{saved: settingsSaved}">
+          <span x-text="settingsSaved ? 'Saved ✓' : 'Save Scout Settings'"></span>
+        </button>
+      </div>
+
+      <!-- Enrich -->
+      <div class="settings-section">
+        <h2 class="settings-section-title">Enrich</h2>
+        <div class="settings-grid">
+          <label>Concurrency</label>
+          <input type="number" min="1" max="20" x-model.number="settings.enrich.concurrency" class="settings-input">
+          <label>Checkpoint every N</label>
+          <input type="number" min="1" max="50" x-model.number="settings.enrich.checkpoint_every" class="settings-input">
+          <label>Model</label>
+          <select x-model="settings.enrich.model" class="settings-input">
+            <option :value="null">Default (env / ENRICH_MODEL)</option>
+            <option value="gemini-2.5-flash">gemini-2.5-flash</option>
+            <option value="gemini-2.5-pro">gemini-2.5-pro</option>
+            <option value="claude-sonnet-4-6">claude-sonnet-4-6</option>
+            <option value="claude-haiku-4-5-20251001">claude-haiku-4-5-20251001</option>
+          </select>
+        </div>
+        <button class="settings-save-btn" @click="saveSettings()" :class="{saved: settingsSaved}">
+          <span x-text="settingsSaved ? 'Saved ✓' : 'Save Enrich Settings'"></span>
+        </button>
+      </div>
+
+      <!-- Evaluate -->
+      <div class="settings-section">
+        <h2 class="settings-section-title">Evaluate</h2>
+        <div class="settings-grid">
+          <label>Auto-reject below</label>
+          <input type="number" min="0" max="10" step="0.5" x-model.number="settings.evaluate.auto_reject_threshold" class="settings-input">
+          <label>Auto-match above</label>
+          <input type="number" min="0" max="10" step="0.5" x-model.number="settings.evaluate.auto_match_threshold" class="settings-input">
+          <label>Location hard-block ≤</label>
+          <input type="number" min="0" max="10" step="0.5" x-model.number="settings.evaluate.location_reject_threshold" class="settings-input">
+          <label>Model</label>
+          <select x-model="settings.evaluate.model" class="settings-input">
+            <option :value="null">Default (env / EVALUATE_MODEL)</option>
+            <option value="gemini-2.5-flash">gemini-2.5-flash</option>
+            <option value="gemini-2.5-pro">gemini-2.5-pro</option>
+            <option value="claude-sonnet-4-6">claude-sonnet-4-6</option>
+            <option value="claude-haiku-4-5-20251001">claude-haiku-4-5-20251001</option>
+          </select>
+        </div>
+        <h3 class="settings-subsection-title">Scoring Weights <span class="weights-sum" :class="{'weights-ok': weightsSum == '1.00', 'weights-warn': weightsSum != '1.00'}">sum = <span x-text="weightsSum"></span></span></h3>
+        <div class="settings-grid">
+          <label>Fit</label>
+          <input type="number" min="0" max="1" step="0.05" x-model.number="settings.evaluate.scoring_weights.fit" class="settings-input">
+          <label>Location</label>
+          <input type="number" min="0" max="1" step="0.05" x-model.number="settings.evaluate.scoring_weights.location" class="settings-input">
+          <label>Seniority</label>
+          <input type="number" min="0" max="1" step="0.05" x-model.number="settings.evaluate.scoring_weights.seniority" class="settings-input">
+          <label>Compensation</label>
+          <input type="number" min="0" max="1" step="0.05" x-model.number="settings.evaluate.scoring_weights.compensation" class="settings-input">
+        </div>
+        <button class="settings-save-btn" @click="saveSettings()" :class="{saved: settingsSaved}">
+          <span x-text="settingsSaved ? 'Saved ✓' : 'Save Evaluate Settings'"></span>
+        </button>
+      </div>
+    </div> <!-- end settings view -->
+
+  </main>
+
+  <script>
+    function appData() {
+      return {
+        jobs: [],
+        apiTasks: [],
+        prevTaskStatuses: {},
+        search: '',
+        statusFilter: 'all',
+        expandedJobId: null,
+        scoutCompany: 'all',
+        scoutMode: 'all',
+        enrichMode: 'all',
+        evaluateMode: 'all',
+        undoState: 'review',
+        now: Date.now(),
+        sortKey: 'updated_at',
+        sortAsc: false,
+        visibleCount: 50,
+        sidebarOpen: true,
+        currentView: 'jobs',
+        rejectPrompt: { jobId: null, reason: '' },
+        companies: [],
+        companySearch: '',
+        scanFilter: null,
+        companiesLoaded: false,
+        companyToggleError: '',
+        expandedCategories: {},
+        profile: {},
+        profileLoaded: false,
+        profileDirty: {},
+        profileSaveMsg: '',
+        backups: [],
+        showBackups: false,
+        expandedExpIdx: null,
+        settings: {
+          scout: { respect_robots: true, max_pages: 10, worker_count: 10, model: null },
+          enrich: { concurrency: 5, checkpoint_every: 5, model: null },
+          evaluate: { auto_reject_threshold: 4.0, auto_match_threshold: 8.5, location_reject_threshold: 2.0,
+            scoring_weights: { fit: 0.5, location: 0.2, seniority: 0.2, compensation: 0.1 },
+            model: null }
+        },
+        settingsSaved: false,
+        expandedEduIdx: null,
+        expandedCertIdx: null,
+        pfSections: { skills: true, targets: true, logistics: true, narrative: false, experience: false, education: false },
+        addingChip: {},
+        newChipVal: {},
+        addingDomain: false,
+        newDomainName: '',
+        newDomainWeight: 5,
+        domainSaveTimer: null,
+
+        get scanTypeCounts() {
+          const descs = {
+            ashby_api: 'Fetches jobs via Ashby\'s public job board API.',
+            greenhouse_api: 'Fetches jobs via Greenhouse\'s board API.',
+            lever_api: 'Fetches jobs via Lever\'s public postings API.',
+            workable_api: 'Fetches jobs via Workable\'s job listing API.',
+            workday_api: 'Fetches jobs via Workday\'s job board API.',
+            smartrecruiters_api: 'Fetches jobs via SmartRecruiters\' API.',
+            agent_review: 'No structured API — scout agent scrapes the careers page.',
+          }
+          const counts = {}
+          for (const c of this.companies) {
+            const m = c.scan_method || 'unknown'
+            counts[m] = (counts[m] || 0) + 1
+          }
+          return Object.entries(counts)
+            .sort(([, a], [, b]) => b - a)
+            .map(([method, count]) => ({ method, count, desc: descs[method] || '' }))
+        },
+
+        get groupedCompanies() {
+          const q = this.companySearch.toLowerCase()
+          const filtered = this.companies.filter(c => {
+            const matchSearch = !q || c.name.toLowerCase().includes(q) || (c.category || '').toLowerCase().includes(q)
+            const matchScan = !this.scanFilter || c.scan_method === this.scanFilter
+            return matchSearch && matchScan
+          })
+          const map = {}
+          for (const c of filtered) {
+            const cat = c.category || 'Uncategorized'
+            if (!map[cat]) map[cat] = []
+            map[cat].push(c)
+          }
+          return Object.keys(map).sort().map(cat => ({ category: cat, companies: map[cat] }))
+        },
+
+        get filteredJobs() {
+          const q = this.search.toLowerCase()
+          const filtered = this.jobs.filter(j => {
+            const matchSearch = !q
+              || (j.title || '').toLowerCase().includes(q)
+              || (j.company || '').toLowerCase().includes(q)
+            const matchStatus = this.statusFilter === 'all'
+              || (this.statusFilter === 'failed' ? j.status === 'failed' : j.state === this.statusFilter)
+            return matchSearch && matchStatus
+          })
+          const key = this.sortKey
+          const asc = this.sortAsc
+          return filtered.slice().sort((a, b) => {
+            let va, vb
+            if (key === 'score') {
+              va = (a.final_score ?? a.score) ?? -1
+              vb = (b.final_score ?? b.score) ?? -1
+            } else if (key === 'updated_at') {
+              va = a.updated_at || ''
+              vb = b.updated_at || ''
+              if (!va && !vb) return 0
+              if (!va) return 1
+              if (!vb) return -1
+            } else {
+              va = (a[key] || '').toLowerCase()
+              vb = (b[key] || '').toLowerCase()
+            }
+            if (va < vb) return asc ? -1 : 1
+            if (va > vb) return asc ? 1 : -1
+            return 0
+          })
+        },
+
+        get visibleJobs() {
+          return this.filteredJobs.slice(0, this.visibleCount)
+        },
+
+        get activeTasks() {
+          const cutoff = this.now - 10000
+          return this.apiTasks.filter(t =>
+            t.status === 'running' ||
+            (t.finished_at && new Date(t.finished_at).getTime() > cutoff)
+          )
+        },
+
+        taskOpacity(task) {
+          if (task.status === 'running' || !task.finished_at) return 1
+          const age = (this.now - new Date(task.finished_at).getTime()) / 1000
+          return age < 7 ? 1 : Math.max(0, 1 - (age - 7) / 3)
+        },
+
+        get stats() {
+          return {
+            total: this.jobs.length,
+            discovered: this.jobs.filter(j => j.state === 'discovered').length,
+            parsed: this.jobs.filter(j => j.state === 'parsed').length,
+            match: this.jobs.filter(j => j.state === 'match').length,
+            review: this.jobs.filter(j => j.state === 'review').length,
+            applied: this.jobs.filter(j => j.state === 'applied').length,
+            rejected: this.jobs.filter(j => j.state === 'rejected').length,
+            archived: this.jobs.filter(j => j.state === 'archived').length,
+            failed: this.jobs.filter(j => j.status === 'failed').length,
+          }
+        },
+
+        async init() {
+          await this.loadJobs()
+          await this.loadTasks()
+          await this.loadSettings()
+          await this.loadCompanies()
+          setInterval(() => this.loadTasks(), 5000)
+          setInterval(() => this.now = Date.now(), 1000)
+          this.$watch('statusFilter', () => { this.visibleCount = 50 })
+          this.$watch('search', () => { this.visibleCount = 50 })
+        },
+
+        async loadSettings() {
+          try {
+            const r = await fetch('/api/settings')
+            this.settings = await r.json()
+          } catch(e) { console.error('loadSettings failed', e) }
+        },
+
+        async saveSettings() {
+          try {
+            await fetch('/api/settings', {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(this.settings)
+            })
+            this.settingsSaved = true
+            setTimeout(() => { this.settingsSaved = false }, 2000)
+          } catch(e) { console.error('saveSettings failed', e) }
+        },
+
+        applyPreset(name) {
+          const presets = {
+            aggressive: { scout: { worker_count: 20, max_pages: 15, respect_robots: false }, enrich: { concurrency: 10, checkpoint_every: 10 } },
+            normal:     { scout: { worker_count: 10, max_pages: 10, respect_robots: false }, enrich: { concurrency: 5,  checkpoint_every: 5  } },
+            slow:       { scout: { worker_count: 3,  max_pages: 5,  respect_robots: true  }, enrich: { concurrency: 2,  checkpoint_every: 3  } },
+          }
+          const p = presets[name]
+          if (!p) return
+          Object.assign(this.settings.scout, p.scout)
+          Object.assign(this.settings.enrich, p.enrich)
+          this.saveSettings()
+        },
+
+        get weightsSum() {
+          const w = this.settings.evaluate.scoring_weights
+          return (w.fit + w.location + w.seniority + w.compensation).toFixed(2)
+        },
+
+        async loadJobs() {
+          try {
+            const r = await fetch('/api/jobs')
+            const d = await r.json()
+            this.jobs = d.jobs || []
+          } catch(e) { console.error('loadJobs failed', e) }
+        },
+
+        scrollToCategory(category) {
+          this.expandedCategories[category] = true
+          this.$nextTick(() => {
+            const id = 'cat-' + category.toLowerCase().replace(/[^a-z0-9]+/g, '-')
+            const el = document.getElementById(id)
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+          })
+        },
+
+        async loadCompanies() {
+          if (this.companiesLoaded) return
+          try {
+            const r = await fetch('/api/companies')
+            const d = await r.json()
+            this.companies = d.companies || []
+            this.companiesLoaded = true
+          } catch(e) { console.error('loadCompanies failed', e) }
+        },
+
+        async toggleCompany(company) {
+          const prev = company.enabled
+          company.enabled = !prev
+          try {
+            const r = await fetch(`/api/companies/${encodeURIComponent(company.name)}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ enabled: company.enabled })
+            })
+            if (!r.ok) {
+              company.enabled = prev
+              this.companyToggleError = `Failed to update ${company.name}`
+              setTimeout(() => { this.companyToggleError = '' }, 3000)
+            }
+          } catch(e) {
+            company.enabled = prev
+            this.companyToggleError = `Network error updating ${company.name}`
+            setTimeout(() => { this.companyToggleError = '' }, 3000)
+          }
+        },
+
+        async loadTasks() {
+          try {
+            const r = await fetch('/api/tasks')
+            const d = await r.json()
+            const tasks = d.tasks || []
+
+            let needsRefresh = false
+            for (const t of tasks) {
+              if (this.prevTaskStatuses[t.id] === 'running' && t.status !== 'running') {
+                needsRefresh = true
+              }
+            }
+
+            this.prevTaskStatuses = Object.fromEntries(tasks.map(t => [t.id, t.status]))
+            this.apiTasks = tasks
+
+            if (needsRefresh) await this.loadJobs()
+          } catch(e) { console.error('loadTasks failed', e) }
+        },
+
+        toggleDark() {
+          const html = document.documentElement
+          const next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'
+          html.setAttribute('data-theme', next)
+          localStorage.setItem('theme', next)
+        },
+
+        async fireOperation(url, body = null) {
+          try {
+            const opts = { method: 'POST', headers: { 'Content-Type': 'application/json' } }
+            if (body) opts.body = JSON.stringify(body)
+            await fetch(url, opts)
+            await this.loadTasks()
+          } catch(e) { console.error('fireOperation failed', e) }
+        },
+
+        async triggerScout() {
+          if (this.scoutCompany !== 'all') {
+            await this.fireOperation(`/api/scout/${encodeURIComponent(this.scoutCompany)}`)
+          } else if (this.scoutMode === 'all') {
+            await this.fireOperation('/api/scout')
+          } else {
+            await this.fireOperation('/api/scout/next', { limit: parseInt(this.scoutMode) })
+          }
+        },
+
+        async triggerEnrich() {
+          if (this.enrichMode === 'all') {
+            await this.fireOperation('/api/enrich/all')
+          } else {
+            await this.fireOperation('/api/enrich/next', { limit: parseInt(this.enrichMode) })
+          }
+        },
+
+        async triggerEvaluate() {
+          if (this.evaluateMode === 'all') {
+            await this.fireOperation('/api/evaluate/all')
+          } else {
+            await this.fireOperation('/api/evaluate/next', { limit: parseInt(this.evaluateMode) })
+          }
+        },
+
+        async enrichJob(jobId) { await this.fireOperation(`/api/enrich/${jobId}`) },
+        async evaluateJob(jobId) { await this.fireOperation(`/api/evaluate/${jobId}`) },
+        async runJob(jobId) { await this.fireOperation(`/api/jobs/${jobId}/run`) },
+        async undoByState(state) {
+          try {
+            await fetch('/api/jobs/undo-by-state', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ state })
+            })
+            await this.loadJobs()
+          } catch(e) { console.error('undoByState failed', e) }
+        },
+
+        async undoJob(jobId) {
+          try {
+            await fetch(`/api/jobs/${jobId}/undo`, { method: 'POST' })
+            await this.loadJobs()
+          } catch(e) { console.error('undoJob failed', e) }
+        },
+
+        armDelete(job, event) {
+          event.stopPropagation()
+          job._armedDelete = true
+        },
+
+        async confirmDelete(job, event) {
+          event.stopPropagation()
+          if (!job._armedDelete) return
+          const idx = this.jobs.findIndex(j => j.id === job.id)
+          this.jobs.splice(idx, 1)
+          try {
+            const r = await fetch(`/api/jobs/${job.id}`, { method: 'DELETE' })
+            if (!r.ok) throw new Error('delete failed')
+          } catch(e) {
+            this.jobs.splice(idx, 0, job)
+            job._armedDelete = false
+            job._deleteError = true
+            setTimeout(() => { job._deleteError = false }, 1500)
+          }
+        },
+
+        async setJobState(jobId, state, reason) {
+          try {
+            await fetch(`/api/jobs/${jobId}/state`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ state, reason: reason || null })
+            })
+            await this.loadJobs()
+          } catch(e) { console.error('setJobState failed', e) }
+        },
+
+        openRejectPrompt(jobId) {
+          this.rejectPrompt = { jobId, reason: '' }
+          this.$nextTick(() => {
+            const input = document.querySelector('.reject-prompt input')
+            if (input) input.focus()
+          })
+        },
+
+        async confirmReject(jobId) {
+          const reason = this.rejectPrompt.reason
+          this.rejectPrompt = { jobId: null, reason: '' }
+          await this.setJobState(jobId, 'rejected', reason)
+        },
+
+        toggleExpand(jobId) {
+          this.expandedJobId = this.expandedJobId === jobId ? null : jobId
+        },
+
+        setSort(key) {
+          if (this.sortKey === key) { this.sortAsc = !this.sortAsc } else { this.sortKey = key; this.sortAsc = key !== 'score' && key !== 'updated_at' }
+        },
+
+        timeAgo(iso) {
+          if (!iso) return ''
+          const secs = Math.floor((Date.now() - new Date(iso)) / 1000)
+          if (secs < 60) return 'just now'
+          if (secs < 3600) return Math.floor(secs / 60) + 'm ago'
+          if (secs < 86400) return Math.floor(secs / 3600) + 'h ago'
+          if (secs < 604800) return Math.floor(secs / 86400) + 'd ago'
+          return new Date(iso).toLocaleDateString()
+        },
+
+        subScoreColor(v) {
+          if (v == null) return 'var(--text-secondary)'
+          if (v >= 7) return 'var(--tag-matched-bg, #16a34a)'
+          if (v >= 4) return '#b45309'
+          return 'var(--danger, #dc2626)'
+        },
+
+        toggleBlock(blockId) {
+          const block = document.getElementById(blockId)
+          if (!block) return
+          const btn = block.nextElementSibling
+          block.classList.toggle('open')
+          if (btn) btn.textContent = block.classList.contains('open') ? '▲ Show less' : '▼ Show more'
+        },
+
+        toggleSummary(jobId) {
+          const block = document.getElementById('sum-' + jobId)
+          if (!block) return
+          const btn = block.nextElementSibling
+          block.classList.toggle('open')
+          if (btn) btn.textContent = block.classList.contains('open') ? '▲ Show less' : '▼ Show more'
+        },
+
+        copyId(event, id) {
+          navigator.clipboard.writeText(id).then(() => {
+            const chip = event.currentTarget
+            const orig = chip.textContent
+            chip.classList.add('copied')
+            chip.textContent = 'copied!'
+            setTimeout(() => { chip.classList.remove('copied'); chip.textContent = orig }, 1500)
+          })
+        },
+
+        formatOperation(op) {
+          const labels = {
+            scout_all: 'Scout All', enrich_all: 'Enrich All', evaluate_all: 'Evaluate All'
+          }
+          if (labels[op]) return labels[op]
+          if (op.startsWith('enrich_next_')) return `Enrich Next ${op.slice(12)}`
+          if (op.startsWith('evaluate_next_')) return `Evaluate Next ${op.slice(14)}`
+          if (op.startsWith('scout_')) return `Scout: ${op.slice(6)}`
+          if (op.startsWith('enrich_')) return 'Enrich Job'
+          if (op.startsWith('evaluate_')) return 'Evaluate Job'
+          if (op.startsWith('run_')) return 'Run Job'
+          return op
+        },
+
+        stateLabel(s) {
+          return s === 'parsed' ? 'enriched' : (s || 'discovered')
+        },
+
+        pipelineCountStyle(n) {
+          if (n === 0) return 'font-size:0.85rem; opacity:0.4'
+          if (n < 5)  return 'font-size:1rem'
+          if (n < 20) return 'font-size:1.25rem'
+          if (n < 50) return 'font-size:1.5rem'
+          return 'font-size:1.75rem'
+        },
+
+        formatElapsed(task, now) {
+          if (!task.started_at) return ''
+          const start = new Date(task.started_at)
+          const end = task.finished_at ? new Date(task.finished_at) : new Date(now)
+          const s = Math.round((end - start) / 1000)
+          return s < 60 ? `${s}s` : `${Math.floor(s / 60)}m ${s % 60}s`
+        },
+
+        scrollToProfileSection(id) {
+          const el = document.getElementById(id)
+          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        },
+
+        async loadProfile() {
+          if (this.profileLoaded) return
+          try {
+            const r = await fetch('/api/profile')
+            if (!r.ok) return
+            this.profile = await r.json()
+            this.profileLoaded = true
+          } catch(e) { console.error('loadProfile failed', e) }
+        },
+
+        async saveProfile() {
+          try {
+            await fetch('/api/profile', {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(this.profile),
+            })
+            this.profileSaveMsg = 'Saved ✓'
+            setTimeout(() => { this.profileSaveMsg = '' }, 2000)
+          } catch(e) { console.error('saveProfile failed', e) }
+        },
+
+        async saveSection(section) {
+          await this.saveProfile()
+          this.profileDirty[section] = false
+        },
+
+        markDirty(section) {
+          this.profileDirty[section] = true
+        },
+
+        startAddChip(key) {
+          this.addingChip[key] = true
+          this.newChipVal[key] = ''
+          this.$nextTick(() => {
+            const el = document.getElementById('chip-input-' + key)
+            if (el) el.focus()
+          })
+        },
+
+        cancelAddChip(key) {
+          this.addingChip[key] = false
+        },
+
+        async commitAddChip(path, key) {
+          const val = (this.newChipVal[key] || '').trim()
+          if (!val) { this.cancelAddChip(key); return }
+          const arr = this._getPath(this.profile, path)
+          if (Array.isArray(arr) && !arr.includes(val)) arr.push(val)
+          this.addingChip[key] = false
+          await this.saveProfile()
+        },
+
+        async removeChip(path, idx) {
+          const arr = this._getPath(this.profile, path)
+          if (Array.isArray(arr)) arr.splice(idx, 1)
+          await this.saveProfile()
+        },
+
+        async cycleSkillTier(skill, fromTier) {
+          const tiers = this.profile.skill_tiers
+          if (!tiers) return
+          const order = ['super_power', 'strong', 'low']
+          const fromArr = tiers[fromTier]
+          if (fromArr) {
+            const i = fromArr.indexOf(skill)
+            if (i !== -1) fromArr.splice(i, 1)
+          }
+          const nextTier = order[order.indexOf(fromTier) + 1]
+          if (nextTier) {
+            if (!tiers[nextTier]) tiers[nextTier] = []
+            if (!tiers[nextTier].includes(skill)) tiers[nextTier].push(skill)
+          }
+          await this.saveProfile()
+        },
+
+        async removeDomain(name) {
+          delete this.profile.mission_domains[name]
+          await this.saveProfile()
+        },
+
+        async addDomain() {
+          const label = this.newDomainName.trim()
+          if (!label) return
+          const key = label.toLowerCase().replace(/\s+/g, '_')
+          if (!this.profile.mission_domains) this.profile.mission_domains = {}
+          this.profile.mission_domains[key] = this.newDomainWeight || 5
+          this.newDomainName = ''
+          this.newDomainWeight = 5
+          this.addingDomain = false
+          await this.saveProfile()
+        },
+
+        debouncedSaveDomain() {
+          clearTimeout(this.domainSaveTimer)
+          this.domainSaveTimer = setTimeout(() => this.saveProfile(), 500)
+        },
+
+        async reorderExp(idx, dir) {
+          const arr = this.profile.experience
+          const swap = idx + dir
+          if (swap < 0 || swap >= arr.length) return
+          ;[arr[idx], arr[swap]] = [arr[swap], arr[idx]]
+          await this.saveProfile()
+        },
+
+        addExperience() {
+          if (!this.profile.experience) this.profile.experience = []
+          this.profile.experience.unshift({ company: '', role: '', location: '', period: '', highlights: [], tech_stack: [] })
+          this.expandedExpIdx = 0
+          this.pfSections.experience = true
+        },
+
+        async removeExperience(idx) {
+          if (!confirm('Remove this experience entry?')) return
+          this.profile.experience.splice(idx, 1)
+          if (this.expandedExpIdx === idx) this.expandedExpIdx = null
+          await this.saveProfile()
+        },
+
+        addHighlight(expIdx) {
+          const exp = this.profile.experience[expIdx]
+          if (!exp.highlights) exp.highlights = []
+          exp.highlights.push('')
+        },
+
+        async removeHighlight(expIdx, hIdx) {
+          this.profile.experience[expIdx].highlights.splice(hIdx, 1)
+          await this.saveProfile()
+        },
+
+        async reorderHighlight(expIdx, hIdx, dir) {
+          const arr = this.profile.experience[expIdx].highlights
+          const swap = hIdx + dir
+          if (swap < 0 || swap >= arr.length) return
+          ;[arr[hIdx], arr[swap]] = [arr[swap], arr[hIdx]]
+          await this.saveProfile()
+        },
+
+        addEducation() {
+          if (!this.profile.education) this.profile.education = []
+          this.profile.education.push({ degree: '', school: '', period: '' })
+          this.expandedEduIdx = this.profile.education.length - 1
+          this.pfSections.education = true
+        },
+
+        async removeEducation(idx) {
+          if (!confirm('Remove this education entry?')) return
+          this.profile.education.splice(idx, 1)
+          if (this.expandedEduIdx === idx) this.expandedEduIdx = null
+          await this.saveProfile()
+        },
+
+        addCertification() {
+          if (!this.profile.certifications) this.profile.certifications = []
+          this.profile.certifications.push({ name: '', date: '' })
+          this.expandedCertIdx = this.profile.certifications.length - 1
+          this.pfSections.education = true
+        },
+
+        async removeCertification(idx) {
+          if (!confirm('Remove this certification?')) return
+          this.profile.certifications.splice(idx, 1)
+          if (this.expandedCertIdx === idx) this.expandedCertIdx = null
+          await this.saveProfile()
+        },
+
+        async loadBackups() {
+          try {
+            const r = await fetch('/api/profile/backups')
+            const d = await r.json()
+            this.backups = d.backups || []
+          } catch(e) { console.error('loadBackups failed', e) }
+        },
+
+        async restoreBackup(filename) {
+          if (!confirm(`Restore backup "${filename}"?\nCurrent profile will be backed up first.`)) return
+          try {
+            await fetch('/api/profile/backups/restore', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ filename }),
+            })
+            this.showBackups = false
+            this.profileLoaded = false
+            this.profileDirty = {}
+            await this.loadProfile()
+          } catch(e) { console.error('restoreBackup failed', e) }
+        },
+
+        formatBackupDate(isoStr) {
+          try { return new Date(isoStr).toLocaleString() } catch { return isoStr }
+        },
+
+        _getPath(obj, path) {
+          return path.split('.').reduce((o, k) => (o && o[k] !== undefined ? o[k] : null), obj)
+        },
+      }
+    }
+  </script>
+</body>
+</html>
