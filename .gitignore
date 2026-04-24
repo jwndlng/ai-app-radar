@@ -44,6 +44,7 @@ reports/*.html
 scripts/backfill_jds.py
 !scripts/__init__.py
 !reports/.gitkeep
+
 # Runtime artifacts & data
 artifacts/
 logs/
@@ -57,6 +58,9 @@ applications/
 
 # Local configuration files
 .envrc
+
+# Openspec
+openspec/changes/
 
 # User-specific config (use configs/profile.example.yaml and configs/companies.example.json as templates)
 configs/profile.yaml
