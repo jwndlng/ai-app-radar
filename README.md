@@ -59,8 +59,8 @@ cp configs/profile.example.yaml configs/profile.yaml
 # Edit configs/profile.yaml — add your skills, location preferences, compensation targets
 
 # 5. Configure companies to track
-cp configs/companies.example.json configs/companies.json
-# Edit configs/companies.json — enable/disable companies, add more via the onboard command
+# configs/companies.json is tracked in the repo — edit it to enable/disable companies,
+# or add more via the onboard command. Keep personal overrides in companies.local.json (gitignored).
 
 # 6. Start the dashboard
 make run
@@ -103,7 +103,7 @@ List of companies to track. Each entry needs a `scan_method` that matches an ATS
 | `workday_api` | Workday | careers URL only |
 | `agent_review` | Any (web scrape + LLM) | careers URL only |
 
-Copy `configs/companies.example.json` as a starting point. To add a new company interactively, use the onboard command from the dashboard or CLI.
+`configs/companies.json` is the community-maintained list — it ships with a curated set of companies and grows via PRs. To add a new company interactively, use the onboard command from the dashboard or CLI.
 
 ### `configs/settings.yaml`
 
@@ -158,8 +158,8 @@ Routes:
 configs/
   profile.yaml              # Your candidate profile (gitignored — copy from .example)
   profile.example.yaml      # Demo profile for testing
-  companies.json            # Your tracked companies (gitignored — copy from .example)
-  companies.example.json    # Starter company set
+  companies.json            # Community-maintained company list (tracked in git)
+  companies.local.json      # Personal enabled/disabled overrides (gitignored)
   settings.yaml             # Pipeline thresholds and model config
 
 src/
@@ -192,7 +192,7 @@ The fastest way is the onboard command from the dashboard. To add via CLI:
 # Auto-detect ATS and add to companies.json
 uv run python -m main onboard "Company Name"
 
-# Or add manually to configs/companies.json following the structure in companies.example.json
+# Or add manually to configs/companies.json — see existing entries for the structure
 ```
 
 ---
