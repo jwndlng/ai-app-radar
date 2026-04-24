@@ -1,0 +1,19 @@
+scout:
+  respect_robots: false
+  max_pages: 10
+  worker_count: 10
+  model: null
+enrich:
+  concurrency: 5
+  checkpoint_every: 5
+  model: null
+evaluate:
+  auto_reject_threshold: 4
+  auto_match_threshold: 8.5
+  location_reject_threshold: 2
+  scoring_weights:
+    fit: 0.5
+    location: 0.2
+    seniority: 0.2
+    compensation: 0.1
+  model: null

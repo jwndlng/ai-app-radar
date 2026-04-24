@@ -1,0 +1,25 @@
+# Test Config for Location Extraction
+title_filter:
+  positive:
+    - "Security"
+    - "Engineer"
+  negative:
+    - "Junior"
+
+tracked_companies:
+  - name: "Snap Inc"
+    careers_url: "https://careers.snap.com/jobs?lang=en-GB&q=security"
+    scan_method: "playwright"
+    card_selector: "table tbody tr"
+    title_selector: "a.sdsm-hyperlink"
+    location_selector: "td:nth-child(4)"
+    wait_for: "table tbody tr"
+    enabled: true
+  - name: "Genesys"
+    careers_url: "https://genesys.wd1.myworkdayjobs.com/Genesys?jobFamilyGroup=0b40e66ca32e1025ac5250e97bd80000&locationCountry=187134fccb084a0ea9b4b95f23890dbe"
+    scan_method: "playwright"
+    card_selector: 'li[data-automation-id="searchResultsListItem"]'
+    title_selector: 'a[data-automation-id="jobTitle"]'
+    location_selector: '[data-automation-id="locations"]'
+    wait_for: 'section[data-automation-id="jobResults"]'
+    enabled: true
