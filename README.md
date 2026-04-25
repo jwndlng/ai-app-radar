@@ -223,6 +223,32 @@ artifacts/                  # Runtime state (gitignored)
 
 ---
 
+## Running the Application
+
+```bash
+make run        # Start the web dashboard → http://localhost:8000
+```
+
+From the dashboard you can trigger each pipeline stage manually. Or run them from the CLI:
+
+```bash
+make scout      # Discover new roles from all tracked companies
+make enrich     # Extract structured metadata for discovered jobs
+make evaluate   # Score jobs against your profile
+make sync       # Run all three stages in sequence
+```
+
+Other useful targets:
+
+```bash
+make scout-one COMPANY="Stripe"   # Scout a single company
+make enrich-all                   # Enrich all queued jobs (no limit)
+make fix-errors                   # Retry jobs that errored in the last run
+make help                         # Show all available targets
+```
+
+---
+
 ## Adding Companies
 
 **With Claude Code or Gemini CLI** (recommended — auto-detects ATS, verifies the endpoint, and appends a validated entry):
