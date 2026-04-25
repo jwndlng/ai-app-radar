@@ -225,14 +225,14 @@ artifacts/                  # Runtime state (gitignored)
 
 ## Adding Companies
 
-The fastest way is the onboard command from the dashboard. To add via CLI:
+**With Claude Code or Gemini CLI** (recommended — auto-detects ATS, verifies the endpoint, and appends a validated entry):
 
-```bash
-# Auto-detect ATS and add to companies.json
-uv run python -m main onboard "Company Name"
-
-# Or add manually to configs/companies.json — see existing entries for the structure
 ```
+/app:onboard-company "Company Name"
+/app:onboard-company "Company Name" https://jobs.example.com
+```
+
+**Manually** — add an entry directly to `configs/companies.json`. See existing entries for the structure or the `configs/companies.json` ATS table in the Configuration section above.
 
 ---
 
