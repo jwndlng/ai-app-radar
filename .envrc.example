@@ -1,0 +1,41 @@
+# Copy this file to .envrc and fill in the values.
+# Activate with: direnv allow
+# Or without direnv: source .envrc
+
+# --- LLM Provider (choose one) ---
+
+# Option A: Google Gemini (direct) — free tier available
+# Get a free key at https://aistudio.google.com/app/apikey
+# Free tier: ~1,500 requests/day on Gemini 2.5 Flash
+# export GEMINI_API_KEY=""
+# export ADK_MODEL="gemini/gemini-2.5-flash"
+
+# Option B: Anthropic Claude (direct)
+# Get a key at https://console.anthropic.com/settings/keys
+# export ANTHROPIC_API_KEY=""
+# export ADK_MODEL="anthropic/claude-haiku-4-5"
+
+# Option C: Groq (direct) — free tier available
+# Get a free key at https://console.groq.com/keys
+# Free tier: rate-limited but no billing required
+# export GROQ_API_KEY=""
+# export ADK_MODEL="groq/llama-3.3-70b-versatile"
+
+# Option D: Ollama (local, fully offline)
+# Install: https://ollama.com  then: ollama pull gemma3:27b
+# No API key needed. Requires ~16 GB RAM for a 27B model.
+# export ADK_MODEL="ollama/gemma3:27b"
+
+# Option E: LiteLLM proxy (self-hosted or team proxy)
+# export LITELLM_BASE_URL=""
+# export LITELLM_API_KEY=""
+# export ADK_MODEL="gemini/gemini-2.5-flash"
+
+# --- Python path (required) ---
+export PYTHONPATH=src
+
+# --- Per-flow model overrides (optional) ---
+# If unset, ADK_MODEL is used for all flows.
+# export SCOUT_MODEL=""
+# export ENRICH_MODEL=""
+# export EVALUATE_MODEL=""

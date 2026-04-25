@@ -57,7 +57,7 @@ class EvaluateConsumer(BaseConsumer[dict]):
         passed, reason = self._vetter.vet(job)
         if not passed:
             self._archive_job(job, reason)
-            self._log.item_warn(name, label="evaluate", detail=reason,
+            self._log.item_warn(name, label="evaluate", detail=f"→ auto-reject [{reason}]",
                                 elapsed=time.monotonic() - t0)
             return
 
@@ -86,7 +86,7 @@ class EvaluateConsumer(BaseConsumer[dict]):
             reason = result.location_reason or f"Location score {result.location_score}/10 below threshold"
             self._reject_job(job, reason)
             self._log.item_warn(name, label="evaluate",
-                                detail=f"location hard-block: {reason}",
+                                detail=f"→ auto-reject [location hard-block: {reason}]",
                                 elapsed=time.monotonic() - t0)
             return
 
@@ -109,7 +109,8 @@ class EvaluateConsumer(BaseConsumer[dict]):
                 job, f"Score {final_score}/10 below auto-reject threshold ({self._auto_reject})"
             )
             self._log.item_warn(name, label="evaluate",
-                                detail=f"score {final_score}/10 below threshold", elapsed=elapsed)
+                                detail=f"→ auto-reject [score {final_score}/10 below threshold]",
+                                elapsed=elapsed)
         elif final_score > self._auto_match:
             job["state"] = "match"
             job["status"] = "ok"
@@ -118,7 +119,8 @@ class EvaluateConsumer(BaseConsumer[dict]):
             StateMachine.touch_updated(job)
             self._reviewed += 1
             self._log.item_ok(name, label="evaluate",
-                              detail=f"score {final_score}/10 → match", elapsed=elapsed)
+                              detail=f"score {final_score}/10 → match [{'; '.join(result.reasons)}]",
+                              elapsed=elapsed)
         else:
             job["state"] = "review"
             job["status"] = "ok"
@@ -127,7 +129,8 @@ class EvaluateConsumer(BaseConsumer[dict]):
             StateMachine.touch_updated(job)
             self._reviewed += 1
             self._log.item_ok(name, label="evaluate",
-                              detail=f"score {final_score}/10 → review", elapsed=elapsed)
+                              detail=f"score {final_score}/10 → review [{'; '.join(result.reasons)}]",
+                              elapsed=elapsed)
 
     async def checkpoint(self) -> None:
         self._store.save(self._all_apps)

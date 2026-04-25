@@ -15,9 +15,9 @@ class ScoutTask(BaseTask[dict]):
     checkpoint_every = 1
     start_gap: tuple[float, float] | None = None
 
-    def __init__(self, config: ScoutConfig, root_dir: Path) -> None:
+    def __init__(self, config: ScoutConfig, root_dir: Path, on_event=None) -> None:
         self.concurrency = config.worker_count
-        log = RunLogger("scout", root_dir)
+        log = RunLogger("scout", root_dir, on_event=on_event)
         self._producer = ScoutProducer(config)
         self._consumer = ScoutConsumer(config, root_dir, log)
 
