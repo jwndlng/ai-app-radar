@@ -40,7 +40,7 @@ Everything is stored locally and surfaced in a web dashboard for triage.
 
 ## Getting Started
 
-**Requirements:** Python 3.9+, [uv](https://docs.astral.sh/uv/), an LLM API key (or Ollama for fully local use), and a way to load environment variables — either [direnv](https://direnv.net) (recommended, auto-loads `.envrc` on `cd`) or just `source .envrc` in each terminal session.
+**Requirements:** Python 3.9+, [uv](https://docs.astral.sh/uv/), a [Google Gemini](https://aistudio.google.com/app/apikey) or [Anthropic](https://console.anthropic.com/settings/keys) API key (or [Ollama](https://ollama.com) for fully local use), and either [direnv](https://direnv.net) or the ability to run `source .envrc` in each terminal session.
 
 ---
 
