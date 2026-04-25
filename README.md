@@ -1,4 +1,4 @@
-# Agentic Application Tracker
+# AI-powered Application Radar
 
 > Automated job discovery, enrichment, and fit scoring — with a web dashboard for triage.
 
@@ -66,8 +66,8 @@ Gemini will invoke the same setup wizard via its built-in skill.
 
 ```bash
 # 1. Clone and install
-git clone https://github.com/jwndlng/agentic-application-tracker
-cd agentic-application-tracker
+git clone https://github.com/jwndlng/ai-app-radar
+cd ai-app-radar
 uv sync
 
 # 2. Install Playwright (for scraping career pages, ~150 MB)

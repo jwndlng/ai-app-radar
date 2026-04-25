@@ -47,8 +47,8 @@ The repository SHALL include a CONTRIBUTING.md that describes how to report issu
 - **THEN** CONTRIBUTING.md explains the process and notes that this is a hobby project with no SLA on responses
 
 ### Requirement: Project name is consistent
-The project name "Agentic Application Tracker" SHALL be used consistently in README.md and pyproject.toml.
+The project name "AI-powered Application Radar" SHALL be used consistently in README.md and pyproject.toml.
 
 #### Scenario: pyproject.toml uses canonical name
 - **WHEN** the project is installed or referenced
-- **THEN** pyproject.toml `name` field is `agentic-application-tracker`
+- **THEN** pyproject.toml `name` field is `ai-app-radar`

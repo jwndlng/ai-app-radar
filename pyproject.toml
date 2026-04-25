@@ -1,7 +1,7 @@
 [project]
-name = "agentic-application-tracker"
+name = "ai-app-radar"
 version = "0.1.0"
-description = "Agentic Application Tracker — automated job discovery, enrichment, and fit scoring pipeline with a web dashboard."
+description = "AI-powered Application Radar — automated job discovery, enrichment, and fit scoring pipeline with a web dashboard."
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
