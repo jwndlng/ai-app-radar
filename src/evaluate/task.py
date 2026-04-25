@@ -19,7 +19,7 @@ class EvaluateTask(BaseTask[dict]):
     checkpoint_every = 5
     start_gap: tuple[float, float] | None = None
 
-    def __init__(self, root_dir: Path) -> None:
+    def __init__(self, root_dir: Path, on_event=None) -> None:
         loader = AppConfigLoader(root_dir)
         evaluate_config = loader.evaluate()
         profile = loader.profile()
@@ -30,7 +30,7 @@ class EvaluateTask(BaseTask[dict]):
 
         store = ApplicationStore(root_dir / "artifacts" / "applications.json")
         all_apps = store.load()
-        log = RunLogger("evaluate", root_dir)
+        log = RunLogger("evaluate", root_dir, on_event=on_event)
 
         self._producer = EvaluateProducer(all_apps)
         self._consumer = EvaluateConsumer(

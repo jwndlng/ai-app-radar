@@ -7,7 +7,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from api.deps import PipelineRunner, get_registry, get_runner
-from api.tasks import TaskRegistry, make_progress_callback, run_with_tracking
+from api.tasks import TaskRegistry, make_event_callback, make_progress_callback, run_with_tracking
 from core.state_machine import StateMachine
 
 _ALLOWED_MANUAL_STATES = {"rejected", "applied"}
@@ -160,7 +160,9 @@ async def scout_next(
 ):
     task_id = registry.create(f"scout_next_{body.limit}")
     background_tasks.add_task(run_with_tracking, registry, task_id,
-                              runner.scout_next(limit=body.limit, on_progress=make_progress_callback(registry, task_id)))
+                              runner.scout_next(limit=body.limit,
+                                                on_progress=make_progress_callback(registry, task_id),
+                                                on_event=make_event_callback(registry, task_id)))
     return {"ok": True, "task_id": task_id}
 
 
@@ -172,7 +174,8 @@ async def scout_all(
 ):
     task_id = registry.create("scout_all")
     background_tasks.add_task(run_with_tracking, registry, task_id,
-                              runner.scout_all(on_progress=make_progress_callback(registry, task_id)))
+                              runner.scout_all(on_progress=make_progress_callback(registry, task_id),
+                                               on_event=make_event_callback(registry, task_id)))
     return {"ok": True, "task_id": task_id}
 
 
@@ -187,7 +190,9 @@ async def scout_company(
         return JSONResponse(status_code=404, content={"detail": f"Company not found: {company_name}"})
     task_id = registry.create(f"scout_{company_name}")
     background_tasks.add_task(run_with_tracking, registry, task_id,
-                              runner.scout_company(company_name, on_progress=make_progress_callback(registry, task_id)))
+                              runner.scout_company(company_name,
+                                                   on_progress=make_progress_callback(registry, task_id),
+                                                   on_event=make_event_callback(registry, task_id)))
     return {"ok": True, "task_id": task_id}
 
 
@@ -201,7 +206,8 @@ async def enrich_all(
 ):
     task_id = registry.create("enrich_all")
     background_tasks.add_task(run_with_tracking, registry, task_id,
-                              runner.enrich_all(on_progress=make_progress_callback(registry, task_id)))
+                              runner.enrich_all(on_progress=make_progress_callback(registry, task_id),
+                                                on_event=make_event_callback(registry, task_id)))
     return {"ok": True, "task_id": task_id}
 
 
@@ -214,7 +220,9 @@ async def enrich_next(
 ):
     task_id = registry.create(f"enrich_next_{body.limit}")
     background_tasks.add_task(run_with_tracking, registry, task_id,
-                              runner.enrich_next(limit=body.limit, on_progress=make_progress_callback(registry, task_id)))
+                              runner.enrich_next(limit=body.limit,
+                                                 on_progress=make_progress_callback(registry, task_id),
+                                                 on_event=make_event_callback(registry, task_id)))
     return {"ok": True, "task_id": task_id}
 
 
@@ -229,7 +237,8 @@ async def enrich_job(
     if not any(j.get("id") == job_id for j in jobs):
         return JSONResponse(status_code=404, content={"detail": f"Job not found: {job_id}"})
     task_id = registry.create(f"enrich_{job_id}")
-    background_tasks.add_task(run_with_tracking, registry, task_id, runner.enrich_job(job_id))
+    background_tasks.add_task(run_with_tracking, registry, task_id,
+                              runner.enrich_job(job_id, on_event=make_event_callback(registry, task_id)))
     return {"ok": True, "task_id": task_id}
 
 
@@ -243,7 +252,8 @@ async def evaluate_all(
 ):
     task_id = registry.create("evaluate_all")
     background_tasks.add_task(run_with_tracking, registry, task_id,
-                              runner.evaluate_all(on_progress=make_progress_callback(registry, task_id)))
+                              runner.evaluate_all(on_progress=make_progress_callback(registry, task_id),
+                                                  on_event=make_event_callback(registry, task_id)))
     return {"ok": True, "task_id": task_id}
 
 
@@ -256,7 +266,9 @@ async def evaluate_next(
 ):
     task_id = registry.create(f"evaluate_next_{body.limit}")
     background_tasks.add_task(run_with_tracking, registry, task_id,
-                              runner.evaluate_next(limit=body.limit, on_progress=make_progress_callback(registry, task_id)))
+                              runner.evaluate_next(limit=body.limit,
+                                                   on_progress=make_progress_callback(registry, task_id),
+                                                   on_event=make_event_callback(registry, task_id)))
     return {"ok": True, "task_id": task_id}
 
 
@@ -271,7 +283,8 @@ async def evaluate_job(
     if not any(j.get("id") == job_id for j in jobs):
         return JSONResponse(status_code=404, content={"detail": f"Job not found: {job_id}"})
     task_id = registry.create(f"evaluate_{job_id}")
-    background_tasks.add_task(run_with_tracking, registry, task_id, runner.evaluate_job(job_id))
+    background_tasks.add_task(run_with_tracking, registry, task_id,
+                              runner.evaluate_job(job_id, on_event=make_event_callback(registry, task_id)))
     return {"ok": True, "task_id": task_id}
 
 
@@ -356,5 +369,6 @@ async def run_job(
     if not any(j.get("id") == job_id for j in jobs):
         return JSONResponse(status_code=404, content={"detail": f"Job not found: {job_id}"})
     task_id = registry.create(f"run_{job_id}")
-    background_tasks.add_task(run_with_tracking, registry, task_id, runner.run_job(job_id))
+    background_tasks.add_task(run_with_tracking, registry, task_id,
+                              runner.run_job(job_id, on_event=make_event_callback(registry, task_id)))
     return {"ok": True, "task_id": task_id}

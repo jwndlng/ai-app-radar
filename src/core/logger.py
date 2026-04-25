@@ -23,7 +23,7 @@ import time
 import traceback as tb_module
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 # ── ANSI codes (no external dependencies) ─────────────────────────────────────
 
@@ -42,9 +42,10 @@ _LABEL_W = 22
 class RunLogger:
     """Colored console + streaming JSONL file logger for a single pipeline run."""
 
-    def __init__(self, flow: str, root_dir: Path) -> None:
+    def __init__(self, flow: str, root_dir: Path, on_event: Callable[[dict], None] | None = None) -> None:
         self._flow = flow
         self._root = root_dir
+        self._on_event = on_event
         self._start_ts = datetime.now()
         self._start_mono = time.monotonic()
         self._total = 0
@@ -160,3 +161,5 @@ class RunLogger:
         }
         self._fh.write(json.dumps(record, ensure_ascii=False) + "\n")
         self._fh.flush()
+        if self._on_event:
+            self._on_event(record)

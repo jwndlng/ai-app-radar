@@ -612,6 +612,20 @@
       transition: width 0.4s ease;
     }
     .task-progress-label { font-size: 0.7rem; color: var(--text-secondary); margin-top: 2px; }
+    .task-countdown { color: var(--text-secondary); font-size: 0.72rem; white-space: nowrap; }
+    .task-dismiss {
+      background: none; border: none; color: var(--text-secondary);
+      cursor: pointer; font-size: 1rem; padding: 0 2px; line-height: 1; flex-shrink: 0;
+    }
+    .task-dismiss:hover { color: var(--text-primary); }
+    .task-events { display: flex; flex-direction: column; gap: 2px; padding: 4px 10px 6px 28px; }
+    .task-event { font-size: 0.75rem; line-height: 1.4; }
+    .task-event-ok   { color: hsl(140, 50%, 40%); }
+    .task-event-warn { color: var(--text-secondary); }
+    .task-event-fail { color: hsl(0, 65%, 50%); }
+    .task-event-summary { color: var(--text-primary); font-size: 0.8rem; }
+    [data-theme="dark"] .task-event-ok   { color: hsl(140, 55%, 60%); }
+    [data-theme="dark"] .task-event-fail { color: hsl(0, 70%, 65%); }
 
     /* ── Job Cards ─────────────────────────────────────────────────────────── */
     .results-header {
@@ -1711,8 +1725,14 @@
               <div class="task-dot" :class="'task-dot-' + task.status"></div>
               <span class="task-name" x-text="formatOperation(task.operation)"></span>
               <span class="task-elapsed" x-text="formatElapsed(task, now)"></span>
+              <template x-if="task.status !== 'running'">
+                <span class="task-countdown" x-text="taskCountdown(task, now)"></span>
+              </template>
+              <template x-if="task.status !== 'running'">
+                <button class="task-dismiss" @click="dismissTask(task.id)" title="Dismiss">×</button>
+              </template>
             </div>
-            <template x-if="task.progress_total != null && task.progress_total > 0">
+            <template x-if="task.status === 'running' && task.progress_total != null && task.progress_total > 0">
               <div class="task-progress-wrap">
                 <div class="task-progress-bar">
                   <div class="task-progress-fill"
@@ -1722,6 +1742,13 @@
                 <div class="task-progress-label"
                      x-text="(task.progress_current || 0) + ' / ' + task.progress_total + ' items'">
                 </div>
+              </div>
+            </template>
+            <template x-if="task.status !== 'running' && taskEvents(task).length > 0">
+              <div class="task-events">
+                <template x-for="(ev, i) in taskEvents(task)" :key="i">
+                  <div class="task-event" :class="'task-event-' + ev.type" x-text="ev.text"></div>
+                </template>
               </div>
             </template>
           </div>
@@ -2724,6 +2751,7 @@
         jobs: [],
         apiTasks: [],
         prevTaskStatuses: {},
+        dismissedTaskIds: {},
         search: '',
         statusFilter: 'all',
         expandedJobId: null,
@@ -2844,17 +2872,50 @@
         },
 
         get activeTasks() {
-          const cutoff = this.now - 10000
+          const cutoff = this.now - 120000
           return this.apiTasks.filter(t =>
-            t.status === 'running' ||
-            (t.finished_at && new Date(t.finished_at).getTime() > cutoff)
+            !this.dismissedTaskIds[t.id] && (
+              t.status === 'running' ||
+              (t.finished_at && new Date(t.finished_at).getTime() > cutoff)
+            )
           )
         },
 
         taskOpacity(task) {
           if (task.status === 'running' || !task.finished_at) return 1
           const age = (this.now - new Date(task.finished_at).getTime()) / 1000
-          return age < 7 ? 1 : Math.max(0, 1 - (age - 7) / 3)
+          return age < 117 ? 1 : Math.max(0, 1 - (age - 117) / 3)
+        },
+
+        taskCountdown(task, now) {
+          if (task.status === 'running' || !task.finished_at) return null
+          const remaining = Math.max(0, 120 - (now - new Date(task.finished_at).getTime()) / 1000)
+          if (remaining <= 0) return null
+          const m = Math.floor(remaining / 60)
+          const s = Math.floor(remaining % 60)
+          return `${m}:${s.toString().padStart(2, '0')}`
+        },
+
+        taskEvents(task) {
+          const events = task.events || []
+          const flow = (task.operation || '').split('_')[0]
+          if (flow === 'enrich') {
+            const end = events.find(e => e.event === 'run_end')
+            if (!end) return []
+            const parts = [`${end.ok || 0} enriched`]
+            if (end.fail) parts.push(`${end.fail} failed`)
+            return [{ type: 'summary', text: parts.join(', ') }]
+          }
+          return events
+            .filter(e => ['item_ok', 'item_warn', 'item_fail'].includes(e.event))
+            .map(e => ({
+              type: e.event === 'item_ok' ? 'ok' : e.event === 'item_warn' ? 'warn' : 'fail',
+              text: e.name + (e.detail ? '  ' + e.detail : '') + (e.error ? '  ' + e.error : '')
+            }))
+        },
+
+        dismissTask(id) {
+          this.dismissedTaskIds = { ...this.dismissedTaskIds, [id]: true }
         },
 
         get stats() {

@@ -6,7 +6,7 @@ import uuid
 from collections import deque
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, Callable
 
 
 @dataclass
@@ -20,6 +20,7 @@ class TaskRecord:
     error: str | None = None
     progress_current: int | None = None
     progress_total: int | None = None
+    events: list[dict] = field(default_factory=list)
 
     def to_dict(self) -> dict:
         return {
@@ -32,6 +33,7 @@ class TaskRecord:
             "error": self.error,
             "progress_current": self.progress_current,
             "progress_total": self.progress_total,
+            "events": self.events,
         }
 
 
@@ -74,8 +76,19 @@ class TaskRegistry:
     def all(self) -> list[TaskRecord]:
         return list(self._records)
 
+    def add_event(self, task_id: str, event: dict) -> None:
+        record = self._get(task_id)
+        if record:
+            record.events.append(event)
+
     def _get(self, task_id: str) -> TaskRecord | None:
         return next((r for r in self._records if r.id == task_id), None)
+
+
+def make_event_callback(registry: "TaskRegistry", task_id: str) -> Callable[[dict], None]:
+    def on_event(event: dict) -> None:
+        registry.add_event(task_id, event)
+    return on_event
 
 
 def make_progress_callback(registry: "TaskRegistry", task_id: str):
