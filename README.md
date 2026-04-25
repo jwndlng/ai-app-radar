@@ -2,6 +2,10 @@
 
 > Automated job discovery, enrichment, and fit scoring — with a web dashboard for triage.
 
+The best job opportunities tend to surface when you're already employed and not actively looking — and that's exactly when you're least likely to catch them. I built this tool to keep a continuous eye on the market in the background, so that when a great match appears you get notified instead of missing it entirely.
+
+The project is still mostly manual in its current form, but the long-term plan is to ship a fully containerized version that can run on Kubernetes or any other server — set it up once, let it run. There are plenty of features and rough edges still to tackle, but the core pipeline works. Have fun with it!
+
 > [!WARNING]
 > **Early-stage / hobby project.** Expect rough edges, breaking changes, and no support SLA. Use at your own risk.
 
@@ -36,33 +40,53 @@ Company career pages & ATS APIs
 
 ---
 
-## Quick Start
+## Getting Started
 
-**Requirements:** Python 3.9+, [uv](https://docs.astral.sh/uv/), an Anthropic or Gemini API key
+**Requirements:** Python 3.9+, [uv](https://docs.astral.sh/uv/), an LLM API key (or Ollama for fully local use)
+
+Choose whichever path fits your setup:
+
+---
+
+### Path A — Claude Code (recommended)
+
+1. Clone the repo and open it in [Claude Code](https://claude.ai/code)
+2. Run `/app:setup`
+
+The setup wizard walks you through dependencies, API keys, profile generation from your CV, and adding companies. It detects what is already configured and offers to skip or redo individual steps.
+
+---
+
+### Path B — Gemini CLI
+
+1. Clone the repo and open it in [Gemini CLI](https://geminicli.com)
+2. Ask: *"Set up the application tracker for me"*
+
+Gemini will invoke the same setup wizard via its built-in skill.
+
+---
+
+### Path C — Manual
 
 ```bash
-# 1. Clone and install
-git clone https://github.com/your-username/agentic-application-tracker
+# 1. Clone and install dependencies
+git clone https://github.com/jxnl/agentic-application-tracker
 cd agentic-application-tracker
 uv sync
 
-# 2. Install Playwright (for scraping career pages)
+# 2. Install Playwright (for scraping career pages, ~150 MB)
 uv run playwright install chromium
 
-# 3. Set your LLM API key
-export ANTHROPIC_API_KEY=sk-ant-...
-# or
-export GEMINI_API_KEY=...
+# 3. Configure your LLM API key
+cp .envrc.example .envrc
+# Edit .envrc — uncomment and fill in GEMINI_API_KEY or ANTHROPIC_API_KEY
+direnv allow   # or: source .envrc
 
 # 4. Configure your profile
 cp configs/profile.example.yaml configs/profile.yaml
-# Edit configs/profile.yaml — add your skills, location preferences, compensation targets
+# Edit configs/profile.yaml — add your skills, location, compensation targets
 
-# 5. Configure companies to track
-# configs/companies.json is tracked in the repo — edit it to enable/disable companies,
-# or add more via the onboard command. Keep personal overrides in companies.local.json (gitignored).
-
-# 6. Start the dashboard
+# 5. Start the dashboard
 make run
 # → http://localhost:8000
 ```
@@ -72,6 +96,20 @@ From the dashboard you can run Scout, Enrich, and Evaluate directly — no CLI n
 ---
 
 ## Configuration
+
+### LLM provider
+
+All pipeline stages use the model set in `ADK_MODEL` (or per-stage overrides). Every model call goes through LiteLLM, so any LiteLLM-supported provider works — just change the env vars.
+
+**Free options:**
+
+| Option | `ADK_MODEL` value | Key needed | Notes |
+|---|---|---|---|
+| Google Gemini free tier | `gemini/gemini-2.5-flash` | `GEMINI_API_KEY` | ~1,500 req/day free; best default |
+| Groq free tier | `groq/llama-3.3-70b-versatile` | `GROQ_API_KEY` | Rate-limited but no billing; fast |
+| Ollama (local) | `ollama/gemma3:27b` | none | Fully offline; needs ~16 GB RAM |
+
+See `.envrc.example` for all options including Anthropic and LiteLLM proxy.
 
 ### `configs/profile.yaml`
 
@@ -155,11 +193,12 @@ Routes:
 ## Directory Layout
 
 ```
+.envrc.example              # Environment variable template (copy to .envrc)
+
 configs/
   profile.yaml              # Your candidate profile (gitignored — copy from .example)
   profile.example.yaml      # Demo profile for testing
   companies.json            # Community-maintained company list (tracked in git)
-  companies.local.json      # Personal enabled/disabled overrides (gitignored)
   settings.yaml             # Pipeline thresholds and model config
 
 src/

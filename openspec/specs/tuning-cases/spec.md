@@ -31,6 +31,10 @@ A case file SHALL contain the following fields:
 - **WHEN** a case file omits `models` or any `expected` subfield
 - **THEN** the runner SHALL raise a validation error before making any network calls
 
+### Requirement: Shipped case files include a representative free-model baseline
+
+> **Note (backlog):** Case files committed to the repo should include a `models` list that covers free-tier and local options alongside paid models — e.g. `gemini/gemini-2.5-flash` (Gemini free tier), `groq/llama-3.3-70b-versatile` (Groq free tier), `ollama/gemma3:27b` (local) — so contributors without paid API access can run comparisons and the results give users a meaningful guide to model suitability for each pipeline stage.
+
 ### Requirement: tuning/results/ is excluded from version control
 The `tuning/results/` directory SHALL be listed in `.gitignore`. Case files in `tuning/cases/` SHALL be committed.
 

@@ -64,6 +64,3 @@ openspec/changes/
 
 # User-specific config (use configs/profile.example.yaml as template)
 configs/profile.yaml
-
-# Local overrides — personal enabled/disabled state (not committed)
-configs/companies.local.json
