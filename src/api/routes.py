@@ -319,6 +319,23 @@ async def set_job_state(
     return {"ok": True, "id": job_id, "state": body.state}
 
 
+# ── Favorites ────────────────────────────────────────────────────────────────
+
+@router.patch("/jobs/{job_id}/favorite")
+async def toggle_favorite(
+    job_id: str,
+    runner: PipelineRunner = Depends(get_runner),
+):
+    store = runner._store()
+    jobs = store.load()
+    job = next((j for j in jobs if j.get("id") == job_id), None)
+    if job is None:
+        return JSONResponse(status_code=404, content={"detail": f"Job not found: {job_id}"})
+    job["favorited"] = not job.get("favorited", False)
+    store.save(jobs)
+    return {"ok": True, "id": job_id, "favorited": job["favorited"]}
+
+
 # ── Undo ─────────────────────────────────────────────────────────────────────
 
 @router.post("/jobs/undo-by-state")

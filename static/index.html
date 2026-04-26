@@ -554,6 +554,84 @@
     }
     .btn-ghost:hover { color: var(--text-primary); border-color: color-mix(in srgb, var(--border-color) 60%, currentColor); }
 
+    /* ── Pipeline Action Cards ─────────────────────────────────────────────── */
+    .pipeline-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      margin-bottom: var(--padding-md);
+    }
+
+    .pipeline-card-steps { display: flex; }
+
+    .pipeline-card-step {
+      flex: 1;
+      padding: 14px 18px;
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .pipeline-card-step:last-child { border-right: none; }
+
+    .pipeline-card-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--accent-primary);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .pipeline-card-title {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 3px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .pipeline-card-desc {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      line-height: 1.4;
+    }
+
+    .pipeline-card-controls {
+      display: flex;
+      gap: 6px;
+      margin-top: auto;
+    }
+
+    .pipeline-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 18px;
+      height: 18px;
+      padding: 0 5px;
+      border-radius: 9px;
+      background: var(--accent-primary);
+      color: white;
+      font-size: 0.65rem;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .pipeline-secondary {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 18px;
+      border-top: 1px solid var(--border-color);
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+    }
+
     /* ── Running Tasks Panel ───────────────────────────────────────────────── */
     .tasks-panel {
       background: var(--bg-card);
@@ -618,6 +696,24 @@
       cursor: pointer; font-size: 1rem; padding: 0 2px; line-height: 1; flex-shrink: 0;
     }
     .task-dismiss:hover { color: var(--text-primary); }
+    .task-item-actions {
+      display: flex;
+      justify-content: flex-end;
+      padding: 5px 10px;
+      border-top: 1px solid var(--border-color);
+    }
+    .btn-ghost-danger {
+      background: none;
+      border: 1px solid transparent;
+      border-radius: var(--radius-sm);
+      color: hsl(0, 60%, 52%);
+      cursor: pointer;
+      font-size: 0.75rem;
+      padding: 3px 10px;
+    }
+    .btn-ghost-danger:hover { background: hsl(0, 65%, 52%, 0.1); border-color: hsl(0, 60%, 52%); }
+    [data-theme="dark"] .btn-ghost-danger { color: hsl(0, 65%, 65%); }
+    [data-theme="dark"] .btn-ghost-danger:hover { background: hsl(0, 65%, 52%, 0.15); border-color: hsl(0, 65%, 65%); }
     .task-events {
       display: flex; flex-direction: column; gap: 3px;
       padding: 8px 10px;
@@ -1663,79 +1759,82 @@
     <div x-show="currentView === 'jobs'">
     <header style="margin-bottom: var(--padding-md);">
       <h1 style="font-size:1.6rem;">Jobs</h1>
-      <p style="color:var(--text-secondary); font-size:0.88rem;">Agentic Discovery Pipeline</p>
+      <p style="color:var(--text-secondary); font-size:0.88rem;">AI-powered Application Radar</p>
     </header>
 
     <!-- Pipeline steps + actions -->
-    <div style="display:flex; gap:0; margin-bottom:8px; background:var(--bg-card); border:1px solid var(--border-color); border-radius:var(--radius-md); overflow:hidden;">
-      <div style="flex:1; padding:14px 18px; border-right:1px solid var(--border-color); display:flex; flex-direction:column; gap:8px;">
-        <div>
-          <div style="font-size:0.72rem; font-weight:700; color:var(--accent-primary); letter-spacing:0.05em; text-transform:uppercase; margin-bottom:4px;">① Scout</div>
-          <div style="font-size:0.82rem; font-weight:600; color:var(--text-primary); margin-bottom:3px;">Discover roles</div>
-          <div style="font-size:0.75rem; color:var(--text-secondary); line-height:1.4;">Scans company career pages and ATS APIs for new postings that match your title filters.</div>
+    <div class="pipeline-card">
+      <div class="pipeline-card-steps">
+        <div class="pipeline-card-step">
+          <div class="pipeline-card-label">① Scout</div>
+          <div class="pipeline-card-title">
+            Discover roles
+            <span class="pipeline-badge" x-show="stats.discovered > 0" x-text="stats.discovered"></span>
+          </div>
+          <div class="pipeline-card-desc">Scans company career pages and ATS APIs for new postings that match your title filters.</div>
+          <div class="pipeline-card-controls">
+            <select class="action-select" x-model="scoutCompany" style="flex:1;">
+              <option value="all">All companies</option>
+              <template x-for="c in companies.filter(c => c.enabled)" :key="c.name">
+                <option :value="c.name" x-text="c.name"></option>
+              </template>
+            </select>
+            <select class="action-select" x-show="scoutCompany === 'all'" x-model="scoutMode">
+              <option value="all">All</option>
+              <option value="5">5</option>
+              <option value="10">10</option>
+              <option value="50">50</option>
+            </select>
+            <button class="btn btn-primary" @click="triggerScout()">Run</button>
+          </div>
         </div>
-        <div style="display:flex; gap:6px; margin-top:auto;">
-          <select class="action-select" x-model="scoutCompany" style="flex:1;">
-            <option value="all">All companies</option>
-            <template x-for="c in companies.filter(c => c.enabled)" :key="c.name">
-              <option :value="c.name" x-text="c.name"></option>
-            </template>
-          </select>
-          <select class="action-select" x-show="scoutCompany === 'all'" x-model="scoutMode">
-            <option value="all">All</option>
-            <option value="5">5</option>
-            <option value="10">10</option>
-            <option value="50">50</option>
-          </select>
-          <button class="btn btn-primary" @click="triggerScout()">Run</button>
+        <div class="pipeline-card-step">
+          <div class="pipeline-card-label">② Enrich</div>
+          <div class="pipeline-card-title">
+            Extract details
+            <span class="pipeline-badge" x-show="stats.discovered > 0" x-text="stats.discovered"></span>
+          </div>
+          <div class="pipeline-card-desc">Opens each listing and uses an LLM to extract location, salary, tech stack, and responsibilities.</div>
+          <div class="pipeline-card-controls">
+            <select class="action-select" x-model="enrichMode" style="flex:1;">
+              <option value="all">All</option>
+              <option value="5">5</option>
+              <option value="10">10</option>
+              <option value="50">50</option>
+            </select>
+            <button class="btn btn-primary" @click="triggerEnrich()">Run</button>
+          </div>
+        </div>
+        <div class="pipeline-card-step">
+          <div class="pipeline-card-label">③ Evaluate</div>
+          <div class="pipeline-card-title">
+            Score &amp; triage
+            <span class="pipeline-badge" x-show="stats.parsed > 0" x-text="stats.parsed"></span>
+          </div>
+          <div class="pipeline-card-desc">Scores each role against your profile across fit, location, seniority, and compensation. Auto-matches or rejects based on thresholds.</div>
+          <div class="pipeline-card-controls">
+            <select class="action-select" x-model="evaluateMode" style="flex:1;">
+              <option value="all">All</option>
+              <option value="5">5</option>
+              <option value="10">10</option>
+              <option value="50">50</option>
+            </select>
+            <button class="btn btn-primary" @click="triggerEvaluate()">Run</button>
+          </div>
         </div>
       </div>
-      <div style="flex:1; padding:14px 18px; border-right:1px solid var(--border-color); display:flex; flex-direction:column; gap:8px;">
-        <div>
-          <div style="font-size:0.72rem; font-weight:700; color:var(--accent-primary); letter-spacing:0.05em; text-transform:uppercase; margin-bottom:4px;">② Enrich</div>
-          <div style="font-size:0.82rem; font-weight:600; color:var(--text-primary); margin-bottom:3px;">Extract details</div>
-          <div style="font-size:0.75rem; color:var(--text-secondary); line-height:1.4;">Opens each listing and uses an LLM to extract location, salary, tech stack, and responsibilities.</div>
-        </div>
-        <div style="display:flex; gap:6px; margin-top:auto;">
-          <select class="action-select" x-model="enrichMode" style="flex:1;">
-            <option value="all">All</option>
-            <option value="5">5</option>
-            <option value="10">10</option>
-            <option value="50">50</option>
-          </select>
-          <button class="btn btn-primary" @click="triggerEnrich()">Run</button>
-        </div>
+      <div class="pipeline-secondary">
+        <span>Undo all</span>
+        <select class="action-select" x-model="undoState">
+          <option value="review">Review</option>
+          <option value="match">Match</option>
+          <option value="rejected">Rejected</option>
+          <option value="archived">Archived</option>
+          <option value="applied">Applied</option>
+          <option value="parsed">Enriched</option>
+        </select>
+        <button class="btn btn-ghost" @click="undoByState(undoState)">Undo</button>
       </div>
-      <div style="flex:1; padding:14px 18px; display:flex; flex-direction:column; gap:8px;">
-        <div>
-          <div style="font-size:0.72rem; font-weight:700; color:var(--accent-primary); letter-spacing:0.05em; text-transform:uppercase; margin-bottom:4px;">③ Evaluate</div>
-          <div style="font-size:0.82rem; font-weight:600; color:var(--text-primary); margin-bottom:3px;">Score &amp; triage</div>
-          <div style="font-size:0.75rem; color:var(--text-secondary); line-height:1.4;">Scores each role against your profile across fit, location, seniority, and compensation. Auto-matches or rejects based on thresholds.</div>
-        </div>
-        <div style="display:flex; gap:6px; margin-top:auto;">
-          <select class="action-select" x-model="evaluateMode" style="flex:1;">
-            <option value="all">All</option>
-            <option value="5">5</option>
-            <option value="10">10</option>
-            <option value="50">50</option>
-          </select>
-          <button class="btn btn-primary" @click="triggerEvaluate()">Run</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Undo row -->
-    <div style="display:flex; justify-content:flex-end; align-items:center; gap:6px; margin-bottom:var(--padding-md);">
-      <span style="font-size:0.75rem; color:var(--text-secondary);">Undo all</span>
-      <select class="action-select" x-model="undoState">
-        <option value="review">Review</option>
-        <option value="match">Match</option>
-        <option value="rejected">Rejected</option>
-        <option value="archived">Archived</option>
-        <option value="applied">Applied</option>
-        <option value="parsed">Enriched</option>
-      </select>
-      <button class="btn btn-ghost" @click="undoByState(undoState)">Undo</button>
     </div>
 
     <!-- Running Tasks Panel -->
@@ -1754,9 +1853,6 @@
               <span class="task-elapsed" x-text="formatElapsed(task, now)"></span>
               <template x-if="task.status !== 'running'">
                 <span class="task-countdown" x-text="taskCountdown(task, now)"></span>
-              </template>
-              <template x-if="task.status !== 'running'">
-                <button class="task-dismiss" @click="dismissTask(task.id)" title="Dismiss">×</button>
               </template>
             </div>
             <template x-if="task.status === 'running' && task.progress_total != null && task.progress_total > 0">
@@ -1784,6 +1880,11 @@
                 </template>
               </div>
             </template>
+            <template x-if="task.status !== 'running'">
+              <div class="task-item-actions">
+                <button class="btn-ghost-danger" @click="dismissTask(task.id)">Delete</button>
+              </div>
+            </template>
           </div>
         </template>
       </div>
@@ -1794,7 +1895,9 @@
       <h3 style="font-size:1rem;"
           x-text="filteredJobs.length + ' Roles' + (visibleCount < filteredJobs.length ? ' (showing ' + visibleCount + ')' : '')"></h3>
       <div class="sort-bar" style="display:flex; gap:8px; align-items:center;">
-        <span style="font-size:0.8rem; color:var(--text-secondary);">Sort:</span>
+        <span class="sort-btn" :class="{active: favoritesOnly}" @click="favoritesOnly = !favoritesOnly"
+              :title="favoritesOnly ? 'Show all jobs' : 'Show favorites only'">★ Favorites</span>
+        <span style="font-size:0.8rem; color:var(--text-secondary); margin-left:4px;">Sort:</span>
         <span class="sort-btn" :class="{active: sortKey==='updated_at'}" @click="setSort('updated_at')">Last updated</span>
         <span class="sort-btn" :class="{active: sortKey==='score'}"     @click="setSort('score')">Score</span>
         <span class="sort-btn" :class="{active: sortKey==='title'}"     @click="setSort('title')">Title</span>
@@ -1842,12 +1945,6 @@
               <span class="badge score-badge"
                     x-show="(job.final_score ?? job.score) != null"
                     x-text="((job.final_score ?? job.score) != null) ? (job.final_score ?? job.score).toFixed(1) + '/10' : ''"></span>
-              <button class="btn-delete"
-                      :class="{ armed: job._armedDelete, error: job._deleteError }"
-                      @click.stop="job._armedDelete ? confirmDelete(job, $event) : armDelete(job, $event)"
-                      @click.outside="job._armedDelete = false"
-                      :title="job._armedDelete ? 'Click again to permanently delete' : 'Remove this job'"
-                      x-text="job._armedDelete ? 'Confirm?' : '×'"></button>
             </div>
           </div>
 
@@ -1878,6 +1975,11 @@
 
           <!-- Card actions -->
           <div class="job-actions" @click.stop>
+            <button class="btn btn-ghost btn-sm"
+                    :class="{ active: job.favorited }"
+                    :title="job.favorited ? 'Remove from favorites' : 'Add to favorites'"
+                    @click="toggleFavorite(job)"
+                    x-text="job.favorited ? '★' : '☆'"></button>
             <button class="btn btn-secondary btn-sm"
                     x-show="job.state === 'discovered'"
                     @click="enrichJob(job.id)">Enrich</button>
@@ -1899,6 +2001,13 @@
             <button class="btn btn-ghost btn-sm"
                     x-show="job.state !== 'discovered'"
                     @click="undoJob(job.id)">Undo</button>
+            <button class="btn-delete"
+                    style="margin-left:auto;"
+                    :class="{ armed: job._armedDelete, error: job._deleteError }"
+                    @click.stop="job._armedDelete ? confirmDelete(job, $event) : armDelete(job, $event)"
+                    @click.outside="job._armedDelete = false"
+                    :title="job._armedDelete ? 'Click again to permanently delete' : 'Remove this job'"
+                    x-text="job._armedDelete ? 'Confirm?' : 'Delete'"></button>
           </div>
 
           <!-- Reject prompt -->
@@ -2790,6 +2899,7 @@
         dismissedTaskIds: {},
         search: '',
         statusFilter: 'all',
+        favoritesOnly: false,
         expandedJobId: null,
         scoutCompany: 'all',
         scoutMode: 'all',
@@ -2878,7 +2988,8 @@
               || (j.company || '').toLowerCase().includes(q)
             const matchStatus = this.statusFilter === 'all'
               || (this.statusFilter === 'failed' ? j.status === 'failed' : j.state === this.statusFilter)
-            return matchSearch && matchStatus
+            const matchFavorites = !this.favoritesOnly || j.favorited
+            return matchSearch && matchStatus && matchFavorites
           })
           const key = this.sortKey
           const asc = this.sortAsc
@@ -3173,6 +3284,14 @@
             job._deleteError = true
             setTimeout(() => { job._deleteError = false }, 1500)
           }
+        },
+
+        async toggleFavorite(job) {
+          try {
+            const r = await fetch(`/api/jobs/${job.id}/favorite`, { method: 'PATCH' })
+            const d = await r.json()
+            if (d.ok) job.favorited = d.favorited
+          } catch(e) { console.error('toggleFavorite failed', e) }
         },
 
         async setJobState(jobId, state, reason) {
