@@ -7,13 +7,14 @@ from datetime import datetime
 # States whose predecessor is unambiguous (fully determined by the pipeline).
 _DETERMINISTIC_PREV: dict[str, str] = {
     "parsed": "discovered",
-    "match": "parsed",
     "review": "parsed",
 }
 
 # States that can be reached from multiple predecessors.
 # These require a `prev_state` field written at transition time.
-_AMBIGUOUS_STATES: frozenset[str] = frozenset({"archived", "rejected", "applied"})
+# `match` is included here because it can be reached from `parsed` (pipeline)
+# or from `review` (manual promotion) — prev_state field disambiguates.
+_AMBIGUOUS_STATES: frozenset[str] = frozenset({"archived", "rejected", "applied", "match"})
 
 
 class StateMachine:

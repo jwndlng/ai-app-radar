@@ -1890,6 +1890,9 @@
             <button class="btn btn-success btn-sm"
                     x-show="job.state === 'match' || job.state === 'review'"
                     @click="setJobState(job.id, 'applied')">Apply</button>
+            <button class="btn btn-primary btn-sm"
+                    x-show="job.state === 'review'"
+                    @click="setJobState(job.id, 'match')">Promote to match</button>
             <button class="btn btn-danger btn-sm"
                     x-show="job.state !== 'rejected'"
                     @click.stop="openRejectPrompt(job.id)">Reject</button>

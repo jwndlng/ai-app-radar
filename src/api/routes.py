@@ -10,7 +10,7 @@ from api.deps import PipelineRunner, get_registry, get_runner
 from api.tasks import TaskRegistry, make_event_callback, make_progress_callback, run_with_tracking
 from core.state_machine import StateMachine
 
-_ALLOWED_MANUAL_STATES = {"rejected", "applied"}
+_ALLOWED_MANUAL_STATES = {"rejected", "applied", "match"}
 
 router = APIRouter()
 
