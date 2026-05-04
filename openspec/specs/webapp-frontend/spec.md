@@ -16,50 +16,82 @@ The frontend SHALL be a single-page application served from `static/index.html` 
 - **THEN** an empty-state message is displayed instead of a blank list
 
 ### Requirement: Top action bar for bulk pipeline operations
-The frontend SHALL display a persistent top action bar with controls for scout, enrich, and evaluate operations. Scout SHALL have an optional text input (empty = all companies, filled = single company). Enrich and evaluate SHALL each have a dropdown with options: All, 5, 10, 50.
+The frontend SHALL display a persistent pipeline action area with three
+stage cards (Scout, Enrich, Evaluate) laid out as named CSS classes
+(not inline styles). Each card SHALL display a pending-job count badge
+showing how many jobs are queued for that stage; the badge SHALL be
+hidden when the count is zero. Scout SHALL have a company selector
+dropdown and a limit dropdown (shown when "All companies" is selected).
+Enrich and Evaluate SHALL each have a limit dropdown (All, 5, 10, 50).
+A secondary actions row SHALL appear below the stage cards, visually
+separated by a divider, and SHALL contain the Undo all control.
 
 #### Scenario: Scout all triggered
-- **WHEN** the scout input is empty and the Scout button is clicked
+- **WHEN** the scout company selector is set to "All companies" and the Run button is clicked
 - **THEN** `POST /api/scout` is called and the new task appears in the Running Tasks panel
 
 #### Scenario: Scout single company triggered
-- **WHEN** the user types a company name in the scout input and clicks Scout
-- **THEN** `POST /api/scout/{company_name}` is called with the entered name
+- **WHEN** the user selects a specific company from the scout dropdown and clicks Run
+- **THEN** `POST /api/scout/{company_name}` is called with the selected company name
 
 #### Scenario: Enrich with limit triggered
-- **WHEN** the user selects "10" from the enrich dropdown and clicks Enrich
+- **WHEN** the user selects "10" from the enrich limit dropdown and clicks Run
 - **THEN** `POST /api/enrich/next` is called with body `{"limit": 10}`
 
 #### Scenario: Enrich all triggered
-- **WHEN** "All" is selected from the enrich dropdown and Enrich is clicked
+- **WHEN** "All" is selected from the enrich limit dropdown and Run is clicked
 - **THEN** `POST /api/enrich/all` is called
 
 #### Scenario: Evaluate with limit triggered
-- **WHEN** the user selects "50" from the evaluate dropdown and clicks Evaluate
+- **WHEN** the user selects "50" from the evaluate limit dropdown and clicks Run
 - **THEN** `POST /api/evaluate/next` is called with body `{"limit": 50}`
 
 #### Scenario: Evaluate all triggered
-- **WHEN** "All" is selected from the evaluate dropdown and Evaluate is clicked
+- **WHEN** "All" is selected from the evaluate limit dropdown and Run is clicked
 - **THEN** `POST /api/evaluate/all` is called
 
+#### Scenario: Pending badge hidden when queue is empty
+- **WHEN** a stage has zero jobs queued
+- **THEN** the pending count badge for that stage is not displayed
+
+#### Scenario: Pending badge shown when jobs are queued
+- **WHEN** one or more jobs are in a stage's input state (e.g. discovered jobs pending enrich)
+- **THEN** the badge displays the count next to the stage title
+
 ### Requirement: Running Tasks panel shows live operation status
-The frontend SHALL display a Running Tasks panel listing active and recently completed operations. Each entry SHALL show the operation name, status (running / done / failed), and elapsed or completion time. The panel SHALL poll `GET /api/tasks` every 2 seconds.
+The frontend SHALL display a Running Tasks panel listing active and recently
+completed operations. Each entry SHALL show the operation name, status
+(running / done / failed), elapsed or completion time, and — when the task
+is done or failed — per-item log events (scout: per-company results;
+enrich: summary count; evaluate: per-job score and routing decision).
+Completed tasks SHALL auto-dismiss after 120 seconds. A "Delete" button
+SHALL appear in a dedicated actions row at the bottom of each completed
+or failed task entry; clicking it SHALL immediately remove the entry.
+No dismiss control SHALL appear on running tasks.
 
 #### Scenario: Running task appears after triggering operation
 - **WHEN** the user triggers any pipeline operation
-- **THEN** within 2 seconds a new entry appears in the Running Tasks panel with status "running"
+- **THEN** within 5 seconds a new entry appears in the Running Tasks panel with status "running"
 
-#### Scenario: Task transitions to done
+#### Scenario: Task transitions to done with results
 - **WHEN** a running task completes
-- **THEN** the panel entry updates to show status "done" and the job list is automatically refreshed
+- **THEN** the panel entry updates to show status "done", the per-item log events are displayed below, and the job list is automatically refreshed
 
-#### Scenario: Failed task shown in red
+#### Scenario: Failed task shown with error
 - **WHEN** a pipeline operation fails
 - **THEN** the task entry is shown with status "failed" and an error indicator
 
-#### Scenario: Empty tasks panel
-- **WHEN** no tasks have been run yet
-- **THEN** the Running Tasks panel shows a placeholder message
+#### Scenario: Completed task auto-dismissed
+- **WHEN** a task has been in done or failed state for 120 seconds
+- **THEN** the task entry is removed from the panel automatically
+
+#### Scenario: User deletes completed task
+- **WHEN** the user clicks "Delete" on a completed or failed task entry
+- **THEN** the entry is immediately removed from the panel
+
+#### Scenario: Delete button absent on running tasks
+- **WHEN** a task is in running state
+- **THEN** no Delete button is shown for that task entry
 
 ### Requirement: Job list with search and status filter
 The frontend SHALL display the job list with a search input (filters by title and company) and status filter pills (All, Discovered, Parsed, Match, Review, Archived, Applied). Filtering SHALL be client-side with no additional API calls.
@@ -123,3 +155,18 @@ The frontend SHALL support dark and light themes toggleable by the user, persist
 #### Scenario: Dark mode persists across reload
 - **WHEN** the user enables dark mode and reloads the page
 - **THEN** the page loads in dark mode
+
+### Requirement: Fit reasons visible on list card
+The job list card SHALL render the `reasons` array as a plain bulleted list below the score-tag row whenever the job has been evaluated and `reasons` is non-empty. The list SHALL use the same font size as the detail drawer's Fit Reasons section (`0.85rem`). The section SHALL be hidden (via `x-show`) when `reasons` is absent or empty, producing no layout shift for unevaluated jobs.
+
+#### Scenario: Evaluated job shows fit reasons on card
+- **WHEN** a job card is rendered and the job has a non-empty `reasons` array
+- **THEN** the reasons are displayed as a bulleted list below the score tags, without requiring the card to be expanded
+
+#### Scenario: Unevaluated job shows no reasons section
+- **WHEN** a job card is rendered and the job has no `reasons` array or an empty array
+- **THEN** no reasons section is visible and the card height is unchanged
+
+#### Scenario: Reasons match detail drawer content
+- **WHEN** the user compares the fit reasons on the card to those in the expanded detail drawer
+- **THEN** the same bullet points appear in both places

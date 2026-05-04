@@ -540,6 +540,15 @@
     }
     .btn-success:hover { background: hsl(140, 50%, 32%); border-color: hsl(140, 50%, 22%); }
 
+    .btn-applied {
+      background: hsl(250, 70%, 52%);
+      color: white;
+      border-color: hsl(250, 70%, 42%);
+    }
+    .btn-applied:hover { background: hsl(250, 70%, 44%); border-color: hsl(250, 70%, 34%); }
+    [data-theme="dark"] .btn-applied { background: hsl(250, 65%, 58%); border-color: hsl(250, 65%, 48%); }
+    [data-theme="dark"] .btn-applied:hover { background: hsl(250, 65%, 50%); }
+
     .btn-danger {
       background: hsl(0, 65%, 97%);
       color: hsl(0, 65%, 45%);
@@ -553,6 +562,10 @@
       border-color: var(--border-color);
     }
     .btn-ghost:hover { color: var(--text-primary); border-color: color-mix(in srgb, var(--border-color) 60%, currentColor); }
+    .btn-ghost.favorited { color: hsl(45, 95%, 45%); border-color: transparent; }
+    .btn-ghost.favorited:hover { color: hsl(45, 95%, 38%); border-color: transparent; }
+    [data-theme="dark"] .btn-ghost.favorited { color: hsl(45, 95%, 58%); }
+    [data-theme="dark"] .btn-ghost.favorited:hover { color: hsl(45, 95%, 68%); }
 
     /* ── Pipeline Action Cards ─────────────────────────────────────────────── */
     .pipeline-card {
@@ -1766,9 +1779,9 @@
     <div class="pipeline-card">
       <div class="pipeline-card-steps">
         <div class="pipeline-card-step">
-          <div class="pipeline-card-label">① Scout</div>
+          <div class="pipeline-card-label">① Discovery</div>
           <div class="pipeline-card-title">
-            Discover roles
+            Find roles
             <span class="pipeline-badge" x-show="stats.discovered > 0" x-text="stats.discovered"></span>
           </div>
           <div class="pipeline-card-desc">Scans company career pages and ATS APIs for new postings that match your title filters.</div>
@@ -1824,7 +1837,7 @@
         </div>
       </div>
       <div class="pipeline-secondary">
-        <span>Undo all</span>
+        <span>Revert all</span>
         <select class="action-select" x-model="undoState">
           <option value="review">Review</option>
           <option value="match">Match</option>
@@ -1833,7 +1846,7 @@
           <option value="applied">Applied</option>
           <option value="parsed">Enriched</option>
         </select>
-        <button class="btn btn-ghost" @click="undoByState(undoState)">Undo</button>
+        <button class="btn btn-ghost" @click="undoByState(undoState)">Revert</button>
       </div>
     </div>
 
@@ -1976,7 +1989,7 @@
           <!-- Card actions -->
           <div class="job-actions" @click.stop>
             <button class="btn btn-ghost btn-sm"
-                    :class="{ active: job.favorited }"
+                    :class="{ favorited: job.favorited }"
                     :title="job.favorited ? 'Remove from favorites' : 'Add to favorites'"
                     @click="toggleFavorite(job)"
                     x-text="job.favorited ? '★' : '☆'"></button>
@@ -1989,10 +2002,10 @@
             <button class="btn btn-primary btn-sm"
                     x-show="job.state === 'discovered' || job.state === 'parsed'"
                     @click="runJob(job.id)">Run All</button>
-            <button class="btn btn-success btn-sm"
+            <button class="btn btn-applied btn-sm"
                     x-show="job.state === 'match' || job.state === 'review'"
                     @click="setJobState(job.id, 'applied')">Apply</button>
-            <button class="btn btn-primary btn-sm"
+            <button class="btn btn-success btn-sm"
                     x-show="job.state === 'review'"
                     @click="setJobState(job.id, 'match')">Promote to match</button>
             <button class="btn btn-danger btn-sm"
@@ -2000,7 +2013,8 @@
                     @click.stop="openRejectPrompt(job.id)">Reject</button>
             <button class="btn btn-ghost btn-sm"
                     x-show="job.state !== 'discovered'"
-                    @click="undoJob(job.id)">Undo</button>
+                    @click="job.state === 'parsed' ? reEnrich(job.id) : reEvaluate(job.id)"
+                    x-text="job.state === 'parsed' ? 'Re-enrich' : 'Re-evaluate'"></button>
             <button class="btn-delete"
                     style="margin-left:auto;"
                     :class="{ armed: job._armedDelete, error: job._deleteError }"
@@ -2056,11 +2070,20 @@
             <!-- Score + archetype + sub-score boxes -->
             <div class="detail-section" x-show="(job.final_score ?? job.score) != null" style="grid-column: span 2;">
               <h4>Strategic Fit</h4>
-              <div style="display:flex; align-items:baseline; gap:10px; margin-bottom:10px;">
-                <span style="font-size:1.3rem; font-weight:700; color:var(--accent-primary);"
-                      x-text="((job.final_score ?? job.score) != null ? (job.final_score ?? job.score).toFixed(1) : 'N/A') + '/10'"></span>
-                <span x-show="job.archetype" style="font-size:0.8rem; color:var(--text-secondary);" x-text="job.archetype"></span>
+              <!-- Fit Score — full-width box with score, archetype, and reasons -->
+              <div style="background:var(--bg-card); border:1px solid var(--border-color); border-radius:var(--radius-md); padding:12px 16px; margin-bottom:8px;">
+                <div style="font-size:0.72rem; font-weight:700; color:var(--accent-primary); letter-spacing:0.05em; text-transform:uppercase; margin-bottom:6px;">Fit Score</div>
+                <div style="display:flex; align-items:baseline; gap:10px; margin-bottom:8px;">
+                  <span style="font-size:1.1rem; font-weight:700; color:var(--text-primary);" x-text="(job.final_score ?? job.score).toFixed(1) + '/10'"></span>
+                  <span x-show="job.archetype" style="font-size:0.8rem; color:var(--text-secondary);" x-text="job.archetype"></span>
+                </div>
+                <template x-if="job.reasons && job.reasons.length">
+                  <ul style="font-size:0.75rem; color:var(--text-secondary); line-height:1.5; padding-left:16px; margin:0;">
+                    <template x-for="r in (job.reasons || [])"><li x-text="r"></li></template>
+                  </ul>
+                </template>
               </div>
+              <!-- Sub-score boxes: Location | Seniority | Compensation -->
               <template x-if="job.location_score != null || job.seniority_score != null || job.compensation_score != null">
                 <div style="display:flex; gap:0; background:var(--bg-card); border:1px solid var(--border-color); border-radius:var(--radius-md); overflow:hidden;">
                   <template x-if="job.location_score != null">
@@ -2086,17 +2109,6 @@
                   </template>
                 </div>
               </template>
-            </div>
-
-            <!-- Fit Reasons -->
-            <div class="detail-section" x-show="job.reasons && job.reasons.length" style="grid-column: span 2;">
-              <h4>Fit Reasons</h4>
-              <div class="expandable-block" :id="'fit-' + job.id">
-                <ul style="font-size:0.85rem; padding-left:16px; margin:0;">
-                  <template x-for="r in (job.reasons || [])"><li x-text="r"></li></template>
-                </ul>
-              </div>
-              <button class="expand-btn" @click.stop="toggleBlock('fit-' + job.id)">▼ Show more</button>
             </div>
 
             <!-- Description / Summary -->
@@ -3265,6 +3277,20 @@
           } catch(e) { console.error('undoJob failed', e) }
         },
 
+        async reEnrich(jobId) {
+          try {
+            await fetch(`/api/jobs/${jobId}/undo`, { method: 'POST' })
+            await this.fireOperation(`/api/enrich/${jobId}`)
+          } catch(e) { console.error('reEnrich failed', e) }
+        },
+
+        async reEvaluate(jobId) {
+          try {
+            await fetch(`/api/jobs/${jobId}/undo`, { method: 'POST' })
+            await this.fireOperation(`/api/evaluate/${jobId}`)
+          } catch(e) { console.error('reEvaluate failed', e) }
+        },
+
         armDelete(job, event) {
           event.stopPropagation()
           job._armedDelete = true
@@ -3372,12 +3398,12 @@
 
         formatOperation(op) {
           const labels = {
-            scout_all: 'Scout All', enrich_all: 'Enrich All', evaluate_all: 'Evaluate All'
+            scout_all: 'Discovery All', enrich_all: 'Enrich All', evaluate_all: 'Evaluate All'
           }
           if (labels[op]) return labels[op]
           if (op.startsWith('enrich_next_')) return `Enrich Next ${op.slice(12)}`
           if (op.startsWith('evaluate_next_')) return `Evaluate Next ${op.slice(14)}`
-          if (op.startsWith('scout_')) return `Scout: ${op.slice(6)}`
+          if (op.startsWith('scout_')) return `Discovery: ${op.slice(6)}`
           if (op.startsWith('enrich_')) return 'Enrich Job'
           if (op.startsWith('evaluate_')) return 'Evaluate Job'
           if (op.startsWith('run_')) return 'Run Job'

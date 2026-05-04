@@ -141,3 +141,22 @@ re-discovered more than once, a quiet "re-posted N×" note is shown alongside it
 #### Scenario: No sources array
 - **WHEN** a job has no sources array
 - **THEN** a fallback "Listing" link using job.url is shown
+
+### Requirement: Fit score box in Strategic Fit section
+The detail drawer's Strategic Fit section SHALL render the overall fit score as a dedicated score box positioned first (leftmost) in the sub-score box row, using the identical visual style (same container, padding, border, and typography) as the Location, Seniority, and Compensation boxes. The box SHALL display the label "Fit Score", the `final_score ?? score` value formatted as `X.X/10`, and the `archetype` string in the reason slot. The plain-text fit score heading that previously appeared above the row SHALL be removed.
+
+#### Scenario: Fit score box renders before sub-score boxes
+- **WHEN** the user expands a job card with an evaluated fit score
+- **THEN** a Fit Score box appears as the first (leftmost) item in the sub-score row, followed by Location, Seniority, and Compensation boxes
+
+#### Scenario: Fit score box shows archetype
+- **WHEN** a job has both a fit score and an archetype value
+- **THEN** the Fit Score box displays the archetype string in the lower text slot below the numeric score
+
+#### Scenario: Fit score box shown without archetype
+- **WHEN** a job has a fit score but no archetype value
+- **THEN** the Fit Score box is still rendered with the score; the archetype slot is empty
+
+#### Scenario: No fit score hides the box
+- **WHEN** a job has no `score` or `final_score` value
+- **THEN** the Fit Score box is not rendered and the Strategic Fit section is hidden
