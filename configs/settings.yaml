@@ -9,7 +9,7 @@ enrich:
   model: null
 evaluate:
   auto_reject_threshold: 4
-  auto_match_threshold: 8.5
+  auto_match_threshold: 7.5
   location_reject_threshold: 2
   scoring_weights:
     fit: 0.5

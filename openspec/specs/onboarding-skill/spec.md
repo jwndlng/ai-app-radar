@@ -127,29 +127,27 @@ The skill SHALL print a concise summary after completing (or aborting) onboardin
 - **WHEN** verification fails or the user aborts due to a duplicate
 - **THEN** the skill explains what happened and what the user can do next (e.g., check the slug manually, try a different URL)
 
-### Requirement: Batch onboarding skill
-A `/app:batch-onboard` skill SHALL process multiple companies through the same discovery + classify + write flow as `/app:onboard-company`, operating on either:
-- A list of company names passed as input, or
-- All entries in `configs/companies.json` matching `--source <value>` that have `enabled == false` and no `status` set
+### Requirement: Skill logic lives in .claude/skills/, commands are thin wrappers
+All app skill instruction bodies SHALL reside in `.claude/skills/<name>/SKILL.md`. The corresponding `.claude/commands/app/<name>.md` SHALL contain only a brief description and a single instruction directing Claude to invoke the named skill. No instruction logic SHALL be duplicated in the command file.
 
-The skill SHALL process entries in batches of 20 (configurable via `--batch N`), writing `configs/companies.json` after each entry. It SHALL skip entries that already have `status` set.
+#### Scenario: Command invokes skill
+- **WHEN** a user runs `/app:setup` or `/app:onboard-company`
+- **THEN** Claude reads the corresponding SKILL.md from `.claude/skills/` for the full instructions
 
-#### Scenario: Batch by source
-- **WHEN** the skill is invoked with `--source zurich_valley`
-- **THEN** it SHALL process up to the batch limit of entries where `source == "zurich_valley"`, `enabled == false`, and no `status` is set
+#### Scenario: Logic update requires one file change
+- **WHEN** the setup logic changes
+- **THEN** only `.claude/skills/app-setup/SKILL.md` needs updating; the command wrapper requires no change
 
-#### Scenario: Any source value supported
-- **WHEN** the skill is invoked with `--source <any_value>`
-- **THEN** it SHALL filter by that source value, making the mechanism reusable for any future bulk import
+### Requirement: Obsolete app commands are removed
+`.claude/commands/app/report.md`, `.claude/commands/app/sync.md`, and `.claude/commands/app/batch-onboard.md` SHALL be deleted. Their functionality is covered by `make sync`, `make run`, and the web dashboard respectively.
 
-#### Scenario: Batch from name list
-- **WHEN** the skill is invoked with a list of company names
-- **THEN** it SHALL run the full onboard flow for each name and append results to `configs/companies.json`
+#### Scenario: Removed commands are absent
+- **WHEN** a Claude Code user browses available commands
+- **THEN** `/app:report`, `/app:sync`, and `/app:batch-onboard` are not present
 
-#### Scenario: Batch interrupted mid-run
-- **WHEN** the session ends before the batch is complete
-- **THEN** all entries processed before interruption SHALL already be persisted; resuming runs the skill again to continue
+### Requirement: Obsolete skills are removed
+`.claude/skills/create_report/` and `.claude/skills/evaluate_roles/` SHALL be deleted. These skills are no longer referenced or used.
 
-#### Scenario: Progress summary
-- **WHEN** a batch completes
-- **THEN** the skill SHALL print counts: enabled (success), needs_manual_review, ats_unsupported, and entries with the given source still remaining
+#### Scenario: Removed skills are absent
+- **WHEN** Claude Code loads available skills
+- **THEN** `create_report` and `evaluate_roles` skills are not present

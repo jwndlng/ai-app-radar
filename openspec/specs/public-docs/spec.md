@@ -14,30 +14,42 @@ The repository SHALL include a LICENSE file containing the MIT license text with
 - **THEN** a LICENSE file is present containing MIT license text
 
 ### Requirement: README accurately describes the current tool
-The README.md SHALL describe the current web-based pipeline (not the old CLI), include a beta disclaimer, cover quick start, pipeline overview, configuration, and contributing guidance.
+The README.md SHALL describe the current web-based pipeline, include a beta disclaimer, and present three distinct onboarding paths in the Getting Started section: (1) Claude Code using `/app:setup`, (2) Gemini CLI triggering the `app-setup` skill, and (3) manual setup following explicit shell commands. The quick start SHALL NOT describe `cp configs/companies.example.json configs/companies.json` (that file is deleted) and SHALL NOT reference `configs/companies.local.json`.
 
 #### Scenario: README reflects current architecture
 - **WHEN** a new user reads README.md
-- **THEN** they see the web UI as the primary interface, not a CLI report command
+- **THEN** they see the web UI as the primary interface and three clearly labelled onboarding paths
 
 #### Scenario: Beta disclaimer is visible
 - **WHEN** a user opens README.md
-- **THEN** a clearly visible disclaimer states this is an early-stage hobby project and usage is at the user's own risk
+- **THEN** a clearly visible disclaimer states this is an early-stage hobby project
 
-#### Scenario: Quick start is actionable
-- **WHEN** a user follows the Quick Start section
-- **THEN** they can get the web UI running with `uv sync`, `uv run playwright install chromium`, and `make run` (or equivalent)
+#### Scenario: Claude Code path is documented
+- **WHEN** a user reads the Getting Started section
+- **THEN** they see instructions to open the repo in Claude Code and run `/app:setup`
 
-#### Scenario: Pipeline stages are explained
-- **WHEN** a user reads the pipeline section
-- **THEN** Scout, Enrich, and Evaluate stages are each described with their purpose and configuration file
+#### Scenario: Gemini CLI path is documented
+- **WHEN** a user reads the Getting Started section
+- **THEN** they see instructions to open the repo in Gemini CLI and ask it to set up the application
 
-### Requirement: Stale internal docs are removed
-AGENT.md, SCOUT.md, and EVALUATION.md SHALL be deleted from the repository as they describe an architecture that no longer exists.
+#### Scenario: Manual path is documented
+- **WHEN** a user reads the Getting Started section
+- **THEN** they see explicit shell commands: `uv sync`, `playwright install chromium`, copy `.envrc.example` to `.envrc`, copy `profile.example.yaml` to `profile.yaml`, `make run`
 
-#### Scenario: Old docs are absent
-- **WHEN** a user browses the repository
-- **THEN** AGENT.md, SCOUT.md, and EVALUATION.md are not present
+#### Scenario: No companies.local.json references
+- **WHEN** a user reads README.md
+- **THEN** `companies.local.json` does not appear anywhere in the document
+
+### Requirement: .envrc.example is committed
+The repository SHALL include a `.envrc.example` file at the root showing all supported environment variable options with comments. It SHALL be the committed template for manual-path users, following the same copy-and-edit pattern as `configs/profile.example.yaml`.
+
+#### Scenario: envrc.example present in repo
+- **WHEN** a user clones the repository
+- **THEN** `.envrc.example` is present and shows `GEMINI_API_KEY`, `ANTHROPIC_API_KEY`, `LITELLM_BASE_URL`, `LITELLM_API_KEY`, `ADK_MODEL`, `PYTHONPATH`, and per-flow model override variables with comments explaining each
+
+#### Scenario: Manual-path user copies template
+- **WHEN** a user follows the manual setup path
+- **THEN** they can run `cp .envrc.example .envrc` and fill in their key, matching the same pattern as the profile setup
 
 ### Requirement: CONTRIBUTING.md sets contributor expectations
 The repository SHALL include a CONTRIBUTING.md that describes how to report issues, submit PRs, and sets an explicit expectation of response latency for a hobby project.

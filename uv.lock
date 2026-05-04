@@ -23,7 +23,7 @@ wheels = [
 ]
 
 [[package]]
-name = "agentic-application-tracker"
+name = "ai-app-radar"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [

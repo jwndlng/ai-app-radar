@@ -5427,6 +5427,14 @@
       "enabled": true,
       "category": "Cloud",
       "employees": "50-200"
+    },
+    {
+      "name": "Zama",
+      "description": "Builds open-source fully homomorphic encryption (FHE) tools and infrastructure for privacy-preserving computation.",
+      "careers_url": "https://jobs.zama.org/",
+      "scan_method": "agent_review",
+      "enabled": true,
+      "category": "Blockchain"
     }
   ]
 }
