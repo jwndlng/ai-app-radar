@@ -1,0 +1,20 @@
+services:
+  app:
+    build: .
+    image: ghcr.io/jwndlng/ai-app-radar:latest
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./configs:/app/configs
+      - ./artifacts:/app/artifacts
+    environment:
+      - ADK_MODEL
+      - GEMINI_API_KEY
+      - ANTHROPIC_API_KEY
+      - GROQ_API_KEY
+      - LITELLM_API_KEY
+      - LITELLM_BASE_URL
+      - SCOUT_MODEL
+      - ENRICH_MODEL
+      - EVALUATE_MODEL
+    restart: unless-stopped

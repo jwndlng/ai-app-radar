@@ -1,0 +1,15 @@
+.venv/
+artifacts/
+logs/
+configs/profile.yaml
+tests/
+tuning/
+openspec/
+.github/
+.claude/
+.gemini/
+*.pyc
+__pycache__/
+.python-version
+.envrc
+*.md
