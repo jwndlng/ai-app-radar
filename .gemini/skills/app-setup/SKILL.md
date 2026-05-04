@@ -4,6 +4,9 @@
 name: app-setup
 description: Use this skill when the user wants to set up the agentic application tracker for the first time, re-configure LLM keys, regenerate their profile, add companies, or run the first scout.
 ---
+
+Interactive onboarding wizard. Takes you from a fresh clone to a fully running pipeline in one session. Safe to re-run — detects what is already configured and offers to skip or redo individual steps.
+
 ---
 
 ## Steps
@@ -36,7 +39,59 @@ If not fully configured, proceed with the full onboarding flow below.
 
 ---
 
-### 1. Prerequisite checks
+### 0.5. Choose runtime
+
+Ask the user how they want to run the application:
+
+```
+How would you like to run ai-app-radar?
+
+  1) Docker — recommended
+     No local Python setup needed. Requires Docker Desktop.
+     Just set your API keys and run: docker compose up
+
+  2) Local — advanced
+     Requires Python 3.9+, uv, and Playwright installed on your machine.
+     Use this if you want to develop or modify the code.
+```
+
+Store the choice and branch accordingly throughout the remaining steps:
+- **Docker path**: steps 1-Docker, 2, 3, 4, 5-Docker, 6-Docker
+- **Local path**: steps 1-Local, 2, 3, 4, 5-Local, 6-Local
+
+---
+
+### 1-Docker. Prerequisite check (Docker path)
+
+**Check — Docker installed and running**
+
+```bash
+docker info
+```
+
+If the command fails:
+```
+Docker is not installed or not running.
+Install Docker Desktop from https://www.docker.com/products/docker-desktop/ and start it, then re-run setup.
+```
+Stop.
+
+Check that `docker-compose.yml` exists at the repo root:
+```bash
+ls docker-compose.yml
+```
+
+If absent:
+```
+docker-compose.yml not found. Make sure you are in the project root directory.
+```
+Stop.
+
+Once the check passes, continue to step 2.
+
+---
+
+### 1-Local. Prerequisite checks (Local path)
 
 Run each check in order. For each failure, print the exact fix command and either offer to run it (if safe and automated) or tell the user to run it and come back.
 
@@ -102,6 +157,7 @@ Check `.envrc` for existing LLM keys (see step 0). If keys are already present, 
 
 ```
 Which LLM provider would you like to use?
+(The order here is the recommended setup path for new users)
 
   1) Google Gemini — direct (recommended for new users)
      Get a free key at https://aistudio.google.com/app/apikey
@@ -145,6 +201,7 @@ export ADK_MODEL="anthropic/claude-haiku-4-5"
 Note to user: `claude-haiku-4-5` is chosen as the default to keep costs low. They can change `ADK_MODEL` in `.envrc` to any other model any time.
 
 **Mode 3 — LiteLLM proxy:**
+Only mention this section if the user wants to do it.
 
 Prompt for three values in sequence:
 1. `LITELLM_BASE_URL` — the proxy base URL (e.g. `https://litellm.example.com`)
@@ -167,12 +224,16 @@ direnv allow    # if using direnv
 source .envrc   # without direnv
 ```
 
+Alternatively provide the user "export" commands to run themselves if they prefer not to write to `.envrc`.
+
 Then verify the key is readable:
 ```bash
 printenv GEMINI_API_KEY  # or ANTHROPIC_API_KEY / LITELLM_BASE_URL
 ```
 
 If the output is empty, remind them to run `direnv allow` or `source .envrc` before continuing.
+
+For Docker path users: explain that `docker compose` will automatically pick up env vars that are exported in the current shell, so no additional `.env` file is needed.
 
 ---
 
@@ -217,7 +278,7 @@ If extraction is incomplete (e.g. no email found), note the missing fields but c
 Then ask 4–5 targeting questions:
 
 1. **Target roles**: "What job titles are you targeting? (e.g. Senior Security Engineer, Staff Platform Engineer)"
-2. **Scout keywords**: "List 3–6 keywords for job title filtering (these control which postings the scout picks up, e.g. security, platform, devops)"
+2. **Scout keywords**: "List 3–6 keywords for job title filtering (these control which postings the scout picks up, e.g. security, platform, devops). It's important to understand that those are used for filtering, so security would catch all titles with security, so the broader the filters are the more roles will be found, but the less targeted they will be. You can also add negative filters to exclude certain words (e.g. 'sales', 'marketing')."
 3. **Location preferences**: "Which locations or remote policies are acceptable? (e.g. Berlin, Remote Europe, EMEA, Global)"
 4. **Mission domains**: "Rate your interest 1–10 in any of these (skip ones that don't apply): cloud infrastructure, developer tooling, fintech, AI/ML, healthcare, climate"
 5. **Compensation**: "What's your compensation range (annual, local currency)? e.g. EUR 100k minimum, 120–160k target"
@@ -374,7 +435,28 @@ Stop when the user leaves the input blank or says they are done.
 
 ---
 
-### 5. First scout
+### 5-Docker. First scout (Docker path)
+
+Ask:
+```
+Setup is complete! Would you like to run the first scout now?
+This will start the container and check all your tracked companies for matching roles.
+(Takes 1–5 minutes depending on company count)
+
+  y) Run now
+  n) Skip — I'll run it later
+```
+
+If yes, run:
+```bash
+docker compose run --rm app python -m main scout
+```
+
+Wait for it to complete, then report: "Scout complete — found N new jobs." (parse the scout output for job count)
+
+---
+
+### 5-Local. First scout (Local path)
 
 Ask:
 ```
@@ -395,7 +477,59 @@ Wait for it to complete, then report: "Scout complete — found N new jobs." (pa
 
 ---
 
-### 6. Closing message
+### 6-Docker. Closing message (Docker path)
+
+Print this closing message:
+
+---
+
+**Setup complete!**
+
+**Starting the dashboard**
+
+```bash
+docker compose up
+# → http://localhost:8000
+```
+
+To run in the background:
+```bash
+docker compose up -d
+docker compose logs -f   # follow logs
+docker compose down      # stop
+```
+
+**Running pipeline stages manually**
+
+```bash
+docker compose run --rm app python -m main scout     # discover new roles
+docker compose run --rm app python -m main enrich    # extract metadata
+docker compose run --rm app python -m main evaluate  # score jobs
+docker compose run --rm app python -m main sync      # run all three
+```
+
+**Updating your profile**
+
+You never need to edit `configs/profile.yaml` by hand. Just tell Claude or Gemini:
+- *"I joined Acme Corp as a Staff Engineer in January — update my experience"*
+- *"Add Rust to my strong skills"*
+- *"I'm now targeting Principal-level roles only"*
+
+**Pulling the latest image**
+
+```bash
+docker compose pull
+docker compose up
+```
+
+To add a new company any time:
+```
+/app:onboard-company "Company Name"
+```
+
+---
+
+### 6-Local. Closing message (Local path)
 
 Print this closing message:
 
