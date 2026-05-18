@@ -1,0 +1,75 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+  id-token: write
+  attestations: write
+  packages: write
+
+jobs:
+  attest-and-annotate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Wait for Docker image
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          IMAGE="ghcr.io/${OWNER}/ai-app-radar:${TAG}"
+          for i in $(seq 1 18); do
+            if docker pull "$IMAGE" 2>/dev/null; then
+              echo "Image available: $IMAGE"
+              break
+            fi
+            if [ "$i" -eq 18 ]; then
+              echo "Timed out waiting for image: $IMAGE"
+              exit 1
+            fi
+            echo "Attempt $i/18: image not yet available, waiting 10s..."
+            sleep 10
+          done
+
+      - name: Extract image digest
+        id: digest
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          IMAGE="ghcr.io/${OWNER}/ai-app-radar:${TAG}"
+          DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' "$IMAGE" | cut -d@ -f2)
+          echo "digest=${DIGEST}" >> $GITHUB_OUTPUT
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32  # v4.1.0
+        with:
+          subject-name: ghcr.io/${{ github.repository_owner }}/ai-app-radar
+          subject-digest: ${{ steps.digest.outputs.digest }}
+          push-to-registry: true
+
+      - name: Append Docker pull instructions
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.event.release.tag_name }}
+          REPO: ${{ github.repository }}
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          CURRENT_BODY=$(gh release view "$TAG" --repo "$REPO" --json body --jq '.body')
+          NOTES_FILE=$(mktemp)
+          {
+            printf '%s' "$CURRENT_BODY"
+            printf '\n\n## Docker Image\n\n```\ndocker pull ghcr.io/%s/ai-app-radar:%s\ndocker pull ghcr.io/%s/ai-app-radar:latest\n```\n' \
+              "$OWNER" "$TAG" "$OWNER"
+          } > "$NOTES_FILE"
+          gh release edit "$TAG" --repo "$REPO" --notes-file "$NOTES_FILE"
+          rm -f "$NOTES_FILE"
