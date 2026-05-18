@@ -5435,6 +5435,18 @@
       "scan_method": "agent_review",
       "enabled": true,
       "category": "Blockchain"
+    },
+    {
+      "name": "Deel",
+      "description": "Deel is a global payroll and HR platform that enables companies to hire, pay, and manage employees and contractors in 150+ countries.",
+      "careers_url": "https://jobs.ashbyhq.com/deel",
+      "scan_method": "ashby_api",
+      "scan_method_config": {
+        "slug": "deel"
+      },
+      "enabled": true,
+      "category": "Fintech",
+      "employees": "5000+"
     }
   ]
 }

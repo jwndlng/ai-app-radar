@@ -24,7 +24,17 @@ class ApplicationStore:
             return []
         with self._path.open() as f:
             data = json.load(f)
-        return [self._migrate(job) for job in data]
+        migrated = [self._migrate(job) for job in data]
+        seen: dict[str, dict] = {}
+        for job in migrated:
+            job_id = job.get("id")
+            if job_id and job_id in seen:
+                existing = seen[job_id]
+                if (job.get("updated_at") or "") > (existing.get("updated_at") or ""):
+                    seen[job_id] = job
+            else:
+                seen[job_id] = job
+        return list(seen.values())
 
     def save(self, data: list[dict]) -> None:
         with self._path.open("w") as f:

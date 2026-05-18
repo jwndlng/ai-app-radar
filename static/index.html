@@ -1931,7 +1931,7 @@
         </div>
       </template>
 
-      <template x-for="job in visibleJobs" :key="job.id">
+      <template x-for="(job, i) in visibleJobs" :key="job.id + '-' + i">
         <div class="job-card" @click="toggleExpand(job.id)">
 
           <!-- Card header -->
@@ -2999,7 +2999,7 @@
               || (j.title || '').toLowerCase().includes(q)
               || (j.company || '').toLowerCase().includes(q)
             const matchStatus = this.statusFilter === 'all'
-              || (this.statusFilter === 'failed' ? j.status === 'failed' : j.state === this.statusFilter)
+              || (this.statusFilter === 'failed' ? j.status === 'failed' : (j.state || 'discovered') === this.statusFilter)
             const matchFavorites = !this.favoritesOnly || j.favorited
             return matchSearch && matchStatus && matchFavorites
           })
