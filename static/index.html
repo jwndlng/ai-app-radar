@@ -1069,6 +1069,47 @@
       .sort-bar { flex-wrap: wrap; gap: 4px; }
     }
 
+    @media (max-width: 768px) {
+      body {
+        flex-direction: column;
+        padding-top: var(--nav-height);
+      }
+
+      .sidebar {
+        position: relative;
+        left: auto;
+        top: auto;
+        width: 100%;
+        height: auto;
+        max-height: 60vh;
+        border-right: none;
+        border-bottom: 1px solid var(--border-color);
+        transition: max-height 0.25s ease, padding 0.25s ease;
+        z-index: 50;
+      }
+
+      .sidebar.collapsed {
+        max-height: 0;
+        overflow: hidden;
+        padding-top: 0;
+        padding-bottom: 0;
+        transform: none;
+      }
+
+      .main-content,
+      .main-content.sidebar-collapsed {
+        margin-left: 0;
+        padding: var(--padding-sm);
+        max-width: 100%;
+        width: 100%;
+      }
+
+      .scan-filter-btn,
+      .pf-node {
+        min-height: 44px;
+      }
+    }
+
     /* ── Top Navigation ────────────────────────────────────────────────────── */
     .top-nav {
       position: fixed;
@@ -1604,11 +1645,12 @@
     <button class="nav-tab" :class="{active: currentView === 'jobs'}" @click="currentView = 'jobs'">Jobs</button>
     <button class="nav-tab" :class="{active: currentView === 'companies'}" @click="currentView = 'companies'; loadCompanies()">Companies</button>
     <button class="nav-tab" :class="{active: currentView === 'profile'}" @click="currentView = 'profile'; loadProfile()">Profile</button>
+    <button class="nav-tab" :class="{active: currentView === 'tasks'}" @click="currentView = 'tasks'">Tasks</button>
     <button class="nav-gear" :class="{active: currentView === 'settings'}" @click="currentView = (currentView === 'settings' ? 'jobs' : 'settings')">⚙ Settings</button>
   </nav>
 
   <!-- ── Sidebar ────────────────────────────────────────────────────────── -->
-  <aside class="sidebar" :class="{'collapsed': !sidebarOpen}" x-show="currentView !== 'settings'">
+  <aside class="sidebar" :class="{'collapsed': !sidebarOpen}" x-show="currentView !== 'settings' && currentView !== 'tasks'">
 
     <!-- Jobs sidebar -->
     <div x-show="currentView === 'jobs'" style="display:contents;">
@@ -2798,6 +2840,57 @@
       </div>
     </div> <!-- end profile view -->
 
+    <!-- Tasks History View -->
+    <div x-show="currentView === 'tasks'" class="settings-view">
+      <header style="margin-bottom: var(--padding-lg);">
+        <h1 style="font-size:1.6rem;">Tasks</h1>
+        <p style="color:var(--text-secondary); font-size:0.88rem;">History of all pipeline operations</p>
+      </header>
+
+      <template x-if="apiTasks.length === 0">
+        <div style="text-align:center; padding:3rem; color:var(--text-secondary);">
+          No tasks have run yet.
+        </div>
+      </template>
+
+      <div class="task-list" x-show="apiTasks.length > 0">
+        <template x-for="task in apiTasks" :key="task.id">
+          <div>
+            <div class="task-item">
+              <div class="task-dot" :class="'task-dot-' + task.status"></div>
+              <span class="task-name" x-text="formatOperation(task.operation)"></span>
+              <span class="task-elapsed" x-text="formatElapsed(task, now)"></span>
+            </div>
+            <template x-if="task.status === 'running' && task.progress_total != null && task.progress_total > 0">
+              <div class="task-progress-wrap">
+                <div class="task-progress-bar">
+                  <div class="task-progress-fill"
+                       :style="'width:' + Math.round(((task.progress_current || 0) / task.progress_total) * 100) + '%'">
+                  </div>
+                </div>
+                <div class="task-progress-label"
+                     x-text="(task.progress_current || 0) + ' / ' + task.progress_total + ' items'">
+                </div>
+              </div>
+            </template>
+            <template x-if="task.status !== 'running' && taskEvents(task).length > 0">
+              <div class="task-events">
+                <template x-for="(ev, i) in taskEvents(task)" :key="i">
+                  <div class="task-event" :class="'task-event-' + ev.type">
+                    <div class="task-event-row">
+                      <span class="task-event-name" x-text="ev.name"></span>
+                      <span class="task-event-routing" x-show="ev.routing" x-text="ev.routing"></span>
+                    </div>
+                    <div class="task-event-reason" x-show="ev.reasoning" x-text="ev.reasoning"></div>
+                  </div>
+                </template>
+              </div>
+            </template>
+          </div>
+        </template>
+      </div>
+    </div>
+
     <!-- Settings View -->
     <div x-show="currentView === 'settings'" class="settings-view">
       <header style="margin-bottom: var(--padding-lg);">
@@ -3099,6 +3192,7 @@
         },
 
         async init() {
+          if (window.innerWidth < 768) this.sidebarOpen = false
           await this.loadJobs()
           await this.loadTasks()
           await this.loadSettings()

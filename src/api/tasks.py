@@ -1,12 +1,19 @@
-"""TaskRegistry — in-memory tracking of background pipeline operations."""
+"""TaskRegistry — tracking of background pipeline operations with file persistence."""
 
 from __future__ import annotations
 
+import json
+import logging
+import os
+import tempfile
 import uuid
 from collections import deque
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any, Callable
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -36,18 +43,42 @@ class TaskRecord:
             "events": self.events,
         }
 
+    @classmethod
+    def from_dict(cls, d: dict) -> TaskRecord:
+        return cls(
+            id=d["id"],
+            operation=d["operation"],
+            status=d["status"],
+            started_at=datetime.fromisoformat(d["started_at"]),
+            finished_at=datetime.fromisoformat(d["finished_at"]) if d.get("finished_at") else None,
+            result=d.get("result"),
+            error=d.get("error"),
+            progress_current=d.get("progress_current"),
+            progress_total=d.get("progress_total"),
+            events=d.get("events", []),
+        )
+
 
 class TaskRegistry:
     _MAX = 100
 
-    def __init__(self) -> None:
+    def __init__(self, path: Path | None = None) -> None:
+        self._path = path
         self._records: deque[TaskRecord] = deque(maxlen=self._MAX)
+        if self._path and self._path.exists():
+            try:
+                data = json.loads(self._path.read_text())
+                for record_dict in reversed(data):
+                    self._records.appendleft(TaskRecord.from_dict(record_dict))
+            except Exception as exc:
+                logger.warning("Could not load task history from %s: %s — starting empty", self._path, exc)
 
     def create(self, operation: str) -> str:
         task_id = uuid.uuid4().hex[:8]
         self._records.appendleft(
             TaskRecord(id=task_id, operation=operation, status="running", started_at=datetime.now(timezone.utc))
         )
+        self._flush()
         return task_id
 
     def complete(self, task_id: str, result: dict | None = None) -> None:
@@ -56,6 +87,7 @@ class TaskRegistry:
             record.status = "done"
             record.finished_at = datetime.now(timezone.utc)
             record.result = result
+            self._flush()
 
     def update_progress(self, task_id: str, current: int, total: int) -> None:
         record = self._get(task_id)
@@ -69,6 +101,7 @@ class TaskRegistry:
             record.status = "failed"
             record.finished_at = datetime.now(timezone.utc)
             record.error = error
+            self._flush()
 
     def get(self, task_id: str) -> TaskRecord | None:
         return self._get(task_id)
@@ -83,6 +116,20 @@ class TaskRegistry:
 
     def _get(self, task_id: str) -> TaskRecord | None:
         return next((r for r in self._records if r.id == task_id), None)
+
+    def _flush(self) -> None:
+        if self._path is None:
+            return
+        payload = json.dumps([r.to_dict() for r in self._records], indent=2)
+        self._path.parent.mkdir(parents=True, exist_ok=True)
+        fd, tmp = tempfile.mkstemp(dir=self._path.parent)
+        try:
+            with os.fdopen(fd, "w") as f:
+                f.write(payload)
+            os.replace(tmp, self._path)
+        except Exception:
+            os.unlink(tmp)
+            raise
 
 
 def make_event_callback(registry: "TaskRegistry", task_id: str) -> Callable[[dict], None]:

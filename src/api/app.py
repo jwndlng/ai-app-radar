@@ -13,6 +13,7 @@ from api.tasks import TaskRegistry
 
 ROOT_DIR = Path(__file__).resolve().parent.parent.parent
 STATIC_DIR = ROOT_DIR / "static"
+TASKS_FILE = ROOT_DIR / "artifacts" / "tasks.json"
 
 
 def create_app() -> FastAPI:
@@ -21,7 +22,7 @@ def create_app() -> FastAPI:
 
     STATIC_DIR.mkdir(exist_ok=True)
     app.state.runner = PipelineRunner(ROOT_DIR)
-    app.state.registry = TaskRegistry()
+    app.state.registry = TaskRegistry(path=TASKS_FILE)
     app.mount("/", StaticFiles(directory=str(STATIC_DIR), html=True), name="static")
 
     return app
