@@ -19,6 +19,7 @@ The project is still mostly manual in its current form, but the long-term plan i
   - [Path B — Gemini CLI](#path-b--gemini-cli)
   - [Path C — Manual](#path-c--manual)
 - [Running the Application](#running-the-application)
+- [Optimization Tips](#optimization-tips)
 - [Adding Companies](#adding-companies)
 - [LLM Provider Options](#llm-provider-options)
 - [Configuration Reference](#configuration-reference)
@@ -116,6 +117,31 @@ make help                         # Show all available targets
 
 ---
 
+## Optimization Tips
+
+<details>
+<summary>Show optimization tips</summary>
+
+> [!TIP]
+> **Limit `agent_review` companies**
+> Each `agent_review` entry triggers a full Playwright browser scrape plus an LLM parse on every pipeline run. Costs and run times scale linearly — keep it to **5 or fewer** `agent_review` companies. Use API-based providers (`greenhouse_api`, `ashby_api`, `lever_api`, etc.) wherever possible; they are fast, free, and don't consume LLM budget.
+
+> [!TIP]
+> **Keep scout filters specific**
+> Broad `title_include` patterns (e.g. `"engineer"`) pull in large volumes of irrelevant jobs. Every job that passes the scout filter gets sent to enrich and evaluate — both of which make LLM calls. Use precise title substrings (e.g. `"Staff Software Engineer"`, `"Senior Backend Engineer"`) to keep the job set small and the results relevant.
+
+> [!TIP]
+> **Use a free-tier model for enrich and evaluate**
+> The enrich and evaluate stages run on every job in the queue. A fast free-tier model such as `gemini/gemini-2.5-flash` (~1,500 req/day free) is more than sufficient for structured extraction and fit scoring. Reserve stronger or paid models for `agent_review` scraping or interactive use.
+
+> [!TIP]
+> **Tune evaluate thresholds after the first real run**
+> The default thresholds (`auto_reject: 4.0`, `auto_match: 8.0`) are conservative by design. Run the pipeline once at defaults and review the results before adjusting — lowering `auto_reject` floods the review queue; raising `auto_match` hides borderline matches. Calibrate against real output, not guesses.
+
+</details>
+
+---
+
 ## Adding Companies
 
 **With Claude Code or Gemini CLI** (recommended — auto-detects ATS, verifies the endpoint, and writes a validated entry):
@@ -134,7 +160,7 @@ make help                         # Show all available targets
 | `lever_api` | Lever | `slug` |
 | `workable_api` | Workable | `slug` |
 | `workday_api` | Workday | careers URL only |
-| `agent_review` | Any (web scrape + LLM) | careers URL only |
+| `agent_review` | Any (web scrape + LLM) | careers URL only (see [Optimization Tips](#optimization-tips)) |
 
 ---
 
