@@ -5459,6 +5459,18 @@
       "enabled": true,
       "category": "Blockchain",
       "employees": "500+"
+    },
+    {
+      "name": "Binance",
+      "description": "Binance is the world's largest cryptocurrency exchange by trading volume, offering spot, futures, and options trading alongside a broad ecosystem of blockchain products.",
+      "careers_url": "https://jobs.lever.co/binance",
+      "scan_method": "lever_api",
+      "scan_method_config": {
+        "slug": "binance"
+      },
+      "enabled": true,
+      "category": "Blockchain",
+      "employees": "500+"
     }
   ]
 }
