@@ -5447,6 +5447,18 @@
       "enabled": true,
       "category": "Fintech",
       "employees": "5000+"
+    },
+    {
+      "name": "Kraken",
+      "description": "Kraken is a cryptocurrency exchange offering spot and futures trading, staking, and custody services for digital assets.",
+      "careers_url": "https://jobs.ashbyhq.com/kraken.com",
+      "scan_method": "ashby_api",
+      "scan_method_config": {
+        "slug": "kraken.com"
+      },
+      "enabled": true,
+      "category": "Blockchain",
+      "employees": "500+"
     }
   ]
 }
