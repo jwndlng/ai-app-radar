@@ -27,7 +27,7 @@ The system SHALL expose `GET /api/jobs` returning the full list of job records f
 - **THEN** `GET /api/jobs` returns `{"jobs": [], "total": 0}` with status 200
 
 ### Requirement: Task registry tracks background operation status
-The system SHALL maintain an in-memory `TaskRegistry` that records all pipeline operations. Each task record SHALL include: `id` (8-char UUID prefix), `operation` (name of the operation), `status` (`running` / `done` / `failed`), `started_at`, `finished_at`, and `result` or `error`. The registry SHALL keep at most 100 records, dropping the oldest on overflow.
+The system SHALL maintain a `TaskRegistry` that records all pipeline operations and persists records to `artifacts/tasks.json`. Each task record SHALL include: `id` (8-char UUID prefix), `operation` (name of the operation), `status` (`running` / `done` / `failed`), `started_at`, `finished_at`, and `result` or `error`. The registry SHALL keep at most 100 records, dropping the oldest on overflow.
 
 #### Scenario: Task created on operation trigger
 - **WHEN** any POST pipeline endpoint is called
@@ -40,6 +40,18 @@ The system SHALL maintain an in-memory `TaskRegistry` that records all pipeline 
 #### Scenario: Task updated on failure
 - **WHEN** a background pipeline operation raises an exception
 - **THEN** the task record status is updated to `failed` and the error message is stored
+
+#### Scenario: Task records persisted after each mutation
+- **WHEN** a task is created, completed, or failed
+- **THEN** the full registry is written to `artifacts/tasks.json` before the call returns
+
+#### Scenario: Registry loads persisted records on startup
+- **WHEN** the server starts and `artifacts/tasks.json` exists
+- **THEN** the registry is pre-populated with the records from that file, preserving history across restarts
+
+#### Scenario: Missing or corrupt file is a no-op at startup
+- **WHEN** the server starts and `artifacts/tasks.json` is absent or contains invalid JSON
+- **THEN** the registry starts empty and a warning is logged; the server starts successfully
 
 ### Requirement: Task listing endpoint
 The system SHALL expose `GET /api/tasks` returning all task records ordered by `started_at` descending.

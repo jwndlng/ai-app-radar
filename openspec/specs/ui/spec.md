@@ -73,7 +73,29 @@ The dashboard SHALL provide an interactive filter grid enabling simultaneous tri
 The UI SHALL render a fixed top navigation bar that remains visible as the user scrolls, providing persistent access to global navigation controls.
 
 ### Requirement: Multi-view routing via Alpine currentView
-The UI SHALL use an Alpine.js `currentView` data property to manage client-side routing between views, switching content without a full page reload.
+The UI SHALL use an Alpine.js `currentView` data property to manage client-side routing between views, switching content without a full page reload. Valid values are `'jobs'`, `'companies'`, `'profile'`, `'settings'`, and `'tasks'`.
+
+#### Scenario: Navigating to tasks view
+- **WHEN** the user clicks the "Tasks" nav tab
+- **THEN** `currentView` is set to `'tasks'` and the Tasks view content is shown
+
+### Requirement: Tasks tab in navigation bar
+The UI SHALL render a "Tasks" tab in the top navigation bar alongside the existing Jobs, Companies, and Profile tabs.
+
+#### Scenario: Tasks tab is always visible
+- **WHEN** the user views any page
+- **THEN** the Tasks tab is present in the navigation bar
+
+#### Scenario: Tasks tab shows active state
+- **WHEN** `currentView === 'tasks'`
+- **THEN** the Tasks tab has the `active` CSS class applied
+
+### Requirement: Sidebar hidden on tasks view
+The UI SHALL hide the sidebar when `currentView === 'tasks'`, giving the tasks layout full horizontal space.
+
+#### Scenario: Sidebar absent in tasks view
+- **WHEN** the user is in the tasks view
+- **THEN** the sidebar is not visible and the tasks content fills the full main area width
 
 ### Requirement: Sidebar hidden on companies view
 The UI SHALL hide the sidebar when the active view is the companies view, giving the companies layout full horizontal space.
