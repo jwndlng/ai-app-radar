@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import os
@@ -65,11 +66,17 @@ class TaskRegistry:
     def __init__(self, path: Path | None = None) -> None:
         self._path = path
         self._records: deque[TaskRecord] = deque(maxlen=self._MAX)
+        self._cancel_events: dict[str, asyncio.Event] = {}
         if self._path and self._path.exists():
             try:
                 data = json.loads(self._path.read_text())
                 for record_dict in reversed(data):
-                    self._records.appendleft(TaskRecord.from_dict(record_dict))
+                    record = TaskRecord.from_dict(record_dict)
+                    if record.status in {"running", "cancelling"}:
+                        record.status = "cancelled"
+                        record.finished_at = record.finished_at or datetime.now(timezone.utc)
+                        record.error = "interrupted by server restart"
+                    self._records.appendleft(record)
             except Exception as exc:
                 logger.warning("Could not load task history from %s: %s — starting empty", self._path, exc)
 
@@ -114,6 +121,34 @@ class TaskRegistry:
         if record:
             record.events.append(event)
 
+    def register_event(self, task_id: str, event: asyncio.Event) -> None:
+        self._cancel_events[task_id] = event
+
+    def unregister_event(self, task_id: str) -> None:
+        self._cancel_events.pop(task_id, None)
+
+    def cancel(self, task_id: str) -> bool:
+        record = self._get(task_id)
+        if record is None or record.status in {"done", "failed", "cancelled"}:
+            return False
+        event = self._cancel_events.get(task_id)
+        if event:
+            event.set()
+        record.status = "cancelling"
+        self._flush()
+        return True
+
+    def is_cancelled(self, task_id: str) -> bool:
+        event = self._cancel_events.get(task_id)
+        return event is not None and event.is_set()
+
+    def mark_cancelled(self, task_id: str) -> None:
+        record = self._get(task_id)
+        if record:
+            record.status = "cancelled"
+            record.finished_at = datetime.now(timezone.utc)
+            self._flush()
+
     def _get(self, task_id: str) -> TaskRecord | None:
         return next((r for r in self._records if r.id == task_id), None)
 
@@ -147,6 +182,14 @@ def make_progress_callback(registry: "TaskRegistry", task_id: str):
 async def run_with_tracking(registry: TaskRegistry, task_id: str, coro: Any) -> None:
     try:
         result = await coro
-        registry.complete(task_id, result if isinstance(result, dict) else {"value": result})
+        if registry.is_cancelled(task_id):
+            registry.mark_cancelled(task_id)
+        else:
+            registry.complete(task_id, result if isinstance(result, dict) else {"value": result})
+    except asyncio.CancelledError:
+        registry.mark_cancelled(task_id)
+        raise
     except Exception as e:
         registry.fail(task_id, str(e))
+    finally:
+        registry.unregister_event(task_id)

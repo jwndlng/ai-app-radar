@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import asyncio
+
 from fastapi import APIRouter, BackgroundTasks, Body, Depends
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
@@ -149,6 +151,17 @@ async def get_task(task_id: str, registry: TaskRegistry = Depends(get_registry))
     return record.to_dict()
 
 
+@router.delete("/tasks/{task_id}")
+async def cancel_task(task_id: str, registry: TaskRegistry = Depends(get_registry)):
+    record = registry.get(task_id)
+    if record is None:
+        return JSONResponse(status_code=404, content={"detail": f"Task not found: {task_id}"})
+    if record.status in {"done", "failed", "cancelled"}:
+        return JSONResponse(status_code=409, content={"detail": f"Task is already {record.status}"})
+    registry.cancel(task_id)
+    return {"ok": True}
+
+
 # ── Scout ─────────────────────────────────────────────────────────────────────
 
 @router.post("/scout/next")
@@ -159,10 +172,13 @@ async def scout_next(
     registry: TaskRegistry = Depends(get_registry),
 ):
     task_id = registry.create(f"scout_next_{body.limit}")
+    event = asyncio.Event()
+    registry.register_event(task_id, event)
     background_tasks.add_task(run_with_tracking, registry, task_id,
                               runner.scout_next(limit=body.limit,
                                                 on_progress=make_progress_callback(registry, task_id),
-                                                on_event=make_event_callback(registry, task_id)))
+                                                on_event=make_event_callback(registry, task_id),
+                                                should_cancel=event.is_set))
     return {"ok": True, "task_id": task_id}
 
 
@@ -173,9 +189,12 @@ async def scout_all(
     registry: TaskRegistry = Depends(get_registry),
 ):
     task_id = registry.create("scout_all")
+    event = asyncio.Event()
+    registry.register_event(task_id, event)
     background_tasks.add_task(run_with_tracking, registry, task_id,
                               runner.scout_all(on_progress=make_progress_callback(registry, task_id),
-                                               on_event=make_event_callback(registry, task_id)))
+                                               on_event=make_event_callback(registry, task_id),
+                                               should_cancel=event.is_set))
     return {"ok": True, "task_id": task_id}
 
 
@@ -189,10 +208,13 @@ async def scout_company(
     if company_name.lower() not in runner._company_names():
         return JSONResponse(status_code=404, content={"detail": f"Company not found: {company_name}"})
     task_id = registry.create(f"scout_{company_name}")
+    event = asyncio.Event()
+    registry.register_event(task_id, event)
     background_tasks.add_task(run_with_tracking, registry, task_id,
                               runner.scout_company(company_name,
                                                    on_progress=make_progress_callback(registry, task_id),
-                                                   on_event=make_event_callback(registry, task_id)))
+                                                   on_event=make_event_callback(registry, task_id),
+                                                   should_cancel=event.is_set))
     return {"ok": True, "task_id": task_id}
 
 
@@ -205,9 +227,12 @@ async def enrich_all(
     registry: TaskRegistry = Depends(get_registry),
 ):
     task_id = registry.create("enrich_all")
+    event = asyncio.Event()
+    registry.register_event(task_id, event)
     background_tasks.add_task(run_with_tracking, registry, task_id,
                               runner.enrich_all(on_progress=make_progress_callback(registry, task_id),
-                                                on_event=make_event_callback(registry, task_id)))
+                                                on_event=make_event_callback(registry, task_id),
+                                                should_cancel=event.is_set))
     return {"ok": True, "task_id": task_id}
 
 
@@ -219,10 +244,13 @@ async def enrich_next(
     registry: TaskRegistry = Depends(get_registry),
 ):
     task_id = registry.create(f"enrich_next_{body.limit}")
+    event = asyncio.Event()
+    registry.register_event(task_id, event)
     background_tasks.add_task(run_with_tracking, registry, task_id,
                               runner.enrich_next(limit=body.limit,
                                                  on_progress=make_progress_callback(registry, task_id),
-                                                 on_event=make_event_callback(registry, task_id)))
+                                                 on_event=make_event_callback(registry, task_id),
+                                                 should_cancel=event.is_set))
     return {"ok": True, "task_id": task_id}
 
 
@@ -237,6 +265,8 @@ async def enrich_job(
     if not any(j.get("id") == job_id for j in jobs):
         return JSONResponse(status_code=404, content={"detail": f"Job not found: {job_id}"})
     task_id = registry.create(f"enrich_{job_id}")
+    event = asyncio.Event()
+    registry.register_event(task_id, event)
     background_tasks.add_task(run_with_tracking, registry, task_id,
                               runner.enrich_job(job_id, on_event=make_event_callback(registry, task_id)))
     return {"ok": True, "task_id": task_id}
@@ -251,9 +281,12 @@ async def evaluate_all(
     registry: TaskRegistry = Depends(get_registry),
 ):
     task_id = registry.create("evaluate_all")
+    event = asyncio.Event()
+    registry.register_event(task_id, event)
     background_tasks.add_task(run_with_tracking, registry, task_id,
                               runner.evaluate_all(on_progress=make_progress_callback(registry, task_id),
-                                                  on_event=make_event_callback(registry, task_id)))
+                                                  on_event=make_event_callback(registry, task_id),
+                                                  should_cancel=event.is_set))
     return {"ok": True, "task_id": task_id}
 
 
@@ -265,10 +298,13 @@ async def evaluate_next(
     registry: TaskRegistry = Depends(get_registry),
 ):
     task_id = registry.create(f"evaluate_next_{body.limit}")
+    event = asyncio.Event()
+    registry.register_event(task_id, event)
     background_tasks.add_task(run_with_tracking, registry, task_id,
                               runner.evaluate_next(limit=body.limit,
                                                    on_progress=make_progress_callback(registry, task_id),
-                                                   on_event=make_event_callback(registry, task_id)))
+                                                   on_event=make_event_callback(registry, task_id),
+                                                   should_cancel=event.is_set))
     return {"ok": True, "task_id": task_id}
 
 
@@ -283,6 +319,8 @@ async def evaluate_job(
     if not any(j.get("id") == job_id for j in jobs):
         return JSONResponse(status_code=404, content={"detail": f"Job not found: {job_id}"})
     task_id = registry.create(f"evaluate_{job_id}")
+    event = asyncio.Event()
+    registry.register_event(task_id, event)
     background_tasks.add_task(run_with_tracking, registry, task_id,
                               runner.evaluate_job(job_id, on_event=make_event_callback(registry, task_id)))
     return {"ok": True, "task_id": task_id}
@@ -386,6 +424,8 @@ async def run_job(
     if not any(j.get("id") == job_id for j in jobs):
         return JSONResponse(status_code=404, content={"detail": f"Job not found: {job_id}"})
     task_id = registry.create(f"run_{job_id}")
+    event = asyncio.Event()
+    registry.register_event(task_id, event)
     background_tasks.add_task(run_with_tracking, registry, task_id,
                               runner.run_job(job_id, on_event=make_event_callback(registry, task_id)))
     return {"ok": True, "task_id": task_id}

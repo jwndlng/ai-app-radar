@@ -17,6 +17,7 @@ class PipelineRuntime:
         self,
         concurrency: int | None = None,
         on_progress: Callable[[int, int], None] | None = None,
+        should_cancel: Callable[[], bool] | None = None,
     ) -> None:
         task = self._task
         n = concurrency if concurrency is not None else task.concurrency
@@ -44,7 +45,7 @@ class PipelineRuntime:
 
         workers = [
             asyncio.create_task(
-                self._worker(queue, consumer, task, completed, lock, last_started, total, on_progress)
+                self._worker(queue, consumer, task, completed, lock, last_started, total, on_progress, should_cancel)
             )
             for _ in range(n)
         ]
@@ -70,12 +71,18 @@ class PipelineRuntime:
         last_started: dict[str, Any],
         total: int = 0,
         on_progress: Callable[[int, int], None] | None = None,
+        should_cancel: Callable[[], bool] | None = None,
     ) -> None:
         while True:
             item = await queue.get()
+
             if item is None:
                 queue.task_done()
                 break
+
+            if should_cancel and should_cancel():
+                queue.task_done()
+                continue
 
             try:
                 if task.start_gap is not None:

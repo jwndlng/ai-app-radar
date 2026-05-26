@@ -682,8 +682,10 @@
     }
 
     .task-dot-running { background: hsl(45, 100%, 50%); animation: pulse 1.2s ease-in-out infinite; }
+    .task-dot-cancelling { background: hsl(30, 90%, 55%); animation: pulse 1.2s ease-in-out infinite; }
     .task-dot-done { background: hsl(140, 60%, 45%); }
     .task-dot-failed { background: hsl(0, 70%, 50%); }
+    .task-dot-cancelled { background: hsl(220, 10%, 55%); }
 
     @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 
@@ -1897,7 +1899,7 @@
       <div class="tasks-panel-header">
         <h4>Running Tasks</h4>
         <span style="font-size:0.75rem; color:var(--text-secondary);"
-              x-text="activeTasks.filter(t => t.status === 'running').length + ' active'"></span>
+              x-text="activeTasks.filter(t => t.status === 'running' || t.status === 'cancelling').length + ' active'"></span>
       </div>
       <div class="task-list">
         <template x-for="task in activeTasks" :key="task.id">
@@ -1906,11 +1908,22 @@
               <div class="task-dot" :class="'task-dot-' + task.status"></div>
               <span class="task-name" x-text="formatOperation(task.operation)"></span>
               <span class="task-elapsed" x-text="formatElapsed(task, now)"></span>
-              <template x-if="task.status !== 'running'">
+              <template x-if="task.status !== 'running' && task.status !== 'cancelling'">
                 <span class="task-countdown" x-text="taskCountdown(task, now)"></span>
               </template>
+              <template x-if="task.status === 'cancelling'">
+                <span class="task-elapsed" style="color:var(--text-secondary);">cancelling…</span>
+              </template>
+              <template x-if="task.status === 'running'">
+                <button class="btn-ghost-danger" style="padding:2px 6px; font-size:0.75rem; line-height:1;"
+                        @click="cancelTask(task.id)" title="Cancel task">×</button>
+              </template>
+              <template x-if="task.status === 'cancelling'">
+                <button class="btn-ghost-danger" style="padding:2px 6px; font-size:0.75rem; line-height:1; opacity:0.4;"
+                        disabled title="Cancelling…">×</button>
+              </template>
             </div>
-            <template x-if="task.status === 'running' && task.progress_total != null && task.progress_total > 0">
+            <template x-if="(task.status === 'running' || task.status === 'cancelling') && task.progress_total != null && task.progress_total > 0">
               <div class="task-progress-wrap">
                 <div class="task-progress-bar">
                   <div class="task-progress-fill"
@@ -1922,7 +1935,7 @@
                 </div>
               </div>
             </template>
-            <template x-if="task.status !== 'running' && taskEvents(task).length > 0">
+            <template x-if="task.status !== 'running' && task.status !== 'cancelling' && taskEvents(task).length > 0">
               <div class="task-events">
                 <template x-for="(ev, i) in taskEvents(task)" :key="i">
                   <div class="task-event" :class="'task-event-' + ev.type">
@@ -1935,7 +1948,7 @@
                 </template>
               </div>
             </template>
-            <template x-if="task.status !== 'running'">
+            <template x-if="task.status !== 'running' && task.status !== 'cancelling'">
               <div class="task-item-actions">
                 <button class="btn-ghost-danger" @click="dismissTask(task.id)">Delete</button>
               </div>
@@ -3159,14 +3172,14 @@
           const cutoff = this.now - 120000
           return this.apiTasks.filter(t =>
             !this.dismissedTaskIds[t.id] && (
-              t.status === 'running' ||
+              t.status === 'running' || t.status === 'cancelling' ||
               (t.finished_at && new Date(t.finished_at).getTime() > cutoff)
             )
           )
         },
 
         taskOpacity(task) {
-          if (task.status === 'running' || !task.finished_at) return 1
+          if (task.status === 'running' || task.status === 'cancelling' || !task.finished_at) return 1
           const age = (this.now - new Date(task.finished_at).getTime()) / 1000
           return age < 117 ? 1 : Math.max(0, 1 - (age - 117) / 3)
         },
@@ -3207,6 +3220,12 @@
 
         dismissTask(id) {
           this.dismissedTaskIds = { ...this.dismissedTaskIds, [id]: true }
+        },
+
+        cancelTask(id) {
+          const task = this.tasks.find(t => t.id === id)
+          if (task) task.status = 'cancelling'
+          fetch('/api/tasks/' + id, { method: 'DELETE' })
         },
 
         get stats() {
