@@ -40,36 +40,43 @@ class WebsearchProvider(BaseProvider):
         visited: set[str] = set()
         jobs: list[dict] = []
 
-        for page_num in range(1, self._max_pages + 1):
-            if current_url in visited:
-                break
-            visited.add(current_url)
+        from playwright.async_api import async_playwright
 
-            content = await self._fetch_page(company_name, current_url, content_selector)
-            if not content or not content.strip():
-                break
+        async with async_playwright() as p:
+            browser = await p.chromium.launch(headless=True)
+            try:
+                for page_num in range(1, self._max_pages + 1):
+                    if current_url in visited:
+                        break
+                    visited.add(current_url)
 
-            response = await agent.extract_jobs(content[:_MAX_BODY_CHARS])
+                    content = await self._fetch_page(company_name, current_url, content_selector, browser)
+                    if not content or not content.strip():
+                        break
 
-            for job in response.jobs:
-                if job.title and self.filter_job(job.title, filters):
-                    jobs.append({
-                        "title": job.title,
-                        "url": job.url,
-                        "company": company_name,
-                        "location": job.location,
-                    })
+                    response = await agent.extract_jobs(content[:_MAX_BODY_CHARS])
 
-            if not response.jobs:
-                print(f"  [~] {company_name}: no jobs on page {page_num}, stopping")
-                break
+                    for job in response.jobs:
+                        if job.title and self.filter_job(job.title, filters):
+                            jobs.append({
+                                "title": job.title,
+                                "url": job.url,
+                                "company": company_name,
+                                "location": job.location,
+                            })
 
-            if not response.next_page_url:
-                break
+                    if not response.jobs:
+                        print(f"  [~] {company_name}: no jobs on page {page_num}, stopping")
+                        break
 
-            print(f"  [>] {company_name}: following page {page_num + 1}")
-            await asyncio.sleep(0.25)
-            current_url = response.next_page_url
+                    if not response.next_page_url:
+                        break
+
+                    print(f"  [>] {company_name}: following page {page_num + 1}")
+                    await asyncio.sleep(0.25)
+                    current_url = response.next_page_url
+            finally:
+                await browser.close()
 
         self._last_page_count = len(visited)
         return jobs
@@ -91,16 +98,15 @@ class WebsearchProvider(BaseProvider):
         company_name: str,
         careers_url: str,
         content_selector: str | None,
+        browser: object,
     ) -> str | None:
         try:
             from playwright.async_api import Error as PlaywrightError
-            from playwright.async_api import async_playwright
 
             _is_workday = "workdayjobs.com" in careers_url
 
-            async with async_playwright() as p:
-                browser = await p.chromium.launch(headless=True)
-                page = await browser.new_page()
+            page = await browser.new_page()  # type: ignore[attr-defined]
+            try:
                 try:
                     wait_event = "domcontentloaded" if _is_workday else "networkidle"
                     await page.goto(careers_url, wait_until=wait_event, timeout=30_000)
@@ -140,8 +146,9 @@ class WebsearchProvider(BaseProvider):
                 if links_block:
                     content += f"\n\n--- PAGE LINKS ---\n{links_block}"
 
-                await browser.close()
                 return content
+            finally:
+                await page.close()
 
         except Exception as e:
             print(f"  [!] {company_name}: Playwright error: {e}")

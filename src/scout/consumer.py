@@ -142,16 +142,22 @@ class ScoutConsumer(BaseConsumer[dict]):
             self._log.finish("no changes discovered")
             return
 
-        store = ApplicationStore(self._root / "artifacts" / "applications.json")
-        all_apps = store.load()
-
+        # Build master_map from the tracker's already-loaded data instead of
+        # re-reading applications.json from disk. known_jobs may index some jobs
+        # under two keys (computed + stored id); deduplicate by computed id.
+        seen_ids: set[str] = set()
         master_map: dict[str, dict] = {}
         url_to_id: dict[str, str] = {}
-        for app in all_apps:
-            aid = self._tracker.generate_id(app.get("company", ""), app.get("title", ""))
-            master_map[aid] = app
-            if app.get("url"):
-                url_to_id[app["url"]] = aid
+        for job in self._tracker.known_jobs.values():
+            aid = self._tracker.generate_id(job.get("company", ""), job.get("title", ""))
+            if aid in seen_ids:
+                continue
+            seen_ids.add(aid)
+            master_map[aid] = job
+            if job.get("url"):
+                url_to_id[job["url"]] = aid
+
+        store = ApplicationStore(self._root / "artifacts" / "applications.json")
 
         new_count = 0
         updated_count = 0
