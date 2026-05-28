@@ -162,6 +162,20 @@ class PipelineRunner:
             on_progress=on_progress, should_cancel=should_cancel)
         return count
 
+    async def run_all(self, on_progress: Callable[[int, int], None] | None = None,
+                      on_event: Callable[[dict], None] | None = None,
+                      should_cancel: Callable[[], bool] | None = None) -> dict:
+        if should_cancel and should_cancel():
+            return {"scout": 0, "enrich": 0, "evaluate": 0}
+        scout_count = await self.scout_all(on_progress=on_progress, on_event=on_event, should_cancel=should_cancel)
+        if should_cancel and should_cancel():
+            return {"scout": scout_count, "enrich": 0, "evaluate": 0}
+        enrich_count = await self.enrich_all(on_progress=on_progress, on_event=on_event, should_cancel=should_cancel)
+        if should_cancel and should_cancel():
+            return {"scout": scout_count, "enrich": enrich_count, "evaluate": 0}
+        evaluate_count = await self.evaluate_all(on_progress=on_progress, on_event=on_event, should_cancel=should_cancel)
+        return {"scout": scout_count, "enrich": enrich_count, "evaluate": evaluate_count}
+
     async def evaluate_next(
         self, limit: int = 10, on_progress: Callable[[int, int], None] | None = None,
         on_event: Callable[[dict], None] | None = None,

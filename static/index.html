@@ -1881,7 +1881,8 @@
         </div>
       </div>
       <div class="pipeline-secondary">
-        <span>Revert all</span>
+        <button class="btn btn-primary" @click="triggerPipelineAll()">Run all</button>
+        <span style="margin-left:auto;">Revert all</span>
         <select class="action-select" x-model="undoState">
           <option value="review">Review</option>
           <option value="match">Match</option>
@@ -1890,7 +1891,7 @@
           <option value="applied">Applied</option>
           <option value="parsed">Enriched</option>
         </select>
-        <button class="btn btn-ghost" @click="undoByState(undoState)">Revert</button>
+        <button class="btn btn-ghost" @click="undoByState(undoState)">Run</button>
       </div>
     </div>
 
@@ -3401,6 +3402,10 @@
           }
         },
 
+        async triggerPipelineAll() {
+          await this.fireOperation('/api/pipeline/all')
+        },
+
         async enrichJob(jobId) { await this.fireOperation(`/api/enrich/${jobId}`) },
         async evaluateJob(jobId) { await this.fireOperation(`/api/evaluate/${jobId}`) },
         async runJob(jobId) { await this.fireOperation(`/api/jobs/${jobId}/run`) },
@@ -3543,7 +3548,7 @@
 
         formatOperation(op) {
           const labels = {
-            scout_all: 'Discovery All', enrich_all: 'Enrich All', evaluate_all: 'Evaluate All'
+            scout_all: 'Discovery All', enrich_all: 'Enrich All', evaluate_all: 'Evaluate All', pipeline_run_all: 'Run All'
           }
           if (labels[op]) return labels[op]
           if (op.startsWith('enrich_next_')) return `Enrich Next ${op.slice(12)}`
