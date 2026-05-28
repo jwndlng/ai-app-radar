@@ -5483,6 +5483,18 @@
       "enabled": true,
       "category": "AI / Speech",
       "employees": "200+"
+    },
+    {
+      "name": "On",
+      "description": "On is a Swiss performance sportswear and running shoe company known for its CloudTec sole technology, founded in 2010 and headquartered in Zurich.",
+      "careers_url": "https://culture.on.com/jobs/",
+      "scan_method": "greenhouse_api",
+      "scan_method_config": {
+        "slug": "onrunning"
+      },
+      "enabled": true,
+      "category": "Sports & Apparel",
+      "employees": "500+"
     }
   ]
 }
