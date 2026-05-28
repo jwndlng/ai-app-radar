@@ -411,6 +411,24 @@ async def undo_job(
     return {"ok": True, "id": job_id, "state": job["state"]}
 
 
+# ── Pipeline ──────────────────────────────────────────────────────────────────
+
+@router.post("/pipeline/all")
+async def pipeline_all(
+    background_tasks: BackgroundTasks,
+    runner: PipelineRunner = Depends(get_runner),
+    registry: TaskRegistry = Depends(get_registry),
+):
+    task_id = registry.create("pipeline_run_all")
+    event = asyncio.Event()
+    registry.register_event(task_id, event)
+    background_tasks.add_task(run_with_tracking, registry, task_id,
+                              runner.run_all(on_progress=make_progress_callback(registry, task_id),
+                                             on_event=make_event_callback(registry, task_id),
+                                             should_cancel=event.is_set))
+    return {"ok": True, "task_id": task_id}
+
+
 # ── Run all remaining ─────────────────────────────────────────────────────────
 
 @router.post("/jobs/{job_id}/run")

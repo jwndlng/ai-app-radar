@@ -5473,6 +5473,18 @@
       "employees": "500+"
     },
     {
+      "name": "AssemblyAI",
+      "description": "AssemblyAI builds industry-leading Speech AI models for transcription and audio intelligence, enabling developers to transcribe speech to text and extract insights from voice data via API.",
+      "careers_url": "https://job-boards.greenhouse.io/assemblyai",
+      "scan_method": "greenhouse_api",
+      "scan_method_config": {
+        "slug": "assemblyai"
+      },
+      "enabled": true,
+      "category": "AI / Speech",
+      "employees": "200+"
+    },
+    {
       "name": "On",
       "description": "On is a Swiss performance sportswear and running shoe company known for its CloudTec sole technology, founded in 2010 and headquartered in Zurich.",
       "careers_url": "https://culture.on.com/jobs/",
