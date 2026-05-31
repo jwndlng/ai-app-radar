@@ -42,10 +42,11 @@ _LABEL_W = 22
 class RunLogger:
     """Colored console + streaming JSONL file logger for a single pipeline run."""
 
-    def __init__(self, flow: str, root_dir: Path, on_event: Callable[[dict], None] | None = None) -> None:
+    def __init__(self, flow: str, root_dir: Path, on_event: Callable[[dict], None] | None = None, keep: int = 10) -> None:
         self._flow = flow
         self._root = root_dir
         self._on_event = on_event
+        self._keep = keep
         self._start_ts = datetime.now()
         self._start_mono = time.monotonic()
         self._total = 0
@@ -137,6 +138,7 @@ class RunLogger:
                    ok=self._ok, warn=self._warn, fail=self._fail, total=total)
         self._fh.flush()
         self._fh.close()
+        self._prune_old_logs()
 
     # ── Internals ──────────────────────────────────────────────────────────────
 
@@ -151,6 +153,12 @@ class RunLogger:
             f" {name[:_NAME_W]:<{_NAME_W}}"
             f"  {detail}  {_D}{elapsed:.1f}s{_X}"
         )
+
+    def _prune_old_logs(self) -> None:
+        logs_dir = self._root / "logs"
+        files = sorted(logs_dir.glob(f"{self._flow}_*.jsonl"))
+        for old in files[: max(0, len(files) - self._keep)]:
+            old.unlink(missing_ok=True)
 
     def _emit(self, event: str, **fields: Any) -> None:
         record = {
