@@ -10,6 +10,7 @@ from core.state_machine import StateMachine
 from core.store import ApplicationStore
 from core.task import BaseConsumer
 from enrich.agent import EnrichResult
+from notifications.notifier import NullNotifier, Notifier
 
 _MAX_JD_CHARS = 40_000
 
@@ -27,11 +28,13 @@ class EnrichConsumer(BaseConsumer[dict]):
         store: ApplicationStore,
         log: RunLogger,
         model: str | None = None,
+        notifier: Notifier = None,
     ) -> None:
         self._all_apps = all_apps
         self._store = store
         self._log = log
         self._model = model
+        self._notifier = notifier if notifier is not None else NullNotifier()
         self._success = 0
         self._failed = 0
 
@@ -75,6 +78,7 @@ class EnrichConsumer(BaseConsumer[dict]):
     async def finalize(self) -> None:
         self._store.save(self._all_apps)
         self._log.finish(f"{self._success} parsed, {self._failed} failed")
+        await self._notifier.on_enrich_summary(self._success)
 
     async def _fetch_and_extract(self, url: str | None) -> dict:
         if not url:

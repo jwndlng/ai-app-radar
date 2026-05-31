@@ -22,14 +22,17 @@ from scout.providers.smartrecruiters import SmartRecruitersProvider
 from scout.providers.websearch import WebsearchProvider
 from scout.providers.workable import WorkableProvider
 from scout.providers.workday import WorkdayProvider
+from notifications.notifier import NullNotifier, Notifier
 from scout.state_tracker import StateTracker
 
 
 class ScoutConsumer(BaseConsumer[dict]):
-    def __init__(self, config: ScoutConfig, root_dir: Path, log: RunLogger) -> None:
+    def __init__(self, config: ScoutConfig, root_dir: Path, log: RunLogger,
+                 notifier: Notifier = None) -> None:
         self._config = config
         self._root = root_dir
         self._log = log
+        self._notifier = notifier if notifier is not None else NullNotifier()
         self._filters = config.title_filter
         self._tracker = StateTracker(root_dir)
         self._discovered_pool: dict[str, dict] = {}
@@ -74,7 +77,8 @@ class ScoutConsumer(BaseConsumer[dict]):
         pass
 
     async def finalize(self) -> None:
-        self._ingest()
+        new_count = self._ingest()
+        await self._notifier.on_scout_summary(new_count)
 
     async def _dispatch(self, company: dict, method: str) -> list[dict]:
         if method == "greenhouse_api":
@@ -137,10 +141,10 @@ class ScoutConsumer(BaseConsumer[dict]):
                 StateMachine.touch_updated(job)
                 self._discovered_pool[jid] = job
 
-    def _ingest(self) -> None:
+    def _ingest(self) -> int:
         if not self._discovered_pool:
             self._log.finish("no changes discovered")
-            return
+            return 0
 
         # Build master_map from the tracker's already-loaded data instead of
         # re-reading applications.json from disk. known_jobs may index some jobs
@@ -182,3 +186,4 @@ class ScoutConsumer(BaseConsumer[dict]):
 
         store.save(list(master_map.values()))
         self._log.finish(f"{new_count} new, {updated_count} updated")
+        return new_count

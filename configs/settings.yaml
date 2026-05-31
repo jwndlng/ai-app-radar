@@ -17,3 +17,12 @@ evaluate:
     seniority: 0.2
     compensation: 0.1
   model: null
+notifications:
+  telegram:
+    bot_token: null
+    chat_id: null
+    notify_scout: true
+    notify_enrich: true
+    notify_match: true
+    notify_review: true
+    notify_summary: true

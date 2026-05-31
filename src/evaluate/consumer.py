@@ -12,6 +12,7 @@ from core.task import BaseConsumer
 from evaluate.agent import FitResult
 from evaluate.fit_scorer import FitScorer
 from evaluate.vetting import Vetter
+from notifications.notifier import NullNotifier, Notifier
 
 
 class EvaluateConsumer(BaseConsumer[dict]):
@@ -30,6 +31,7 @@ class EvaluateConsumer(BaseConsumer[dict]):
         auto_match: float,
         location_reject: float,
         log: RunLogger,
+        notifier: Notifier = None,
     ) -> None:
         self._all_apps = all_apps
         self._store = store
@@ -40,6 +42,8 @@ class EvaluateConsumer(BaseConsumer[dict]):
         self._auto_match = auto_match
         self._location_reject = location_reject
         self._log = log
+        self._notifier = notifier if notifier is not None else NullNotifier()
+        self._matched = 0
         self._reviewed = 0
 
     async def on_start(self, total: int) -> None:
@@ -117,10 +121,12 @@ class EvaluateConsumer(BaseConsumer[dict]):
             job.pop("error_message", None)
             job["vetted_at"] = datetime.now().isoformat()
             StateMachine.touch_updated(job)
+            self._matched += 1
             self._reviewed += 1
             self._log.item_ok(name, label="evaluate",
                               detail=f"score {final_score}/10 → match [{'; '.join(result.reasons)}]",
                               elapsed=elapsed)
+            await self._notifier.on_match(job, final_score, result.reasons)
         else:
             job["state"] = "review"
             job["status"] = "ok"
@@ -131,6 +137,7 @@ class EvaluateConsumer(BaseConsumer[dict]):
             self._log.item_ok(name, label="evaluate",
                               detail=f"score {final_score}/10 → review [{'; '.join(result.reasons)}]",
                               elapsed=elapsed)
+            await self._notifier.on_review(job, final_score, result.reasons)
 
     async def checkpoint(self) -> None:
         self._store.save(self._all_apps)
@@ -138,6 +145,7 @@ class EvaluateConsumer(BaseConsumer[dict]):
     async def finalize(self) -> None:
         self._store.save(self._all_apps)
         self._log.finish(f"{self._reviewed} jobs moved to match/review")
+        await self._notifier.on_run_summary(self._matched, self._reviewed - self._matched)
 
     @staticmethod
     def _archive_job(job: dict, reason: str) -> None:

@@ -9,6 +9,7 @@ from core.store import ApplicationStore
 from core.task import BaseTask
 from enrich.producer import EnrichProducer
 from enrich.consumer import EnrichConsumer
+from notifications.notifier import NullNotifier, Notifier
 
 
 class EnrichTask(BaseTask[dict]):
@@ -16,7 +17,8 @@ class EnrichTask(BaseTask[dict]):
     checkpoint_every = 5
     start_gap: tuple[float, float] | None = (0.25, 1.0)
 
-    def __init__(self, root_dir: Path, limit: int | None = None, on_event=None) -> None:
+    def __init__(self, root_dir: Path, limit: int | None = None, on_event=None,
+                 notifier: Notifier = None) -> None:
         from core.config import AppConfigLoader
         cfg = AppConfigLoader(root_dir).enrich(limit=limit)
         self.concurrency = cfg.concurrency
@@ -29,7 +31,8 @@ class EnrichTask(BaseTask[dict]):
         log = RunLogger("enrich", root_dir, on_event=on_event)
 
         self._producer = EnrichProducer(all_apps)
-        self._consumer = EnrichConsumer(all_apps, store, log, model=cfg.model)
+        self._consumer = EnrichConsumer(all_apps, store, log, model=cfg.model,
+                                        notifier=notifier if notifier is not None else NullNotifier())
 
     @property
     def producer(self) -> EnrichProducer:

@@ -58,7 +58,8 @@ class PipelineRunner:
 
         config = AppConfigLoader(self._root).scout()
         ids_before = {j["id"] for j in self._store().load()}
-        await PipelineRuntime(ScoutTask(config, self._root, on_event=on_event)).run(
+        await PipelineRuntime(ScoutTask(config, self._root, on_event=on_event,
+                                        notifier=self._notifier())).run(
             on_progress=on_progress, should_cancel=should_cancel)
         return sum(1 for j in self._store().load() if j["id"] not in ids_before)
 
@@ -81,7 +82,8 @@ class PipelineRunner:
             worker_count=config.worker_count,
         )
         ids_before = {j["id"] for j in self._store().load()}
-        await PipelineRuntime(ScoutTask(filtered, self._root, on_event=on_event)).run(
+        await PipelineRuntime(ScoutTask(filtered, self._root, on_event=on_event,
+                                        notifier=self._notifier())).run(
             on_progress=on_progress, should_cancel=should_cancel)
         return sum(1 for j in self._store().load() if j["id"] not in ids_before)
 
@@ -104,7 +106,8 @@ class PipelineRunner:
             tracked_companies=match,
         )
         ids_before = {j["id"] for j in self._store().load()}
-        await PipelineRuntime(ScoutTask(filtered, self._root, on_event=on_event)).run(
+        await PipelineRuntime(ScoutTask(filtered, self._root, on_event=on_event,
+                                        notifier=self._notifier())).run(
             on_progress=on_progress, should_cancel=should_cancel)
         return sum(1 for j in self._store().load() if j["id"] not in ids_before)
 
@@ -115,7 +118,8 @@ class PipelineRunner:
         from enrich.task import EnrichTask
 
         count = sum(1 for j in self._store().load() if j.get("state") == "discovered")
-        await PipelineRuntime(EnrichTask(self._root, on_event=on_event)).run(
+        await PipelineRuntime(EnrichTask(self._root, on_event=on_event,
+                                         notifier=self._notifier())).run(
             on_progress=on_progress, should_cancel=should_cancel)
         return count
 
@@ -128,9 +132,28 @@ class PipelineRunner:
         from enrich.task import EnrichTask
 
         available = sum(1 for j in self._store().load() if j.get("state") == "discovered")
-        await PipelineRuntime(EnrichTask(self._root, limit=limit, on_event=on_event)).run(
+        await PipelineRuntime(EnrichTask(self._root, limit=limit, on_event=on_event,
+                                         notifier=self._notifier())).run(
             on_progress=on_progress, should_cancel=should_cancel)
         return min(limit, available)
+
+    def _notifier(self):
+        from core.config import AppConfigLoader
+        from notifications.notifier import NullNotifier
+        from notifications.telegram import TelegramNotifier
+
+        cfg = AppConfigLoader(self._root).notifications()
+        if cfg.bot_token and cfg.chat_id:
+            return TelegramNotifier(
+                bot_token=cfg.bot_token,
+                chat_id=cfg.chat_id,
+                notify_match=cfg.notify_match,
+                notify_review=cfg.notify_review,
+                notify_summary=cfg.notify_summary,
+                notify_scout=cfg.notify_scout,
+                notify_enrich=cfg.notify_enrich,
+            )
+        return NullNotifier()
 
     async def enrich_job(self, job_id: str, on_event: Callable[[dict], None] | None = None) -> bool:
         from core.config import AppConfigLoader
@@ -145,7 +168,7 @@ class PipelineRunner:
 
         cfg = AppConfigLoader(self._root).enrich()
         log = RunLogger("enrich", self._root, on_event=on_event)
-        consumer = EnrichConsumer(all_apps, store, log, model=cfg.model)
+        consumer = EnrichConsumer(all_apps, store, log, model=cfg.model, notifier=self._notifier())
         await consumer.on_start(1)
         await consumer.consume(job)
         await consumer.finalize()
@@ -158,7 +181,7 @@ class PipelineRunner:
         from evaluate.task import EvaluateTask
 
         count = sum(1 for j in self._store().load() if j.get("state") == "parsed")
-        await PipelineRuntime(EvaluateTask(self._root, on_event=on_event)).run(
+        await PipelineRuntime(EvaluateTask(self._root, on_event=on_event, notifier=self._notifier())).run(
             on_progress=on_progress, should_cancel=should_cancel)
         return count
 
@@ -185,7 +208,7 @@ class PipelineRunner:
         from evaluate.task import EvaluateTask
 
         available = sum(1 for j in self._store().load() if j.get("state") == "parsed")
-        task = EvaluateTask(self._root, on_event=on_event)
+        task = EvaluateTask(self._root, on_event=on_event, notifier=self._notifier())
         task.limit = limit
         await PipelineRuntime(task).run(on_progress=on_progress, should_cancel=should_cancel)
         return min(limit, available)
@@ -221,6 +244,7 @@ class PipelineRunner:
             auto_match=evaluate_config.auto_match_threshold,
             location_reject=evaluate_config.location_reject_threshold,
             log=log,
+            notifier=self._notifier(),
         )
         await consumer.on_start(1)
         await consumer.consume(job)

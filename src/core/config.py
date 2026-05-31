@@ -85,10 +85,22 @@ class EvaluateSettings:
 
 
 @dataclass
+class NotificationSettings:
+    bot_token: str | None = None
+    chat_id: str | None = None
+    notify_match: bool = True
+    notify_review: bool = True
+    notify_summary: bool = True
+    notify_scout: bool = True
+    notify_enrich: bool = True
+
+
+@dataclass
 class AppSettings:
     scout: ScoutSettings = field(default_factory=ScoutSettings)
     enrich: EnrichSettings = field(default_factory=EnrichSettings)
     evaluate: EvaluateSettings = field(default_factory=EvaluateSettings)
+    notifications: NotificationSettings = field(default_factory=NotificationSettings)
 
 
 # ---------------------------------------------------------------------------
@@ -161,6 +173,19 @@ class AppConfigLoader:
             auto_match_threshold=s.auto_match_threshold,
             scoring_weights=s.scoring_weights,
             model=s.model or os.environ.get("EVALUATE_MODEL") or None,
+        )
+
+    def notifications(self) -> NotificationSettings:
+        raw = self._yaml("configs/settings.yaml")
+        t = raw.get("notifications", {}).get("telegram", {})
+        return NotificationSettings(
+            bot_token=t.get("bot_token") or os.environ.get("TELEGRAM_BOT_TOKEN") or None,
+            chat_id=t.get("chat_id") or os.environ.get("TELEGRAM_CHAT_ID") or None,
+            notify_match=t.get("notify_match", True),
+            notify_review=t.get("notify_review", True),
+            notify_summary=t.get("notify_summary", True),
+            notify_scout=t.get("notify_scout", True),
+            notify_enrich=t.get("notify_enrich", True),
         )
 
     def profile(self) -> dict:

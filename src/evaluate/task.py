@@ -12,6 +12,7 @@ from evaluate.fit_scorer import FitScorer
 from evaluate.producer import EvaluateProducer
 from evaluate.consumer import EvaluateConsumer
 from evaluate.vetting import Vetter
+from notifications.notifier import NullNotifier, Notifier
 
 
 class EvaluateTask(BaseTask[dict]):
@@ -19,7 +20,7 @@ class EvaluateTask(BaseTask[dict]):
     checkpoint_every = 5
     start_gap: tuple[float, float] | None = None
 
-    def __init__(self, root_dir: Path, on_event=None) -> None:
+    def __init__(self, root_dir: Path, on_event=None, notifier: Notifier = None) -> None:
         loader = AppConfigLoader(root_dir)
         evaluate_config = loader.evaluate()
         profile = loader.profile()
@@ -43,6 +44,7 @@ class EvaluateTask(BaseTask[dict]):
             auto_match=evaluate_config.auto_match_threshold,
             location_reject=evaluate_config.location_reject_threshold,
             log=log,
+            notifier=notifier if notifier is not None else NullNotifier(),
         )
 
     @property

@@ -75,6 +75,24 @@ class PipelineCLI:
 
         return parser
 
+    def _notifier(self):
+        from core.config import AppConfigLoader
+        from notifications.notifier import NullNotifier
+        from notifications.telegram import TelegramNotifier
+
+        cfg = AppConfigLoader(self._root).notifications()
+        if cfg.bot_token and cfg.chat_id:
+            return TelegramNotifier(
+                bot_token=cfg.bot_token,
+                chat_id=cfg.chat_id,
+                notify_match=cfg.notify_match,
+                notify_review=cfg.notify_review,
+                notify_summary=cfg.notify_summary,
+                notify_scout=cfg.notify_scout,
+                notify_enrich=cfg.notify_enrich,
+            )
+        return NullNotifier()
+
     async def _run_scout(self, company: str | None = None) -> None:
         from core.config import AppConfigLoader, ScoutConfig
         from core.runtime import PipelineRuntime
@@ -93,7 +111,7 @@ class PipelineCLI:
             )
             print(f"[*] Scoping scout to: {match[0]['name']}")
 
-        await PipelineRuntime(ScoutTask(config, self._root)).run()
+        await PipelineRuntime(ScoutTask(config, self._root, notifier=self._notifier())).run()
 
     async def _run_enrich(
         self,
@@ -104,14 +122,13 @@ class PipelineCLI:
         from core.runtime import PipelineRuntime
         from enrich.task import EnrichTask
         await PipelineRuntime(
-            EnrichTask(self._root, limit=limit, concurrency=concurrency,
-                       checkpoint_every=checkpoint_every)
+            EnrichTask(self._root, limit=limit, notifier=self._notifier())
         ).run()
 
     async def _run_evaluate(self) -> None:
         from core.runtime import PipelineRuntime
         from evaluate.task import EvaluateTask
-        await PipelineRuntime(EvaluateTask(self._root)).run()
+        await PipelineRuntime(EvaluateTask(self._root, notifier=self._notifier())).run()
 
     def _run_fix_errors(self, last_n: int = 3) -> None:
         from repair.repair import RepairOrchestrator

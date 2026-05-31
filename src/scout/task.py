@@ -7,6 +7,7 @@ from pathlib import Path
 from core.config import ScoutConfig
 from core.logger import RunLogger
 from core.task import BaseTask
+from notifications.notifier import NullNotifier, Notifier
 from scout.producer import ScoutProducer
 from scout.consumer import ScoutConsumer
 
@@ -15,11 +16,13 @@ class ScoutTask(BaseTask[dict]):
     checkpoint_every = 1
     start_gap: tuple[float, float] | None = None
 
-    def __init__(self, config: ScoutConfig, root_dir: Path, on_event=None) -> None:
+    def __init__(self, config: ScoutConfig, root_dir: Path, on_event=None,
+                 notifier: Notifier = None) -> None:
         self.concurrency = config.worker_count
         log = RunLogger("scout", root_dir, on_event=on_event)
         self._producer = ScoutProducer(config)
-        self._consumer = ScoutConsumer(config, root_dir, log)
+        self._consumer = ScoutConsumer(config, root_dir, log,
+                                       notifier=notifier if notifier is not None else NullNotifier())
 
     @property
     def producer(self) -> ScoutProducer:
