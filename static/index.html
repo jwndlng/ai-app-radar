@@ -1071,33 +1071,117 @@
       .sort-bar { flex-wrap: wrap; gap: 4px; }
     }
 
-    @media (max-width: 768px) {
-      body {
-        flex-direction: column;
-        padding-top: var(--nav-height);
-      }
+    /* ── Mobile nav dropdown (base: hidden on desktop) ──────────────────────── */
+    .nav-mobile-toggle {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border: none;
+      background: transparent;
+      color: var(--text-secondary);
+      cursor: pointer;
+      border-radius: var(--radius-sm);
+      font-size: 1.1rem;
+      transition: background 0.15s, color 0.15s;
+      flex-shrink: 0;
+    }
+    .nav-mobile-toggle:hover { background: var(--bg-sidebar); color: var(--text-primary); }
 
+    .nav-dropdown {
+      display: none;
+      position: fixed;
+      top: var(--nav-height);
+      left: 0; right: 0;
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border-color);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+      z-index: 190;
+      flex-direction: column;
+      padding: 4px 0;
+    }
+    .nav-dropdown.open { display: flex; }
+    .nav-dropdown-item {
+      width: 100%;
+      padding: 12px var(--padding-lg);
+      border: none;
+      border-bottom: 1px solid var(--border-color);
+      background: transparent;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      cursor: pointer;
+      text-align: left;
+      transition: background 0.15s, color 0.15s;
+    }
+    .nav-dropdown-item:last-child { border-bottom: none; }
+    .nav-dropdown-item:hover { background: var(--bg-sidebar); color: var(--text-primary); }
+    .nav-dropdown-item.active { color: var(--accent-primary); background: var(--bg-sidebar); }
+
+    /* ── Mobile filters header (base: hidden on desktop) ────────────────────── */
+    .filters-header {
+      display: none;
+      width: 100%;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px var(--padding-lg);
+      border: none;
+      background: transparent;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--text-secondary);
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      transition: color 0.15s;
+    }
+    .filters-header:hover { color: var(--text-primary); }
+
+    /* Sidebar inner: transparent on desktop, collapsible on mobile */
+    .sidebar-inner { display: contents; }
+
+    @media (max-width: 768px) {
+      body { flex-direction: column; padding-top: var(--nav-height); }
+
+      /* Nav: hide desktop-only controls, show mobile toggle on left */
+      .nav-toggle, .nav-tab, .nav-gear { display: none; }
+      .nav-mobile-toggle { display: flex; margin-left: 0; }
+      .nav-title { margin-right: auto; font-size: 0.85rem; }
+
+      /* Sidebar: always visible inline, no slide animation */
       .sidebar {
         position: relative;
-        left: auto;
-        top: auto;
+        left: auto; top: auto;
         width: 100%;
         height: auto;
-        max-height: 60vh;
         border-right: none;
         border-bottom: 1px solid var(--border-color);
-        transition: max-height 0.25s ease, padding 0.25s ease;
         z-index: 50;
+        padding: 0;
+        gap: 0;
+        overflow: visible;
+        transition: none;
+      }
+      .sidebar.collapsed { transform: none; }
+
+      /* Filters header: shown on mobile */
+      .filters-header { display: flex; }
+
+      /* Sidebar content: hidden until expanded */
+      .sidebar-inner { display: none; }
+      .sidebar-inner.open {
+        display: flex;
+        flex-direction: column;
+        gap: var(--padding-md);
+        padding: var(--padding-md) var(--padding-lg);
+        max-height: 60vh;
+        overflow-y: auto;
       }
 
-      .sidebar.collapsed {
-        max-height: 0;
-        overflow: hidden;
-        padding-top: 0;
-        padding-bottom: 0;
-        transform: none;
-      }
-
+      /* Main content: full width, no left margin */
       .main-content,
       .main-content.sidebar-collapsed {
         margin-left: 0;
@@ -1106,10 +1190,12 @@
         width: 100%;
       }
 
-      .scan-filter-btn,
-      .pf-node {
-        min-height: 44px;
-      }
+      /* Pipeline steps: vertical stack */
+      .pipeline-card-steps { flex-direction: column; }
+      .pipeline-card-step { border-right: none; border-bottom: 1px solid var(--border-color); }
+      .pipeline-card-step:last-child { border-bottom: none; }
+
+      .scan-filter-btn, .pf-node { min-height: 44px; }
     }
 
     /* ── Top Navigation ────────────────────────────────────────────────────── */
@@ -1643,6 +1729,7 @@
   <!-- ── Top Navigation ───────────────────────────────────────────────── -->
   <nav class="top-nav">
     <button class="nav-toggle" @click="sidebarOpen = !sidebarOpen" :title="sidebarOpen ? 'Hide sidebar' : 'Show sidebar'">☰</button>
+    <button class="nav-mobile-toggle" @click="navOpen = !navOpen" :title="navOpen ? 'Close menu' : 'Open menu'">☰</button>
     <span class="nav-title">AI-powered Application Radar</span>
     <button class="nav-tab" :class="{active: currentView === 'jobs'}" @click="currentView = 'jobs'">Jobs</button>
     <button class="nav-tab" :class="{active: currentView === 'companies'}" @click="currentView = 'companies'; loadCompanies()">Companies</button>
@@ -1651,8 +1738,25 @@
     <button class="nav-gear" :class="{active: currentView === 'settings'}" @click="currentView = (currentView === 'settings' ? 'jobs' : 'settings')">⚙ Settings</button>
   </nav>
 
+  <!-- Mobile nav dropdown -->
+  <div class="nav-dropdown" :class="{open: navOpen}">
+    <button class="nav-dropdown-item" :class="{active: currentView === 'jobs'}" @click="currentView = 'jobs'; navOpen = false">Jobs</button>
+    <button class="nav-dropdown-item" :class="{active: currentView === 'companies'}" @click="currentView = 'companies'; loadCompanies(); navOpen = false">Companies</button>
+    <button class="nav-dropdown-item" :class="{active: currentView === 'profile'}" @click="currentView = 'profile'; loadProfile(); navOpen = false">Profile</button>
+    <button class="nav-dropdown-item" :class="{active: currentView === 'tasks'}" @click="currentView = 'tasks'; navOpen = false">Tasks</button>
+    <button class="nav-dropdown-item" :class="{active: currentView === 'settings'}" @click="currentView = (currentView === 'settings' ? 'jobs' : 'settings'); navOpen = false">⚙ Settings</button>
+  </div>
+
   <!-- ── Sidebar ────────────────────────────────────────────────────────── -->
   <aside class="sidebar" :class="{'collapsed': !sidebarOpen}" x-show="currentView !== 'settings' && currentView !== 'tasks'">
+
+    <!-- Mobile: filters expand/collapse header -->
+    <button class="filters-header" @click="filtersOpen = !filtersOpen">
+      <span>Filters</span>
+      <span x-text="filtersOpen ? '▲' : '▼'" style="font-size:0.7rem;"></span>
+    </button>
+
+    <div class="sidebar-inner" :class="{'open': filtersOpen}">
 
     <!-- Jobs sidebar -->
     <div x-show="currentView === 'jobs'" style="display:contents;">
@@ -1806,6 +1910,8 @@
         <span>Dark Mode</span>
       </div>
     </div>
+
+    </div><!-- /.sidebar-inner -->
 
   </aside>
 
@@ -3062,6 +3168,8 @@
         sortAsc: false,
         visibleCount: 50,
         sidebarOpen: true,
+        navOpen: false,
+        filtersOpen: false,
         currentView: 'jobs',
         rejectPrompt: { jobId: null, reason: '' },
         companies: [],
