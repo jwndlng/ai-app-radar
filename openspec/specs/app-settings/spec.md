@@ -73,3 +73,25 @@ When `scout.respect_robots` is `true`, the system SHALL check `robots.txt` for e
 #### Scenario: Robots disabled — all companies fetched
 - **WHEN** `respect_robots=false`
 - **THEN** no robots.txt check is performed and all companies are fetched regardless
+
+### Requirement: Settings file schema includes a notifications section
+The system SHALL support an optional `notifications` top-level key in `configs/settings.yaml` alongside the existing `scout`, `enrich`, and `evaluate` sections. When absent, all notification settings SHALL default to disabled (no notifications sent). The `AppSettings` dataclass SHALL include a `NotificationSettings` field, and `AppConfigLoader` SHALL expose a `notifications()` method returning a `NotificationSettings` dataclass.
+
+#### Scenario: Missing notifications block defaults to no-op
+- **WHEN** `configs/settings.yaml` has no `notifications` key
+- **THEN** `AppConfigLoader.notifications()` returns a `NotificationSettings` with `bot_token=None` and `chat_id=None`
+
+#### Scenario: Notifications block is parsed correctly
+- **WHEN** `configs/settings.yaml` contains a valid `notifications.telegram` block with `bot_token` and `chat_id` set
+- **THEN** `AppConfigLoader.notifications()` returns those values in the `NotificationSettings` dataclass
+
+### Requirement: Telegram credentials fall back to environment variables
+When `notifications.telegram.bot_token` or `chat_id` is `null` or absent in `settings.yaml`, the system SHALL fall back to `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` environment variables respectively, consistent with the existing `SCOUT_MODEL` / `ENRICH_MODEL` / `EVALUATE_MODEL` pattern.
+
+#### Scenario: Null token uses env var
+- **WHEN** `settings.yaml` has `notifications.telegram.bot_token: null` and `TELEGRAM_BOT_TOKEN=abc123` is set
+- **THEN** `AppConfigLoader.notifications()` returns `bot_token="abc123"`
+
+#### Scenario: Settings value overrides env var
+- **WHEN** `settings.yaml` has `notifications.telegram.bot_token: "from-file"` and `TELEGRAM_BOT_TOKEN=from-env` is set
+- **THEN** `AppConfigLoader.notifications()` returns `bot_token="from-file"`
