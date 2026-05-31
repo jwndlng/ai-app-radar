@@ -1,49 +1,40 @@
-name: PR Conventions
-
+name: Conventional Commits PR title check
 on:
   pull_request:
-    types: [opened, edited, synchronize, reopened]
-  pull_request_target:
-    types: [opened, edited, synchronize, reopened]
+    types:
+      - opened
+      - reopened
+      - edited
+      - synchronize
 
 jobs:
-  validate-title:
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: amannn/action-semantic-pull-request@48f256284bd46cdaab1048c3721360e808335d50  # v6.1.1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          types: |
-            feat
-            fix
-            chore
-            build
-            ci
-            docs
-            style
-            refactor
-            perf
-            test
-
-  auto-label:
-    if: github.event_name == 'pull_request_target'
+  check:
+    name: conventional-pr-title:required
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
     steps:
-      - name: Apply type label and breaking-change label
+        # Conventional commit patterns:
+        #   verb: description
+        #   verb!: description of breaking change
+        #   verb(scope): Description of change to $scope
+        #   verb(scope)!: Description of breaking change to $scope
+        # verb: feat, fix, ...
+        # scope: refers to the part of code being changed.  E.g. " (accounts)" or " (accounts,canisters)"
+        # !: Indicates that the PR contains a breaking change.
+      - name: Check PR title
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR_TITLE: ${{ github.event.pull_request.title }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          REPO: ${{ github.repository }}
+          TITLE: ${{ github.event.pull_request.title }}
         run: |
-          TYPE=$(echo "$PR_TITLE" | grep -oP '^[a-z]+(?=[\(!:])')
-          if [ -n "$TYPE" ]; then
-            gh pr edit "$PR_NUMBER" --repo "$REPO" --add-label "$TYPE" || true
+          echo "PR title: $TITLE"
+          if [[ "$TITLE" =~ ^(feat|fix|chore|build|ci|docs|style|refactor|perf|test)(\([-a-zA-Z0-9,]+\))?\!?\: ]]; then
+              echo pass
+          else
+              echo "PR title does not match conventions"
+              exit 1
           fi
-          if echo "$PR_TITLE" | grep -qP '^[a-z]+(\([^)]+\))?!:'; then
-            gh pr edit "$PR_NUMBER" --repo "$REPO" --add-label "major" || true
-          fi
+
+      - name: Add conventional labels
+        uses: action-runner/conventional-labeler@2c9e06155ac5585f82ca9440b3e5edba9e81d433
+        with:
+          access_token: ${{ secrets.GITHUB_TOKEN }}
