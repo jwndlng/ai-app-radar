@@ -58,3 +58,18 @@ When a task sets `start_gap`, the runtime SHALL introduce a random delay between
 #### Scenario: No delay when start_gap is None
 - **WHEN** `task.start_gap` is `None`
 - **THEN** workers SHALL begin processing immediately without any imposed delay
+
+### Requirement: PipelineRuntime accepts a should_cancel callback for graceful stop
+`PipelineRuntime.run()` SHALL accept an optional `should_cancel: Callable[[], bool]` parameter. Before each worker dequeues a new item, it SHALL call `should_cancel()`. If it returns `True`, the worker SHALL stop consuming items and exit; remaining queued items are left unprocessed. Workers that are already mid-item SHALL complete that item before stopping.
+
+#### Scenario: Runtime stops when should_cancel returns True
+- **WHEN** `should_cancel()` returns `True` during a run with 10 items queued
+- **THEN** workers finish their current in-flight items and stop without processing remaining queued items
+
+#### Scenario: Runtime runs normally when should_cancel is not provided
+- **WHEN** `PipelineRuntime.run()` is called without a `should_cancel` argument
+- **THEN** behaviour is unchanged — all items are processed
+
+#### Scenario: In-flight item completes before stop
+- **WHEN** a worker is mid-item (inside `consumer.consume()`) when `should_cancel()` becomes `True`
+- **THEN** the worker completes that item fully before stopping; the item's result is persisted

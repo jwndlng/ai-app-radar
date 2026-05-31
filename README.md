@@ -96,7 +96,7 @@ make run
 make run        # Start the web dashboard → http://localhost:8000
 ```
 
-The dashboard is the recommended way to use the app — Scout, Enrich, and Evaluate are all triggerable with a button, and results update in real time.
+The dashboard is the recommended way to use the app — Scout, Enrich, and Evaluate are all triggerable with a button, results update in real time, and running tasks can be cancelled at any time via the × button on the task card. The layout is responsive and works on mobile.
 
 <details>
 <summary>CLI usage (advanced — no UI required)</summary>
@@ -199,14 +199,26 @@ Key sections:
 
 ### `configs/settings.yaml`
 
-Pipeline thresholds:
+Pipeline thresholds and notification settings:
 
 ```yaml
 evaluate:
   auto_reject: 4.0        # score below this → archived
   auto_match: 8.0         # score above this → match
   location_reject_threshold: 2.0  # location score below this → hard rejected
+
+notifications:
+  telegram:
+    bot_token: null       # or set TELEGRAM_BOT_TOKEN env var
+    chat_id: null         # or set TELEGRAM_CHAT_ID env var
+    notify_match: true    # per-job message on match
+    notify_review: true   # per-job message on review
+    notify_summary: true  # post-evaluate summary
+    notify_scout: true    # post-scout summary
+    notify_enrich: true   # post-enrich summary
 ```
+
+**Telegram setup:** create a bot via [@BotFather](https://t.me/BotFather), get your `chat_id` from [@userinfobot](https://t.me/userinfobot), then add both to `.envrc` or `settings.yaml`. Credentials in `settings.yaml` take precedence over environment variables. Send `/start` to your bot at least once before the first run.
 
 ### Directory layout
 
