@@ -7,15 +7,27 @@ TBD — implements the `Notifier` interface using the Telegram Bot API to delive
 ## Requirements
 
 ### Requirement: TelegramNotifier sends a per-job message for matches and reviews
-`TelegramNotifier` SHALL implement `Notifier` and send a `sendMessage` request to `https://api.telegram.org/bot{token}/sendMessage` on each `on_match` and `on_review` call. The message SHALL include: job title, company name, final score out of 10, and up to three top reasons. Match messages SHALL be prefixed with `✅ Match`, review messages with `👀 Review`. Notification delivery SHALL be best-effort — any HTTP or network error SHALL be caught, printed to stderr, and silently ignored so the pipeline is never blocked.
+`TelegramNotifier` SHALL send a `sendMessage` request with `parse_mode: HTML` on each `on_match` and `on_review` call. The message SHALL be formatted as two lines:
+1. A bold hyperlink line: `<b><a href="{url}">{title}</a> @ {company}</b>`. If `url` is absent, the title SHALL be rendered as plain bold text without an `<a>` tag.
+2. A scores line: `Match — {final}/10  (fit {score} · loc {loc} · sen {sen} · comp {comp})`, using `👀 Review —` prefix for review messages.
 
-#### Scenario: Match message format
-- **WHEN** `on_match` is called with a job scoring 8.9 at "Stripe" for "Senior Backend Engineer" with reasons ["remote-friendly", "senior role"]
-- **THEN** a Telegram message is sent containing "✅ Match", "Senior Backend Engineer", "Stripe", "8.9/10", and the reasons
+Title and company SHALL be HTML-escaped before embedding. The reasons list SHALL NOT be included. Notification delivery SHALL remain best-effort — any HTTP or network error SHALL be caught, printed to stderr, and silently ignored.
 
-#### Scenario: Review message format
-- **WHEN** `on_review` is called with a job scoring 7.1
-- **THEN** a Telegram message is sent containing "👀 Review" and the score
+#### Scenario: Match message format with URL
+- **WHEN** `on_match` is called with a job with `url="https://example.com/job"`, title `"Senior Backend Engineer"`, company `"Stripe"`, `final_score=8.9`, `score=9.1`, `location_score=8.0`, `seniority_score=9.0`, `compensation_score=8.5`
+- **THEN** a Telegram message is sent with `parse_mode: HTML` containing `<b><a href="https://example.com/job">Senior Backend Engineer</a> @ Stripe</b>` on the first line and `Match — 8.9/10  (fit 9.1 · loc 8.0 · sen 9.0 · comp 8.5)` on the second line
+
+#### Scenario: Match message format without URL
+- **WHEN** `on_match` is called with a job that has no `url` field
+- **THEN** the first line is `<b>Senior Backend Engineer @ Stripe</b>` with no `<a>` tag
+
+#### Scenario: Review message uses review prefix
+- **WHEN** `on_review` is called
+- **THEN** the scores line is prefixed with `👀 Review —` instead of `✅ Match —`
+
+#### Scenario: HTML special characters are escaped
+- **WHEN** `on_match` is called with a job whose title contains `&`, `<`, or `>`
+- **THEN** those characters are HTML-escaped in the message so Telegram renders them correctly
 
 #### Scenario: Network failure does not abort the pipeline
 - **WHEN** the Telegram API is unreachable during `on_match`

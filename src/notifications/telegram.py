@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import html
 import sys
 
 import httpx
@@ -68,18 +69,28 @@ class TelegramNotifier(Notifier):
 
     @staticmethod
     def _format_job(prefix: str, job: dict, score: float, reasons: list[str]) -> str:
-        title = job.get("title", "?")
-        company = job.get("company", "?")
-        top_reasons = "\n".join(f"→ {r}" for r in reasons[:3])
-        lines = [f"{prefix} — {score}/10", f"", f"{title}", f"@ {company}"]
-        if top_reasons:
-            lines += ["", top_reasons]
-        return "\n".join(lines)
+        title = html.escape(job.get("title", "?"))
+        company = html.escape(job.get("company", "?"))
+        url = job.get("url")
+        fit = job.get("score", "?")
+        loc = job.get("location_score", "?")
+        sen = job.get("seniority_score", "?")
+        comp = job.get("compensation_score", "?")
+
+        if url:
+            header = f'<b><a href="{html.escape(url)}">{title}</a> @ {company}</b>'
+        else:
+            header = f"<b>{title} @ {company}</b>"
+
+        scores = f"{prefix} — {score}/10  (fit {fit} · loc {loc} · sen {sen} · comp {comp})"
+        return f"{header}\n{scores}"
 
     async def _send(self, text: str) -> None:
         try:
             url = _API.format(token=self._token)
-            resp = await self._client.post(url, json={"chat_id": self._chat_id, "text": text})
+            resp = await self._client.post(
+                url, json={"chat_id": self._chat_id, "text": text, "parse_mode": "HTML"}
+            )
             if not resp.is_success:
                 print(f"[telegram] API error {resp.status_code}: {resp.text}", file=sys.stderr)
         except Exception as exc:
