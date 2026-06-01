@@ -1923,6 +1923,7 @@
     <header style="margin-bottom: var(--padding-md);">
       <h1 style="font-size:1.6rem;">Jobs</h1>
       <p style="color:var(--text-secondary); font-size:0.88rem;">AI-powered Application Radar</p>
+      <p x-show="appVersion" x-text="appVersion" style="color:var(--text-secondary); font-size:0.75rem; margin-top:2px;"></p>
     </header>
 
     <!-- Pipeline steps + actions -->
@@ -3202,6 +3203,7 @@
         newDomainName: '',
         newDomainWeight: 5,
         domainSaveTimer: null,
+        appVersion: '',
 
         get scanTypeCounts() {
           const descs = {
@@ -3353,6 +3355,7 @@
 
         async init() {
           if (window.innerWidth < 768) this.sidebarOpen = false
+          fetch('/api/version').then(r => r.json()).then(d => { this.appVersion = d.version })
           await this.loadJobs()
           await this.loadTasks()
           await this.loadSettings()

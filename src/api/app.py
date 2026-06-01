@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 from fastapi import FastAPI
@@ -17,7 +18,7 @@ TASKS_FILE = ROOT_DIR / "artifacts" / "tasks.json"
 
 
 def create_app() -> FastAPI:
-    app = FastAPI(title="Pipeline API", version="1.0.0")
+    app = FastAPI(title="Pipeline API", version=os.environ.get("APP_VERSION", "dev"))
     app.include_router(router, prefix="/api")
 
     STATIC_DIR.mkdir(exist_ok=True)
