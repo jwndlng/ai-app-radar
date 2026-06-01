@@ -90,9 +90,9 @@ class NotificationSettings:
     chat_id: str | None = None
     notify_match: bool = True
     notify_review: bool = True
-    notify_summary: bool = True
-    notify_scout: bool = True
-    notify_enrich: bool = True
+    notify_evaluate_summary: bool = True
+    notify_scout_summary: bool = True
+    notify_enrich_summary: bool = True
 
 
 @dataclass
@@ -183,9 +183,9 @@ class AppConfigLoader:
             chat_id=t.get("chat_id") or os.environ.get("TELEGRAM_CHAT_ID") or None,
             notify_match=t.get("notify_match", True),
             notify_review=t.get("notify_review", True),
-            notify_summary=t.get("notify_summary", True),
-            notify_scout=t.get("notify_scout", True),
-            notify_enrich=t.get("notify_enrich", True),
+            notify_evaluate_summary=t.get("notify_evaluate_summary", True),
+            notify_scout_summary=t.get("notify_scout_summary", True),
+            notify_enrich_summary=t.get("notify_enrich_summary", True),
         )
 
     def profile(self) -> dict:
