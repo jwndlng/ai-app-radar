@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import os
 
 from fastapi import APIRouter, BackgroundTasks, Body, Depends
 from fastapi.responses import JSONResponse
@@ -15,6 +16,11 @@ from core.state_machine import StateMachine
 _ALLOWED_MANUAL_STATES = {"rejected", "applied", "match"}
 
 router = APIRouter()
+
+
+@router.get("/version")
+def get_version() -> dict:
+    return {"version": os.environ.get("APP_VERSION", "dev")}
 
 
 class LimitBody(BaseModel):

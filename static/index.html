@@ -377,6 +377,47 @@
     .filter-group { display: flex; flex-direction: column; gap: 8px; }
     .filter-group label { font-size: 0.82rem; font-weight: 700; color: var(--text-primary); margin-top: 4px; }
 
+    .sidebar-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      align-self: flex-end;
+      width: 24px;
+      height: 24px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-sidebar);
+      color: var(--text-secondary);
+      cursor: pointer;
+      border-radius: var(--radius-sm);
+      font-size: 0.9rem;
+      line-height: 1;
+      margin: 4px 4px 4px auto;
+      flex-shrink: 0;
+      transition: background 0.15s, color 0.15s;
+    }
+    .sidebar-toggle:hover { background: var(--border-color); color: var(--text-primary); }
+
+    .sidebar-expand {
+      position: fixed;
+      left: 0;
+      top: calc(var(--nav-height) + 8px);
+      z-index: 101;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 20px;
+      height: 28px;
+      border: 1px solid var(--border-color);
+      border-left: none;
+      background: var(--bg-sidebar);
+      color: var(--text-secondary);
+      cursor: pointer;
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      font-size: 0.9rem;
+      transition: background 0.15s, color 0.15s;
+    }
+    .sidebar-expand:hover { background: var(--border-color); color: var(--text-primary); }
+
     .sidebar-heading {
       font-size: 0.72rem;
       font-weight: 700;
@@ -1147,8 +1188,9 @@
       body { flex-direction: column; padding-top: var(--nav-height); }
 
       /* Nav: hide desktop-only controls, show mobile toggle on left */
-      .nav-toggle, .nav-tab, .nav-gear { display: none; }
+      .nav-tab, .nav-gear { display: none; }
       .nav-mobile-toggle { display: flex; margin-left: 0; }
+      .sidebar-toggle { display: none; }
       .nav-title { margin-right: auto; font-size: 0.85rem; }
 
       /* Sidebar: always visible inline, no slide animation */
@@ -1219,6 +1261,15 @@
       font-weight: 700;
       color: var(--text-primary);
       margin-right: var(--padding-md);
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+    .nav-version {
+      font-size: 0.65rem;
+      font-weight: 400;
+      color: var(--text-secondary);
+      letter-spacing: 0.02em;
     }
 
     .nav-tab {
@@ -1728,15 +1779,20 @@
 
   <!-- ── Top Navigation ───────────────────────────────────────────────── -->
   <nav class="top-nav">
-    <button class="nav-toggle" @click="sidebarOpen = !sidebarOpen" :title="sidebarOpen ? 'Hide sidebar' : 'Show sidebar'">☰</button>
     <button class="nav-mobile-toggle" @click="navOpen = !navOpen" :title="navOpen ? 'Close menu' : 'Open menu'">☰</button>
-    <span class="nav-title">AI-powered Application Radar</span>
+    <span class="nav-title">
+      <span>AI-powered Application Radar</span>
+      <span class="nav-version" x-show="appVersion" x-text="appVersion"></span>
+    </span>
     <button class="nav-tab" :class="{active: currentView === 'jobs'}" @click="currentView = 'jobs'">Jobs</button>
     <button class="nav-tab" :class="{active: currentView === 'companies'}" @click="currentView = 'companies'; loadCompanies()">Companies</button>
     <button class="nav-tab" :class="{active: currentView === 'profile'}" @click="currentView = 'profile'; loadProfile()">Profile</button>
     <button class="nav-tab" :class="{active: currentView === 'tasks'}" @click="currentView = 'tasks'">Tasks</button>
     <button class="nav-gear" :class="{active: currentView === 'settings'}" @click="currentView = (currentView === 'settings' ? 'jobs' : 'settings')">⚙ Settings</button>
   </nav>
+
+  <!-- Sidebar expand button — fixed to left edge below nav, shown only when sidebar is collapsed -->
+  <button class="sidebar-expand" x-show="!sidebarOpen && currentView !== 'settings' && currentView !== 'tasks'" @click="sidebarOpen = true" title="Expand sidebar">›</button>
 
   <!-- Mobile nav dropdown -->
   <div class="nav-dropdown" :class="{open: navOpen}">
@@ -1749,6 +1805,9 @@
 
   <!-- ── Sidebar ────────────────────────────────────────────────────────── -->
   <aside class="sidebar" :class="{'collapsed': !sidebarOpen}" x-show="currentView !== 'settings' && currentView !== 'tasks'">
+
+    <!-- Desktop: sidebar collapse/expand toggle -->
+    <button class="sidebar-toggle" @click="sidebarOpen = !sidebarOpen" :title="sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'" x-text="sidebarOpen ? '‹' : '›'"></button>
 
     <!-- Mobile: filters expand/collapse header -->
     <button class="filters-header" @click="filtersOpen = !filtersOpen">
@@ -3202,6 +3261,7 @@
         newDomainName: '',
         newDomainWeight: 5,
         domainSaveTimer: null,
+        appVersion: '',
 
         get scanTypeCounts() {
           const descs = {
@@ -3353,6 +3413,7 @@
 
         async init() {
           if (window.innerWidth < 768) this.sidebarOpen = false
+          fetch('/api/version').then(r => r.json()).then(d => { this.appVersion = d.version })
           await this.loadJobs()
           await this.loadTasks()
           await this.loadSettings()
