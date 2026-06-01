@@ -21,8 +21,8 @@ notifications:
   telegram:
     bot_token: null
     chat_id: null
-    notify_scout: true
-    notify_enrich: true
     notify_match: true
     notify_review: true
-    notify_summary: true
+    notify_scout_summary: true
+    notify_enrich_summary: true
+    notify_evaluate_summary: true

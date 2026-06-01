@@ -19,17 +19,17 @@ class TelegramNotifier(Notifier):
         chat_id: str,
         notify_match: bool = True,
         notify_review: bool = True,
-        notify_summary: bool = True,
-        notify_scout: bool = True,
-        notify_enrich: bool = True,
+        notify_evaluate_summary: bool = True,
+        notify_scout_summary: bool = True,
+        notify_enrich_summary: bool = True,
     ) -> None:
         self._token = bot_token
         self._chat_id = chat_id
         self._notify_match = notify_match
         self._notify_review = notify_review
-        self._notify_summary = notify_summary
-        self._notify_scout = notify_scout
-        self._notify_enrich = notify_enrich
+        self._notify_evaluate_summary = notify_evaluate_summary
+        self._notify_scout_summary = notify_scout_summary
+        self._notify_enrich_summary = notify_enrich_summary
         self._client = httpx.AsyncClient(timeout=_TIMEOUT)
 
     async def on_match(self, job: dict, score: float, reasons: list[str]) -> None:
@@ -45,7 +45,7 @@ class TelegramNotifier(Notifier):
         await self._send(text)
 
     async def on_run_summary(self, matched: int, reviewed: int) -> None:
-        if not self._notify_summary:
+        if not self._notify_evaluate_summary:
             return
         text = (
             f"📊 Evaluate complete\n"
@@ -55,13 +55,13 @@ class TelegramNotifier(Notifier):
         await self._send(text)
 
     async def on_scout_summary(self, discovered: int) -> None:
-        if not self._notify_scout:
+        if not self._notify_scout_summary:
             return
         text = f"🔍 Scout complete\n{discovered} new job{'s' if discovered != 1 else ''} discovered"
         await self._send(text)
 
     async def on_enrich_summary(self, enriched: int) -> None:
-        if not self._notify_enrich:
+        if not self._notify_enrich_summary:
             return
         text = f"⚙️ Enrich complete\n{enriched} job{'s' if enriched != 1 else ''} enriched"
         await self._send(text)

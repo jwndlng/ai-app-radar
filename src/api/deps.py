@@ -149,9 +149,9 @@ class PipelineRunner:
                 chat_id=cfg.chat_id,
                 notify_match=cfg.notify_match,
                 notify_review=cfg.notify_review,
-                notify_summary=cfg.notify_summary,
-                notify_scout=cfg.notify_scout,
-                notify_enrich=cfg.notify_enrich,
+                notify_evaluate_summary=cfg.notify_evaluate_summary,
+                notify_scout_summary=cfg.notify_scout_summary,
+                notify_enrich_summary=cfg.notify_enrich_summary,
             )
         return NullNotifier()
 

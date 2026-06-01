@@ -211,11 +211,11 @@ notifications:
   telegram:
     bot_token: null       # or set TELEGRAM_BOT_TOKEN env var
     chat_id: null         # or set TELEGRAM_CHAT_ID env var
-    notify_match: true    # per-job message on match
-    notify_review: true   # per-job message on review
-    notify_summary: true  # post-evaluate summary
-    notify_scout: true    # post-scout summary
-    notify_enrich: true   # post-enrich summary
+    notify_match: true             # alert per matched job
+    notify_review: true            # alert per review job
+    notify_scout_summary: true     # summary after scout completes
+    notify_enrich_summary: true    # summary after enrich completes
+    notify_evaluate_summary: true  # summary after evaluate completes
 ```
 
 **Telegram setup:** create a bot via [@BotFather](https://t.me/BotFather), get your `chat_id` from [@userinfobot](https://t.me/userinfobot), then add both to `.envrc` or `settings.yaml`. Credentials in `settings.yaml` take precedence over environment variables. Send `/start` to your bot at least once before the first run.
