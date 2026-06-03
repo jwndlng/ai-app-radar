@@ -5495,6 +5495,18 @@
       "enabled": true,
       "category": "Sports & Apparel",
       "employees": "500+"
+    },
+    {
+      "name": "Near One",
+      "description": "Near One is the organization stewarding the NEAR Protocol, a Layer-1 blockchain platform for decentralized applications.",
+      "careers_url": "https://job-boards.eu.greenhouse.io/nearfoundation",
+      "scan_method": "greenhouse_api",
+      "scan_method_config": {
+        "api_base": "https://boards-api.greenhouse.io/v1/boards/nearfoundation/jobs"
+      },
+      "enabled": true,
+      "category": "Blockchain",
+      "employees": "10-50"
     }
   ]
 }
