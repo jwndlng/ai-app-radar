@@ -807,7 +807,7 @@
       "name": "Microsoft (R&D)",
       "careers_url": "https://careers.microsoft.com",
       "scan_method": "agent_review",
-      "enabled": false,
+      "enabled": true,
       "category": "AI/ML",
       "employees": "200+",
       "status": "duplicate",
@@ -830,7 +830,7 @@
       "name": "IBM Research",
       "careers_url": "https://research.ibm.com/labs/zurich/careers",
       "scan_method": "agent_review",
-      "enabled": false,
+      "enabled": true,
       "category": "AI/ML",
       "employees": "350+",
       "source": "zurich_valley",
@@ -971,7 +971,7 @@
       "name": "Snapchat",
       "careers_url": "https://careers.snap.com/",
       "scan_method": "agent_review",
-      "enabled": false,
+      "enabled": true,
       "category": "Social",
       "employees": "50+",
       "source": "zurich_valley",
@@ -1301,7 +1301,7 @@
       "description": "Mobile-first employee communication and operations platform for frontline workforce teams."
     },
     {
-      "name": "Z\u00fchlke",
+      "name": "Zühlke",
       "careers_url": "https://www.zuehlke.com/en/careers",
       "scan_method": "agent_review",
       "enabled": true,
@@ -1790,7 +1790,7 @@
       "name": "Sensirion",
       "careers_url": "https://sensirion.com/career",
       "scan_method": "agent_review",
-      "enabled": false,
+      "enabled": true,
       "category": "Semiconductor",
       "employees": "1000+",
       "status": "low_relevance",
@@ -2047,7 +2047,7 @@
       "description": "University of Zurich center for entrepreneurship, startup support, and innovation ecosystem building."
     },
     {
-      "name": "Impact Hub Z\u00fcrich",
+      "name": "Impact Hub Zürich",
       "careers_url": "https://zurich.impacthub.ch/en/about-us/job-openings/",
       "scan_method": "agent_review",
       "enabled": false,
@@ -2089,7 +2089,7 @@
       "description": "ESA Business Incubation Centre supporting Swiss space-tech startups with funding and mentorship."
     },
     {
-      "name": "IFJ Institut f\u00fcr Jungunternehmen",
+      "name": "IFJ Institut für Jungunternehmen",
       "careers_url": "https://www.ifj.ch",
       "scan_method": "agent_review",
       "enabled": false,
@@ -2455,7 +2455,7 @@
       "name": "Dell Technologies",
       "careers_url": "https://dell.wd1.myworkdayjobs.com/External",
       "scan_method": "workday_api",
-      "enabled": false,
+      "enabled": true,
       "category": "Enterprise",
       "employees": "100+",
       "source": "zurich_valley",
@@ -2558,7 +2558,7 @@
       "name": "Equinix",
       "careers_url": "https://equinix.wd1.myworkdayjobs.com/External",
       "scan_method": "workday_api",
-      "enabled": false,
+      "enabled": true,
       "category": "Cloud",
       "employees": "100+",
       "source": "zurich_valley",
@@ -2577,7 +2577,7 @@
       "description": "Browser-based video and screen collaboration platform for remote engineering and design teams."
     },
     {
-      "name": "USZ Universit\u00e4tsspital",
+      "name": "USZ Universitätsspital",
       "careers_url": "https://job.usz.ch/",
       "scan_method": "agent_review",
       "enabled": false,
@@ -2662,7 +2662,7 @@
       "name": "Nobel Biocare",
       "careers_url": "https://envista.wd1.myworkdayjobs.com/envistacareers",
       "scan_method": "workday_api",
-      "enabled": false,
+      "enabled": true,
       "category": "MedTech",
       "employees": "200+",
       "source": "zurich_valley",
@@ -2740,7 +2740,7 @@
       "name": "TECAN",
       "careers_url": "https://careers.tecan.com/",
       "scan_method": "agent_review",
-      "enabled": false,
+      "enabled": true,
       "category": "MedTech",
       "employees": "500+",
       "status": "low_relevance",
@@ -3581,7 +3581,7 @@
       "description": "Swiss university of applied sciences with strong programs in engineering, business, and health."
     },
     {
-      "name": "ZHAW Z\u00fcrich (Lagerstrasse)",
+      "name": "ZHAW Zürich (Lagerstrasse)",
       "careers_url": "https://www.zhaw.ch/en/jobs/",
       "scan_method": "agent_review",
       "enabled": false,
@@ -3791,7 +3791,7 @@
       "name": "Takeda",
       "careers_url": "https://takeda.wd3.myworkdayjobs.com/External",
       "scan_method": "workday_api",
-      "enabled": false,
+      "enabled": true,
       "category": "MedTech",
       "employees": "500+",
       "source": "zurich_valley",
@@ -3802,7 +3802,7 @@
       "name": "Novo Nordisk",
       "careers_url": "https://careers.novonordisk.com/",
       "scan_method": "agent_review",
-      "enabled": false,
+      "enabled": true,
       "category": "MedTech",
       "employees": "200+",
       "status": "low_relevance",
@@ -4063,7 +4063,7 @@
       "description": "Electric commercial vehicle engineering firm and EV powertrain manufacturer for trucks and buses."
     },
     {
-      "name": "energie360\u00b0",
+      "name": "energie360°",
       "careers_url": "https://energie360.ch/de/arbeiten-bei-energie-360/jobs/",
       "scan_method": "agent_review",
       "enabled": false,
@@ -4180,7 +4180,7 @@
       "name": "Barry Callebaut",
       "careers_url": "https://www.barry-callebaut.com/en/group/careers",
       "scan_method": "agent_review",
-      "enabled": false,
+      "enabled": true,
       "category": "FoodTech",
       "employees": "500+",
       "status": "low_relevance",
@@ -4190,7 +4190,7 @@
       "name": "Amcor",
       "careers_url": "https://amcor.wd5.myworkdayjobs.com/Amcor_External_Career_Site",
       "scan_method": "workday_api",
-      "enabled": false,
+      "enabled": true,
       "category": "FoodTech",
       "employees": "200+",
       "source": "zurich_valley",
@@ -4198,7 +4198,7 @@
       "description": "Global packaging company producing flexible, rigid, and specialty packaging for food and healthcare."
     },
     {
-      "name": "GoNi\u00f1a",
+      "name": "GoNiña",
       "careers_url": "https://gonina.ch/careers",
       "scan_method": "agent_review",
       "enabled": false,
@@ -4349,20 +4349,20 @@
       "description": "R&D division of Givaudan, the world's leading flavour and fragrance company."
     },
     {
-      "name": "Mondel\u0113z Europe",
+      "name": "Mondelēz Europe",
       "careers_url": "https://www.mondelezinternational.com/careers/",
       "scan_method": "agent_review",
-      "enabled": false,
+      "enabled": true,
       "category": "FoodTech",
       "employees": "100+",
       "status": "low_relevance",
-      "description": "European operations of Mondel\u0113z International, producing Oreo, Toblerone, and other snack brands."
+      "description": "European operations of Mondelēz International, producing Oreo, Toblerone, and other snack brands."
     },
     {
       "name": "Coca-Cola HBC",
       "careers_url": "https://www.coca-colahellenic.com/en/careers/",
       "scan_method": "agent_review",
-      "enabled": false,
+      "enabled": true,
       "category": "FoodTech",
       "employees": "100+",
       "status": "low_relevance",
