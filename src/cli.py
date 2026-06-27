@@ -140,10 +140,23 @@ class PipelineCLI:
 
     async def _run_sync(self) -> None:
         print("[sync] Starting full pipeline...")
-        print("\n[sync] Step 1/3: Scout")
+        print("\n[sync] Step 1/4: Scout")
         await self._run_scout()
-        print("\n[sync] Step 2/3: Enrich")
+        print("\n[sync] Step 2/4: Enrich")
         await self._run_enrich()
-        print("\n[sync] Step 3/3: Evaluate")
+        print("\n[sync] Step 3/4: Evaluate")
         await self._run_evaluate()
+        print("\n[sync] Step 4/4: Archive old rejected jobs")
+        self._run_archival()
         print("\n[sync] Pipeline complete.")
+
+    def _run_archival(self) -> None:
+        from core.config import AppConfigLoader
+        from maintenance.archiver import JobArchiver
+
+        try:
+            threshold = AppConfigLoader(self._root).settings().archival.rejected_after_days
+            archived_count = JobArchiver(self._root, rejected_after_days=threshold).run()
+            print(f"[sync] Archived {archived_count} old rejected job(s).")
+        except Exception as e:
+            print(f"[sync] Warning: archival step failed: {e}")

@@ -17,6 +17,8 @@ evaluate:
     seniority: 0.2
     compensation: 0.1
   model: null
+archival:
+  rejected_after_days: 30
 notifications:
   telegram:
     bot_token: null
