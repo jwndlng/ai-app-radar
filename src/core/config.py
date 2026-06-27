@@ -85,6 +85,11 @@ class EvaluateSettings:
 
 
 @dataclass
+class ArchivalSettings:
+    rejected_after_days: int = 30
+
+
+@dataclass
 class NotificationSettings:
     bot_token: str | None = None
     chat_id: str | None = None
@@ -100,6 +105,7 @@ class AppSettings:
     scout: ScoutSettings = field(default_factory=ScoutSettings)
     enrich: EnrichSettings = field(default_factory=EnrichSettings)
     evaluate: EvaluateSettings = field(default_factory=EvaluateSettings)
+    archival: ArchivalSettings = field(default_factory=ArchivalSettings)
     notifications: NotificationSettings = field(default_factory=NotificationSettings)
 
 
@@ -119,6 +125,7 @@ class AppConfigLoader:
         e = raw.get("enrich", {})
         v = raw.get("evaluate", {})
         w = v.get("scoring_weights", {})
+        a = raw.get("archival", {})
         return AppSettings(
             scout=ScoutSettings(
                 respect_robots=s.get("respect_robots", True),
@@ -142,6 +149,9 @@ class AppConfigLoader:
                     compensation=w.get("compensation", 0.1),
                 ),
                 model=v.get("model") or None,
+            ),
+            archival=ArchivalSettings(
+                rejected_after_days=a.get("rejected_after_days", 30),
             ),
         )
 
