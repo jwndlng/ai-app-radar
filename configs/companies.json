@@ -5495,6 +5495,17 @@
       "enabled": true,
       "category": "Sports & Apparel",
       "employees": "500+"
+    },
+    {
+      "name": "Swapcard",
+      "description": "Event management platform for in-person, virtual, and hybrid conferences and exhibitions.",
+      "careers_url": "https://jobs.lever.co/swapcard",
+      "scan_method": "lever_api",
+      "scan_method_config": {
+        "slug": "swapcard"
+      },
+      "enabled": true,
+      "category": "Enterprise"
     }
   ]
 }
