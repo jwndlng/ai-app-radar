@@ -5518,6 +5518,19 @@
       "enabled": true,
       "category": "Blockchain",
       "employees": "10-50"
+    },
+    {
+      "name": "Domino",
+      "description": "Enterprise MLOps platform for managing the full data science and machine learning model lifecycle.",
+      "careers_url": "https://domino.ai/careers",
+      "scan_method": "greenhouse_api",
+      "scan_method_config": {
+        "api_base": "https://boards-api.greenhouse.io/v1/boards/dominodatalab/jobs"
+      },
+      "enabled": true,
+      "category": "AI/ML",
+      "employees": "200-500",
+      "notes": "Careers page is skinned with CareerPuck, but job postings are served via Greenhouse underneath."
     }
   ]
 }
