@@ -150,3 +150,7 @@ Print a confirmation:
 ```
 
 If onboarding was aborted at any step, explain what happened and what the user can do next.
+
+### 9. Committing (if requested)
+
+If the user asks to commit or open a PR for the onboarding, use the `chore:` commit type (not `feat:`) — adding a company config is a data/config change, not a product feature.
