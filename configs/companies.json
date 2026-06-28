@@ -834,7 +834,6 @@
       "category": "AI/ML",
       "employees": "350+",
       "source": "zurich_valley",
-      "status": "low_relevance",
       "description": "IBM's Zurich research lab advancing AI, quantum computing, materials science, and blockchain."
     },
     {
@@ -1091,7 +1090,6 @@
       "category": "Robotics",
       "employees": "100+",
       "source": "zurich_valley",
-      "status": "low_relevance",
       "description": "Autonomous indoor drone systems for automated inventory tracking in logistics warehouses."
     },
     {
@@ -1149,7 +1147,6 @@
       "enabled": false,
       "category": "AI/ML",
       "employees": "30+",
-      "status": "low_relevance",
       "description": "Baidu's autonomous robotaxi and intelligent transportation service platform."
     },
     {
@@ -1160,7 +1157,6 @@
       "category": "AI/ML",
       "employees": "400+",
       "source": "zurich_valley",
-      "status": "low_relevance",
       "description": "Direct air capture technology company scaling CO2 removal to fight climate change."
     },
     {
@@ -1203,7 +1199,6 @@
       "enabled": false,
       "category": "Semiconductor",
       "employees": "20+",
-      "status": "low_relevance",
       "description": "Swiss neuromorphic chip startup building ultra-low-power analog AI inference hardware."
     },
     {
@@ -1234,7 +1229,6 @@
       "enabled": false,
       "category": "AI/ML",
       "employees": "10-50",
-      "status": "low_relevance",
       "description": "Active learning and self-supervised platform for curating computer vision training datasets."
     },
     {
@@ -1266,7 +1260,6 @@
       "enabled": false,
       "category": "CleanTech",
       "employees": "20+",
-      "status": "low_relevance",
       "description": "Mobile recycling platform making waste collection transparent, rewarding, and community-driven."
     },
     {
@@ -1288,7 +1281,6 @@
       "enabled": false,
       "category": "AI/ML",
       "employees": "50+",
-      "status": "low_relevance",
       "description": "Disney's Zurich R&D lab advancing computer graphics, robotics, simulation, and visual effects technology."
     },
     {
@@ -1346,7 +1338,6 @@
       "enabled": false,
       "category": "Academia",
       "employees": "12000+",
-      "status": "low_relevance",
       "description": "Switzerland's leading technical university and one of the world's top research institutions."
     },
     {
@@ -1356,7 +1347,6 @@
       "enabled": false,
       "category": "Academia",
       "employees": "8000+",
-      "status": "low_relevance",
       "description": "Switzerland's largest university with strong research programs across sciences, medicine, and humanities."
     },
     {
@@ -1366,7 +1356,6 @@
       "enabled": false,
       "category": "Academia",
       "employees": "100+",
-      "status": "low_relevance",
       "description": "Interdisciplinary center at ETH Zurich advancing AI research and fostering industry-academia collaboration."
     },
     {
@@ -1376,7 +1365,6 @@
       "enabled": false,
       "category": "Academia",
       "employees": "50+",
-      "status": "low_relevance",
       "description": "University of Zurich's AI research and education initiative spanning faculties and applied projects."
     },
     {
@@ -1444,7 +1432,6 @@
       "enabled": false,
       "category": "Robotics",
       "employees": "10+",
-      "status": "low_relevance",
       "description": "Develops autonomous underwater drones for offshore inspection and scientific exploration."
     },
     {
@@ -1466,7 +1453,6 @@
       "enabled": false,
       "category": "Robotics",
       "employees": "10+",
-      "status": "low_relevance",
       "description": "Develops autonomous drone systems and software for industrial inspection and monitoring."
     },
     {
@@ -1498,7 +1484,6 @@
       "enabled": false,
       "category": "Robotics",
       "employees": "30+",
-      "status": "low_relevance",
       "description": "Aerial security and public safety drone systems for real-time situational awareness."
     },
     {
@@ -1543,7 +1528,6 @@
       "enabled": false,
       "category": "Robotics",
       "employees": "30+",
-      "status": "low_relevance",
       "description": "Autonomous drone-based inspection systems for wind turbine blade assessment and analysis."
     },
     {
@@ -1553,7 +1537,6 @@
       "enabled": false,
       "category": "Robotics",
       "employees": "30+",
-      "status": "low_relevance",
       "description": "Residential autonomous security drone and smart home monitoring system."
     },
     {
@@ -1563,7 +1546,6 @@
       "enabled": false,
       "category": "Robotics",
       "employees": "30+",
-      "status": "low_relevance",
       "description": "Develops heavy-lift unmanned helicopter platforms for professional aerial work applications."
     },
     {
@@ -1573,7 +1555,6 @@
       "enabled": false,
       "category": "Robotics",
       "employees": "10+",
-      "status": "low_relevance",
       "description": "Autonomous indoor drone systems for automated warehouse inventory management and scanning."
     },
     {
@@ -1583,7 +1564,6 @@
       "enabled": false,
       "category": "Robotics",
       "employees": "30+",
-      "status": "low_relevance",
       "description": "Omnidirectional tethered aerial robot for inspection and maintenance of high-access structures."
     },
     {
@@ -1604,7 +1584,6 @@
       "enabled": false,
       "category": "Robotics",
       "employees": "10+",
-      "status": "low_relevance",
       "description": "Develops AI-powered autonomous systems for underground mining and harsh-environment vehicles."
     },
     {
@@ -1614,7 +1593,6 @@
       "enabled": false,
       "category": "Robotics",
       "employees": "50+",
-      "status": "low_relevance",
       "description": "Collaborative and service robots for eldercare, hospitality, and industrial automation."
     },
     {
@@ -1624,7 +1602,6 @@
       "enabled": false,
       "category": "Robotics",
       "employees": "10+",
-      "status": "low_relevance",
       "description": "Develops intelligent mobile robotic platforms for industrial logistics and warehouse automation."
     },
     {
@@ -1634,7 +1611,6 @@
       "enabled": false,
       "category": "Robotics",
       "employees": "50+",
-      "status": "low_relevance",
       "description": "Develops cognitive humanoid robots designed to work safely alongside humans in various environments."
     },
     {
@@ -1667,7 +1643,6 @@
       "enabled": false,
       "category": "Robotics",
       "employees": "20+",
-      "status": "low_relevance",
       "description": "Robotic 3D printing and additive manufacturing systems for large-scale construction fabrication."
     },
     {
@@ -1677,7 +1652,6 @@
       "enabled": false,
       "category": "AI/ML",
       "employees": "10+",
-      "status": "low_relevance",
       "description": "AI agent platform for automating complex knowledge work and business processes."
     },
     {
@@ -1698,7 +1672,6 @@
       "enabled": false,
       "category": "Robotics",
       "employees": "10+",
-      "status": "low_relevance",
       "description": "AI-powered robotic systems and vision technology for industrial pick-and-place automation."
     },
     {
@@ -1730,7 +1703,6 @@
       "enabled": false,
       "category": "AI/ML",
       "employees": "30+",
-      "status": "low_relevance",
       "description": "Optimization-based autonomy and trajectory planning software for industrial and autonomous vehicles."
     },
     {
@@ -1740,7 +1712,6 @@
       "enabled": false,
       "category": "AI/ML",
       "employees": "20+",
-      "status": "low_relevance",
       "description": "High-accuracy GNSS/IMU positioning systems for autonomous vehicles and outdoor robots."
     },
     {
@@ -1793,7 +1764,6 @@
       "enabled": true,
       "category": "Semiconductor",
       "employees": "1000+",
-      "status": "low_relevance",
       "description": "Swiss sensor manufacturer specializing in gas, flow, humidity, and environmental sensing technology."
     },
     {
@@ -1848,7 +1818,6 @@
       "category": "AI/ML",
       "employees": "30+",
       "source": "zurich_valley",
-      "status": "low_relevance",
       "description": "AI-based visual 3D SLAM and localization software for autonomous mobile robots and forklifts."
     },
     {
@@ -1867,7 +1836,6 @@
       "enabled": false,
       "category": "Academia",
       "employees": "100+",
-      "status": "low_relevance",
       "description": "Innovation campus co-locating ETH Zurich research spinoffs and industry R&D teams."
     },
     {
@@ -1888,7 +1856,6 @@
       "enabled": false,
       "category": "Academia",
       "employees": "30+",
-      "status": "low_relevance",
       "description": "Translational research center at ETH and UZH accelerating the development of bioinspired medical devices."
     },
     {
@@ -1953,7 +1920,6 @@
       "enabled": false,
       "category": "Robotics",
       "employees": "10+",
-      "status": "low_relevance",
       "description": "Develops robotic solutions for construction, tunneling, and industrial borehole operations."
     },
     {
@@ -1963,7 +1929,6 @@
       "enabled": false,
       "category": "Academia",
       "employees": "1000+",
-      "status": "low_relevance",
       "description": "Swiss federal materials science and technology research institute conducting applied R&D."
     },
     {
@@ -1973,7 +1938,6 @@
       "enabled": false,
       "category": "Academia",
       "employees": "50+",
-      "status": "low_relevance",
       "description": "ETH Zurich research lab building autonomous robots and vehicles with perception, planning, and learning."
     },
     {
@@ -1983,7 +1947,6 @@
       "enabled": false,
       "category": "Academia",
       "employees": "50+",
-      "status": "low_relevance",
       "description": "ETH Zurich lab advancing legged locomotion, manipulation, and field robotics research."
     },
     {
@@ -1993,7 +1956,6 @@
       "enabled": false,
       "category": "Academia",
       "employees": "30+",
-      "status": "low_relevance",
       "description": "ETH Zurich lab developing microrobots for minimally invasive medicine and precision assembly."
     },
     {
@@ -2003,7 +1965,6 @@
       "enabled": false,
       "category": "Academia",
       "employees": "20+",
-      "status": "low_relevance",
       "description": "ETH Zurich lab researching soft, compliant robots that safely interact with humans and unstructured environments."
     },
     {
@@ -2013,7 +1974,6 @@
       "enabled": false,
       "category": "Academia",
       "employees": "20+",
-      "status": "low_relevance",
       "description": "ETH Zurich lab researching motion planning, optimization, and learning for dexterous robotic systems."
     },
     {
@@ -2023,7 +1983,6 @@
       "enabled": false,
       "category": "Academia",
       "employees": "30+",
-      "status": "low_relevance",
       "description": "ETH Zurich lab advancing deep learning, image understanding, and visual recognition research."
     },
     {
@@ -2033,7 +1992,6 @@
       "enabled": false,
       "category": "Academia",
       "employees": "30+",
-      "status": "low_relevance",
       "description": "ETH Zurich and Balgrist lab developing neuroprosthetics and assistive robotic systems for rehabilitation."
     },
     {
@@ -2043,7 +2001,6 @@
       "enabled": false,
       "category": "Academia",
       "employees": "20+",
-      "status": "low_relevance",
       "description": "University of Zurich center for entrepreneurship, startup support, and innovation ecosystem building."
     },
     {
@@ -2053,7 +2010,6 @@
       "enabled": false,
       "category": "Incubator",
       "employees": "30+",
-      "status": "low_relevance",
       "description": "Collaborative coworking and innovation hub supporting social entrepreneurs and changemakers in Zurich."
     },
     {
@@ -2074,7 +2030,6 @@
       "enabled": false,
       "category": "Incubator",
       "employees": "10+",
-      "status": "low_relevance",
       "description": "Empa deep-tech incubator accelerating the commercialization of materials science research spinoffs."
     },
     {
@@ -2095,7 +2050,6 @@
       "enabled": false,
       "category": "Incubator",
       "employees": "30+",
-      "status": "low_relevance",
       "description": "Swiss startup support institute offering founding advice, coaching, and startup financing programs."
     },
     {
@@ -2116,7 +2070,6 @@
       "enabled": false,
       "category": "Incubator",
       "employees": "20+",
-      "status": "low_relevance",
       "description": "ETH Zurich's technology transfer office commercializing research inventions and IP licensing."
     },
     {
@@ -2138,7 +2091,6 @@
       "category": "Accelerator",
       "employees": "20+",
       "source": "zurich_valley",
-      "status": "low_relevance",
       "description": "Digital startup accelerator building internet and software companies in Switzerland."
     },
     {
@@ -2148,7 +2100,6 @@
       "enabled": false,
       "category": "Accelerator",
       "employees": "10+",
-      "status": "low_relevance",
       "description": "Corporate open innovation program co-creating solutions between corporates and global startups."
     },
     {
@@ -2159,7 +2110,6 @@
       "category": "Accelerator",
       "employees": "20+",
       "source": "zurich_valley",
-      "status": "low_relevance",
       "description": "Fintech and insurtech incubator and accelerator running programs with leading financial institutions."
     },
     {
@@ -2170,7 +2120,6 @@
       "category": "Accelerator",
       "employees": "20+",
       "source": "zurich_valley",
-      "status": "low_relevance",
       "description": "Venture studio and accelerator building and scaling digital products and tech startups."
     },
     {
@@ -2191,7 +2140,6 @@
       "enabled": false,
       "category": "Accelerator",
       "employees": "20+",
-      "status": "low_relevance",
       "description": "Swiss entrepreneurship program supporting researchers and students in building science-based companies."
     },
     {
@@ -2213,7 +2161,6 @@
       "enabled": false,
       "category": "Investor",
       "employees": "20+",
-      "status": "low_relevance",
       "description": "Listed Swiss investment company focusing on technology sector investments and active ownership."
     },
     {
@@ -2267,7 +2214,6 @@
       "enabled": false,
       "category": "University",
       "employees": "200+",
-      "status": "low_relevance",
       "description": "Swiss business school offering executive education, MBAs, and digital leadership programs."
     },
     {
@@ -2288,7 +2234,6 @@
       "enabled": false,
       "category": "Academia",
       "employees": "20+",
-      "status": "low_relevance",
       "description": "ETH Zurich lab researching real-time rendering, physics simulation, and interactive media technology."
     },
     {
@@ -2372,7 +2317,6 @@
       "category": "AI/ML",
       "employees": "30+",
       "source": "zurich_valley",
-      "status": "low_relevance",
       "description": "Conversational AI platform automating customer and employee support for enterprises and banks."
     },
     {
@@ -2448,7 +2392,6 @@
       "category": "AI/ML",
       "employees": "30+",
       "source": "zurich_valley",
-      "status": "low_relevance",
       "description": "No-code computer vision AI platform for building and deploying custom vision applications."
     },
     {
@@ -2511,7 +2454,6 @@
       "enabled": false,
       "category": "Semiconductor",
       "employees": "50+",
-      "status": "low_relevance",
       "description": "Neuromorphic AI chip company delivering event-driven inference processors for edge applications."
     },
     {
@@ -2521,7 +2463,6 @@
       "enabled": false,
       "category": "AI/ML",
       "employees": "50+",
-      "status": "low_relevance",
       "description": "Full-motion VR helicopter flight simulator for pilot training with regulatory certification."
     },
     {
@@ -2542,7 +2483,6 @@
       "enabled": false,
       "category": "AI/ML",
       "employees": "10+",
-      "status": "low_relevance",
       "description": "AI simulation and testing platform for validating autonomous vehicle and robotics systems."
     },
     {
@@ -2583,7 +2523,6 @@
       "enabled": false,
       "category": "University",
       "employees": "5000+",
-      "status": "low_relevance",
       "description": "University Hospital Zurich, a leading academic medical center for clinical care and biomedical research."
     },
     {
@@ -2593,7 +2532,6 @@
       "enabled": false,
       "category": "Academia",
       "employees": "50+",
-      "status": "low_relevance",
       "description": "Specialized hospital campus for spinal, orthopaedic, and neurorehabilitation research and clinical care."
     },
     {
@@ -2614,7 +2552,6 @@
       "enabled": false,
       "category": "MedTech",
       "employees": "20+",
-      "status": "low_relevance",
       "description": "Develops in vitro diagnostics and nucleic acid testing solutions for disease detection."
     },
     {
@@ -2624,7 +2561,6 @@
       "enabled": false,
       "category": "MedTech",
       "employees": "50+",
-      "status": "low_relevance",
       "description": "Digital health platform using AI to measure, score, and improve personal health and lifestyle."
     },
     {
@@ -2634,7 +2570,6 @@
       "enabled": false,
       "category": "MedTech",
       "employees": "100+",
-      "status": "low_relevance",
       "description": "Develops robotic and sensor-based rehabilitation therapy devices for neurological patients."
     },
     {
@@ -2644,7 +2579,6 @@
       "enabled": false,
       "category": "MedTech",
       "employees": "20+",
-      "status": "low_relevance",
       "description": "Develops extracorporeal blood purification technology for removing toxins from critically ill patients."
     },
     {
@@ -2655,7 +2589,6 @@
       "category": "MedTech",
       "employees": "20+",
       "source": "zurich_valley",
-      "status": "low_relevance",
       "description": "In-ear physiological sensing platform for continuous health monitoring and brain-computer interfaces."
     },
     {
@@ -2688,7 +2621,6 @@
       "category": "MedTech",
       "employees": "50+",
       "source": "zurich_valley",
-      "status": "low_relevance",
       "description": "Medical simulation systems for minimally invasive surgical training and clinical skills assessment."
     },
     {
@@ -2709,7 +2641,6 @@
       "enabled": false,
       "category": "MedTech",
       "employees": "50+",
-      "status": "low_relevance",
       "description": "Precision medical device manufacturer producing instruments and implants for Swiss orthopedics."
     },
     {
@@ -2720,7 +2651,6 @@
       "category": "MedTech",
       "employees": "50+",
       "source": "zurich_valley",
-      "status": "low_relevance",
       "description": "Develops implantable drainage systems for treating fluid accumulation in heart failure patients."
     },
     {
@@ -2743,7 +2673,6 @@
       "enabled": true,
       "category": "MedTech",
       "employees": "500+",
-      "status": "low_relevance",
       "description": "Laboratory automation and liquid handling robot instruments for life science and diagnostics."
     },
     {
@@ -2764,7 +2693,6 @@
       "enabled": false,
       "category": "MedTech",
       "employees": "10+",
-      "status": "low_relevance",
       "description": "Industry association representing Swiss medical technology companies and advocating for MedTech innovation."
     },
     {
@@ -2807,7 +2735,6 @@
       "category": "Blockchain",
       "employees": "20+",
       "source": "zurich_valley",
-      "status": "low_relevance",
       "description": "Digital share register and equity management platform for Swiss startups using blockchain."
     },
     {
@@ -2888,7 +2815,6 @@
       "enabled": false,
       "category": "Investor",
       "employees": "20+",
-      "status": "low_relevance",
       "description": "Pan-European growth-stage venture capital fund backing technology companies across Europe."
     },
     {
@@ -2898,7 +2824,6 @@
       "enabled": false,
       "category": "Fintech",
       "employees": "10+",
-      "status": "low_relevance",
       "description": "Swiss online business bank offering accounts, cards, and payment tools for companies."
     },
     {
@@ -2921,7 +2846,6 @@
       "category": "Fintech",
       "employees": "10+",
       "source": "zurich_valley",
-      "status": "low_relevance",
       "description": "Tokenized equity platform enabling SMEs to issue and trade digital shares on public blockchains."
     },
     {
@@ -2931,7 +2855,6 @@
       "enabled": false,
       "category": "Fintech",
       "employees": "50+",
-      "status": "low_relevance",
       "description": "Impact-focused Swiss investment bank offering future-oriented sustainable wealth management."
     },
     {
@@ -2962,7 +2885,6 @@
       "enabled": false,
       "category": "Fintech",
       "employees": "20+",
-      "status": "low_relevance",
       "description": "Swiss robo-advisor delivering personalized, ESG-aware investment portfolios at low cost."
     },
     {
@@ -2972,7 +2894,6 @@
       "enabled": false,
       "category": "Fintech",
       "employees": "20+",
-      "status": "low_relevance",
       "description": "Digital investment platform for institutional-grade private equity and alternative asset access."
     },
     {
@@ -3094,7 +3015,6 @@
       "enabled": false,
       "category": "AI/ML",
       "employees": "10+",
-      "status": "low_relevance",
       "description": "AI-accelerated drug discovery and molecular design platform for pharma research."
     },
     {
@@ -3160,7 +3080,6 @@
       "enabled": false,
       "category": "Academia",
       "employees": "20+",
-      "status": "low_relevance",
       "description": "ETH Zurich student consulting association providing project-based work experience for students."
     },
     {
@@ -3180,7 +3099,6 @@
       "category": "Fintech",
       "employees": "30+",
       "source": "zurich_valley",
-      "status": "low_relevance",
       "description": "Business FX payment platform for automated multi-currency treasury and hedging operations."
     },
     {
@@ -3191,7 +3109,6 @@
       "category": "Fintech",
       "employees": "20+",
       "source": "zurich_valley",
-      "status": "low_relevance",
       "description": "Virtual cash distribution network enabling ATM-free cash withdrawals at retail partner locations."
     },
     {
@@ -3225,7 +3142,6 @@
       "enabled": false,
       "category": "Fintech",
       "employees": "10+",
-      "status": "low_relevance",
       "description": "Digital mortgage origination and automation platform for banks, lenders, and brokers."
     },
     {
@@ -3268,7 +3184,6 @@
       "category": "Fintech",
       "employees": "20+",
       "source": "zurich_valley",
-      "status": "low_relevance",
       "description": "Portfolio management and client reporting platform for Swiss wealth managers and advisors."
     },
     {
@@ -3278,7 +3193,6 @@
       "enabled": false,
       "category": "Fintech",
       "employees": "30+",
-      "status": "low_relevance",
       "description": "Digital compliance and regulatory content platform for financial services compliance automation."
     },
     {
@@ -3299,7 +3213,6 @@
       "enabled": false,
       "category": "Fintech",
       "employees": "30+",
-      "status": "low_relevance",
       "description": "Institutional crypto asset management and trading infrastructure platform."
     },
     {
@@ -3309,7 +3222,6 @@
       "enabled": false,
       "category": "Fintech",
       "employees": "20+",
-      "status": "low_relevance",
       "description": "Swiss online insurer offering car, e-bike, and household insurance with instant digital policies."
     },
     {
@@ -3396,7 +3308,6 @@
       "enabled": false,
       "category": "Incubator",
       "employees": "10+",
-      "status": "low_relevance",
       "description": "Swiss health tech incubation and co-innovation platform for MedTech and digital health startups."
     },
     {
@@ -3428,7 +3339,6 @@
       "enabled": false,
       "category": "Accelerator",
       "employees": "10+",
-      "status": "low_relevance",
       "description": "Corporate real estate innovation program connecting proptech startups with industry partners."
     },
     {
@@ -3449,7 +3359,6 @@
       "enabled": false,
       "category": "Incubator",
       "employees": "10+",
-      "status": "low_relevance",
       "description": "Student innovation campus fostering entrepreneurship, side projects, and startup creation at universities."
     },
     {
@@ -3459,7 +3368,6 @@
       "enabled": false,
       "category": "Investor",
       "employees": "20+",
-      "status": "low_relevance",
       "description": "Zurich-based early-stage venture capital firm investing in European technology startups."
     },
     {
@@ -3469,7 +3377,6 @@
       "enabled": false,
       "category": "Investor",
       "employees": "10+",
-      "status": "low_relevance",
       "description": "Pre-seed VC fund focused exclusively on Swiss startups at their earliest stage."
     },
     {
@@ -3490,7 +3397,6 @@
       "enabled": false,
       "category": "Investor",
       "employees": "20+",
-      "status": "low_relevance",
       "description": "Corporate venture capital arm of Swisscom investing in digital, cloud, and telecom startups."
     },
     {
@@ -3577,7 +3483,6 @@
       "enabled": false,
       "category": "University",
       "employees": "3000+",
-      "status": "low_relevance",
       "description": "Swiss university of applied sciences with strong programs in engineering, business, and health."
     },
     {
@@ -3597,7 +3502,6 @@
       "enabled": false,
       "category": "University",
       "employees": "2000+",
-      "status": "low_relevance",
       "description": "Zurich University of the Arts offering programs in fine art, design, film, music, and game design."
     },
     {
@@ -3607,7 +3511,6 @@
       "enabled": false,
       "category": "University",
       "employees": "1000+",
-      "status": "low_relevance",
       "description": "Zurich University of Teacher Education preparing educators for Swiss primary and secondary schools."
     },
     {
@@ -3628,7 +3531,6 @@
       "enabled": false,
       "category": "MedTech",
       "employees": "100+",
-      "status": "low_relevance",
       "description": "Proteomics technology company providing deep protein expression analysis services for drug development."
     },
     {
@@ -3638,7 +3540,6 @@
       "enabled": false,
       "category": "MedTech",
       "employees": "100+",
-      "status": "low_relevance",
       "description": "Develops DARPin therapeutic proteins as a new class of targeted cancer and ophthalmic drugs."
     },
     {
@@ -3648,7 +3549,6 @@
       "enabled": false,
       "category": "MedTech",
       "employees": "50+",
-      "status": "low_relevance",
       "description": "3D cell culture platform producing organ-on-a-chip and spheroid models for drug development and testing."
     },
     {
@@ -3658,7 +3558,6 @@
       "enabled": false,
       "category": "MedTech",
       "employees": "50+",
-      "status": "low_relevance",
       "description": "Develops bioresorbable bone and tissue regeneration products for orthopaedic and spine surgery."
     },
     {
@@ -3668,7 +3567,6 @@
       "enabled": false,
       "category": "MedTech",
       "employees": "50+",
-      "status": "low_relevance",
       "description": "CMO providing large-scale production of synthetic carbohydrate-based drug compounds and conjugates."
     },
     {
@@ -3689,7 +3587,6 @@
       "enabled": false,
       "category": "MedTech",
       "employees": "10+",
-      "status": "low_relevance",
       "description": "Clinical-stage pharma developing topical treatments for chronic wounds and dermatological conditions."
     },
     {
@@ -3699,7 +3596,6 @@
       "enabled": false,
       "category": "MedTech",
       "employees": "30+",
-      "status": "low_relevance",
       "description": "Biotech company engineering antibody fragment-based therapeutics for ophthalmic diseases."
     },
     {
@@ -3720,7 +3616,6 @@
       "enabled": false,
       "category": "MedTech",
       "employees": "50+",
-      "status": "low_relevance",
       "description": "Develops fully human bispecific antibodies and T cell engagers for cancer immunotherapy."
     },
     {
@@ -3730,7 +3625,6 @@
       "enabled": false,
       "category": "MedTech",
       "employees": "20+",
-      "status": "low_relevance",
       "description": "Develops glycan-targeting biologic drugs for immunological diseases and novel cancer therapies."
     },
     {
@@ -3773,7 +3667,6 @@
       "enabled": false,
       "category": "MedTech",
       "employees": "30+",
-      "status": "low_relevance",
       "description": "Single-cell analysis platform using FluidFM technology for precise intracellular manipulation and extraction."
     },
     {
@@ -3805,7 +3698,6 @@
       "enabled": true,
       "category": "MedTech",
       "employees": "200+",
-      "status": "low_relevance",
       "description": "Danish pharma leader developing diabetes, obesity, and rare disease treatments with Zurich R&D activities."
     },
     {
@@ -3815,7 +3707,6 @@
       "enabled": false,
       "category": "MedTech",
       "employees": "10+",
-      "status": "low_relevance",
       "description": "Medical device company developing non-invasive hemodynamic monitoring for critical care patients."
     },
     {
@@ -3869,7 +3760,6 @@
       "enabled": false,
       "category": "Incubator",
       "employees": "30+",
-      "status": "low_relevance",
       "description": "Life science campus and incubator providing labs and services for biotech and medtech startups."
     },
     {
@@ -3934,7 +3824,6 @@
       "enabled": false,
       "category": "CleanTech",
       "employees": "10+",
-      "status": "low_relevance",
       "description": "Compostable biomass composite materials replacing single-use plastics in packaging applications."
     },
     {
@@ -3944,7 +3833,6 @@
       "enabled": false,
       "category": "CleanTech",
       "employees": "20+",
-      "status": "low_relevance",
       "description": "AI route planning platform for optimizing utility infrastructure placement and environmental impact."
     },
     {
@@ -3954,7 +3842,6 @@
       "enabled": false,
       "category": "CleanTech",
       "employees": "20+",
-      "status": "low_relevance",
       "description": "High-precision heat flux sensors and wearable thermal measurement devices for R&D and building energy."
     },
     {
@@ -3964,7 +3851,6 @@
       "enabled": false,
       "category": "CleanTech",
       "employees": "50+",
-      "status": "low_relevance",
       "description": "Climate project developer and carbon credit originator for renewable energy and forestry projects."
     },
     {
@@ -4007,7 +3893,6 @@
       "enabled": false,
       "category": "CleanTech",
       "employees": "20+",
-      "status": "low_relevance",
       "description": "Electrochemical water treatment technology destroying persistent PFAS contamination in industrial wastewater."
     },
     {
@@ -4028,7 +3913,6 @@
       "enabled": false,
       "category": "AI/ML",
       "employees": "10+",
-      "status": "low_relevance",
       "description": "AI data analytics platform for industrial process optimization and predictive maintenance."
     },
     {
@@ -4038,7 +3922,6 @@
       "enabled": false,
       "category": "Academia",
       "employees": "500+",
-      "status": "low_relevance",
       "description": "Swiss federal aquatic research institute studying water science, ecology, and environmental management."
     },
     {
@@ -4059,7 +3942,6 @@
       "enabled": false,
       "category": "CleanTech",
       "employees": "100+",
-      "status": "low_relevance",
       "description": "Electric commercial vehicle engineering firm and EV powertrain manufacturer for trucks and buses."
     },
     {
@@ -4069,7 +3951,6 @@
       "enabled": false,
       "category": "CleanTech",
       "employees": "300+",
-      "status": "low_relevance",
       "description": "Zurich energy utility providing natural gas, biogas, EV charging, and heating network services."
     },
     {
@@ -4079,7 +3960,6 @@
       "enabled": false,
       "category": "CleanTech",
       "employees": "10+",
-      "status": "low_relevance",
       "description": "Energy analytics and demand management platform for commercial building energy optimization."
     },
     {
@@ -4100,7 +3980,6 @@
       "enabled": false,
       "category": "CleanTech",
       "employees": "500+",
-      "status": "low_relevance",
       "description": "Waste-to-energy plant engineering and construction company and biomethane technology provider."
     },
     {
@@ -4110,7 +3989,6 @@
       "enabled": false,
       "category": "CleanTech",
       "employees": "100+",
-      "status": "low_relevance",
       "description": "Swiss EV charging infrastructure manufacturer producing AC and DC chargers for public and private use."
     },
     {
@@ -4153,7 +4031,6 @@
       "enabled": false,
       "category": "CleanTech",
       "employees": "100+",
-      "status": "low_relevance",
       "description": "Swiss nonprofit offering carbon offset programs, climate education, and corporate sustainability advisory."
     },
     {
@@ -4163,7 +4040,6 @@
       "enabled": false,
       "category": "Investor",
       "employees": "20+",
-      "status": "low_relevance",
       "description": "Cleantech venture capital firm funding early-stage environmental and energy technology companies."
     },
     {
@@ -4173,7 +4049,6 @@
       "enabled": false,
       "category": "Investor",
       "employees": "30+",
-      "status": "low_relevance",
       "description": "Swiss infrastructure and energy transition investment fund managing clean energy and sustainable assets."
     },
     {
@@ -4183,7 +4058,6 @@
       "enabled": true,
       "category": "FoodTech",
       "employees": "500+",
-      "status": "low_relevance",
       "description": "World's largest cocoa processing and chocolate manufacturer supplying B2B food companies globally."
     },
     {
@@ -4282,7 +4156,6 @@
       "enabled": false,
       "category": "FoodTech",
       "employees": "100+",
-      "status": "low_relevance",
       "description": "Swiss subsidiary of Heineken managing local brewing, distribution, and brand portfolio."
     },
     {
@@ -4292,7 +4165,6 @@
       "enabled": false,
       "category": "FoodTech",
       "employees": "100+",
-      "status": "low_relevance",
       "description": "Plant-based meat company crafting whole-muscle structure alternatives from fermented pea protein."
     },
     {
@@ -4324,7 +4196,6 @@
       "enabled": false,
       "category": "FoodTech",
       "employees": "20+",
-      "status": "low_relevance",
       "description": "Fermentation and precision brewing platform for producing novel food proteins and flavors."
     },
     {
@@ -4345,7 +4216,6 @@
       "enabled": false,
       "category": "FoodTech",
       "employees": "200+",
-      "status": "low_relevance",
       "description": "R&D division of Givaudan, the world's leading flavour and fragrance company."
     },
     {
@@ -4355,7 +4225,6 @@
       "enabled": true,
       "category": "FoodTech",
       "employees": "100+",
-      "status": "low_relevance",
       "description": "European operations of Mondelēz International, producing Oreo, Toblerone, and other snack brands."
     },
     {
@@ -4365,7 +4234,6 @@
       "enabled": true,
       "category": "FoodTech",
       "employees": "100+",
-      "status": "low_relevance",
       "description": "Bottling and distribution partner for Coca-Cola across 29 countries in Europe and Africa."
     },
     {
@@ -4375,7 +4243,6 @@
       "enabled": false,
       "category": "FoodTech",
       "employees": "200+",
-      "status": "low_relevance",
       "description": "Swiss flexible packaging manufacturer specializing in sustainable food and industrial packaging."
     },
     {
@@ -4408,7 +4275,6 @@
       "enabled": false,
       "category": "Enterprise",
       "employees": "10+",
-      "status": "low_relevance",
       "description": "Strategic AI consultancy helping Swiss businesses design and implement applied AI solutions."
     },
     {
@@ -4418,7 +4284,6 @@
       "enabled": false,
       "category": "AI/ML",
       "employees": "10+",
-      "status": "low_relevance",
       "description": "AI-powered retail automation platform for inventory management and customer experience."
     },
     {
@@ -4428,7 +4293,6 @@
       "enabled": false,
       "category": "Fintech",
       "employees": "10+",
-      "status": "low_relevance",
       "description": "AI-driven investment analytics and portfolio signal generation platform for financial professionals."
     },
     {
@@ -4438,7 +4302,6 @@
       "enabled": false,
       "category": "AI/ML",
       "employees": "10+",
-      "status": "low_relevance",
       "description": "AI health coaching and preventive care platform delivering personalized wellness guidance."
     },
     {
@@ -4459,7 +4322,6 @@
       "enabled": false,
       "category": "AI/ML",
       "employees": "10+",
-      "status": "low_relevance",
       "description": "AI-powered analytics and decision intelligence platform for Swiss enterprises."
     },
     {
@@ -4493,7 +4355,6 @@
       "category": "AI/ML",
       "employees": "10+",
       "source": "zurich_valley",
-      "status": "low_relevance",
       "description": "AI-powered sourcing and procurement optimization platform for strategic cost reduction."
     },
     {
@@ -4504,7 +4365,6 @@
       "category": "Enterprise",
       "employees": "50+",
       "source": "zurich_valley",
-      "status": "low_relevance",
       "description": "Enterprise AI platform for automating document processing and knowledge management workflows."
     },
     {
@@ -4515,7 +4375,6 @@
       "category": "Robotics",
       "employees": "10+",
       "source": "zurich_valley",
-      "status": "low_relevance",
       "description": "Inspection robot combining wheel locomotion with leg mobility for autonomous outdoor security missions."
     },
     {
@@ -4547,7 +4406,6 @@
       "enabled": false,
       "category": "AI/ML",
       "employees": "10+",
-      "status": "low_relevance",
       "description": "AI workforce analytics and HR optimization platform for skill management and talent development."
     },
     {
@@ -4557,7 +4415,6 @@
       "enabled": false,
       "category": "AI/ML",
       "employees": "50+",
-      "status": "low_relevance",
       "description": "University clinic in Zurich specializing in spinal surgery, orthopaedics, and neurorehabilitation."
     },
     {
@@ -4567,7 +4424,6 @@
       "enabled": false,
       "category": "AI/ML",
       "employees": "50+",
-      "status": "low_relevance",
       "description": "Digital transformation and AI consulting firm delivering enterprise software solutions."
     },
     {
@@ -4577,7 +4433,6 @@
       "enabled": false,
       "category": "AI/ML",
       "employees": "10+",
-      "status": "low_relevance",
       "description": "AI-powered blood diagnostics platform for rapid, at-home biomarker health testing."
     },
     {
@@ -4587,7 +4442,6 @@
       "enabled": false,
       "category": "AI/ML",
       "employees": "10+",
-      "status": "low_relevance",
       "description": "Open-source library enabling AI agents to control web browsers for task automation."
     },
     {
@@ -4609,7 +4463,6 @@
       "category": "AI/ML",
       "employees": "10+",
       "source": "zurich_valley",
-      "status": "low_relevance",
       "description": "AI text analysis and coding platform for survey data, reviews, and qualitative research."
     },
     {
@@ -4652,7 +4505,6 @@
       "enabled": false,
       "category": "AI/ML",
       "employees": "50+",
-      "status": "low_relevance",
       "description": "Corporate venture builder designing, funding, and launching new digital businesses for large companies."
     },
     {
@@ -4717,7 +4569,6 @@
       "category": "AI/ML",
       "employees": "10+",
       "source": "zurich_valley",
-      "status": "low_relevance",
       "description": "Federated AI training and data collaboration platform for privacy-preserving enterprise ML."
     },
     {
@@ -4807,7 +4658,6 @@
       "enabled": false,
       "category": "Robotics",
       "employees": "10+",
-      "status": "low_relevance",
       "description": "Robotic and autonomous inspection solutions division within the Hexagon technology group."
     },
     {
@@ -4828,7 +4678,6 @@
       "enabled": false,
       "category": "AI/ML",
       "employees": "10+",
-      "status": "low_relevance",
       "description": "Data visualization and AI-powered analytics platform for financial and business reporting."
     },
     {
@@ -4869,7 +4718,6 @@
       "enabled": false,
       "category": "AI/ML",
       "employees": "10+",
-      "status": "low_relevance",
       "description": "AI-powered industrial monitoring and predictive maintenance platform for factory equipment."
     },
     {
@@ -4902,7 +4750,6 @@
       "enabled": false,
       "category": "AI/ML",
       "employees": "10+",
-      "status": "low_relevance",
       "description": "No-code web scraping and data extraction platform powered by AI for any website."
     },
     {
@@ -4932,7 +4779,6 @@
       "enabled": false,
       "category": "AI/ML",
       "employees": "10+",
-      "status": "low_relevance",
       "description": "AI reasoning and decision automation platform for complex enterprise workflows."
     },
     {
@@ -4942,7 +4788,6 @@
       "enabled": false,
       "category": "AI/ML",
       "employees": "10+",
-      "status": "low_relevance",
       "description": "AI-powered mental health and well-being platform offering digital therapeutic interventions."
     },
     {
@@ -4963,7 +4808,6 @@
       "enabled": false,
       "category": "Robotics",
       "employees": "10+",
-      "status": "low_relevance",
       "description": "Micro-robotic platform for delivering targeted therapies and interventions inside the human body."
     },
     {
@@ -4973,7 +4817,6 @@
       "enabled": false,
       "category": "Robotics",
       "employees": "10+",
-      "status": "low_relevance",
       "description": "AI lifecycle platform for data preparation, model evaluation, and deployment governance."
     },
     {
@@ -4994,7 +4837,6 @@
       "enabled": false,
       "category": "AI/ML",
       "employees": "10+",
-      "status": "low_relevance",
       "description": "AI network management and automation platform for enterprise IT infrastructure."
     },
     {
@@ -5038,7 +4880,6 @@
       "enabled": false,
       "category": "AI/ML",
       "employees": "10+",
-      "status": "low_relevance",
       "description": "AI satellite imagery and analytics platform for precision agriculture and crop monitoring."
     },
     {
@@ -5059,7 +4900,6 @@
       "enabled": false,
       "category": "AI/ML",
       "employees": "10+",
-      "status": "low_relevance",
       "description": "Photonics and optical sensing technology for high-speed AI inference acceleration."
     },
     {
@@ -5069,7 +4909,6 @@
       "enabled": false,
       "category": "AI/ML",
       "employees": "50+",
-      "status": "low_relevance",
       "description": "Orthopaedic research and robotics experimental center at Balgrist and ETH Zurich."
     },
     {
@@ -5080,7 +4919,6 @@
       "category": "AI/ML",
       "employees": "10+",
       "source": "zurich_valley",
-      "status": "low_relevance",
       "description": "Online marketplace connecting CNC machining buyers with manufacturing suppliers globally."
     },
     {
@@ -5090,7 +4928,6 @@
       "enabled": false,
       "category": "AI/ML",
       "employees": "10+",
-      "status": "low_relevance",
       "description": "AI-powered procurement automation and spend analytics platform for enterprise sourcing teams."
     },
     {
@@ -5122,7 +4959,6 @@
       "enabled": false,
       "category": "AI/ML",
       "employees": "10+",
-      "status": "low_relevance",
       "description": "Medical device and AI platform for non-invasive cervical tissue assessment during pregnancy."
     },
     {
@@ -5144,7 +4980,6 @@
       "enabled": false,
       "category": "AI/ML",
       "employees": "10+",
-      "status": "low_relevance",
       "description": "Human data labeling and feedback platform for AI training with global contributor network."
     },
     {
@@ -5154,7 +4989,6 @@
       "enabled": false,
       "category": "Robotics",
       "employees": "50+",
-      "status": "low_relevance",
       "description": "Applied robotics and AI research institute advancing legged robot autonomy in partnership with Boston Dynamics."
     },
     {
@@ -5175,7 +5009,6 @@
       "enabled": false,
       "category": "AI/ML",
       "employees": "10+",
-      "status": "low_relevance",
       "description": "AI-powered revenue intelligence and pricing optimization platform for e-commerce businesses."
     },
     {
@@ -5230,7 +5063,6 @@
       "enabled": false,
       "category": "AI/ML",
       "employees": "10+",
-      "status": "low_relevance",
       "description": "Autonomous AI camera direction software for live broadcast, streaming, and virtual production."
     },
     {
@@ -5240,7 +5072,6 @@
       "enabled": false,
       "category": "AI/ML",
       "employees": "10+",
-      "status": "low_relevance",
       "description": "Supply chain transparency platform helping brands map and audit their supplier networks."
     },
     {
@@ -5272,7 +5103,6 @@
       "enabled": false,
       "category": "AI/ML",
       "employees": "10+",
-      "status": "low_relevance",
       "description": "AI-powered drone inspection and data analytics platform for infrastructure monitoring."
     },
     {
@@ -5304,7 +5134,6 @@
       "enabled": false,
       "category": "Academia",
       "employees": "50+",
-      "status": "low_relevance",
       "description": "Zurich's flagship innovation and technology park hosting startups, SMEs, and corporate R&D teams."
     },
     {
@@ -5314,7 +5143,6 @@
       "enabled": false,
       "category": "Robotics",
       "employees": "10+",
-      "status": "low_relevance",
       "description": "Autonomous underwater vehicles for infrastructure inspection and environmental monitoring missions."
     },
     {
@@ -5335,7 +5163,6 @@
       "enabled": false,
       "category": "AI/ML",
       "employees": "10+",
-      "status": "low_relevance",
       "description": "Enterprise consent management and privacy compliance platform for cookie and data regulations."
     },
     {
@@ -5357,7 +5184,6 @@
       "enabled": false,
       "category": "AI/ML",
       "employees": "10+",
-      "status": "low_relevance",
       "description": "AI-powered virtual environment and digital twin platform for spatial computing applications."
     },
     {
@@ -5367,7 +5193,6 @@
       "enabled": false,
       "category": "AI/ML",
       "employees": "10+",
-      "status": "low_relevance",
       "description": "Natural language interface for databases allowing business users to query data in plain language."
     },
     {
