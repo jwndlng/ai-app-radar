@@ -42,12 +42,35 @@ def test_recent_rejected_job_is_not_archived(tmp_path: Path) -> None:
     assert not (tmp_path / "artifacts" / "applications_archive.json").exists()
 
 
-def test_non_rejected_jobs_are_never_archived(tmp_path: Path) -> None:
+def test_non_terminal_jobs_are_never_archived(tmp_path: Path) -> None:
     jobs = [
         {"id": "1", "state": "match", "vetted_at": _iso(400)},
         {"id": "2", "state": "applied", "vetted_at": _iso(400)},
-        {"id": "3", "state": "archived", "vetted_at": _iso(400)},
+        {"id": "3", "state": "review", "vetted_at": _iso(400)},
     ]
+    apps_path = _write_jobs(tmp_path, jobs)
+    archived_count = JobArchiver(tmp_path, rejected_after_days=30).run()
+
+    assert archived_count == 0
+    assert json.loads(apps_path.read_text()) == jobs
+
+
+def test_old_auto_rejected_job_is_archived(tmp_path: Path) -> None:
+    """state == "archived" is the score-based auto-reject path (EvaluateConsumer._archive_job),
+    stamped with archived_at rather than vetted_at — it's a candidate for archival too."""
+    jobs = [{"id": "1", "state": "archived", "archived_at": _iso(40)}]
+    apps_path = _write_jobs(tmp_path, jobs)
+    archived_count = JobArchiver(tmp_path, rejected_after_days=30).run()
+
+    assert archived_count == 1
+    assert json.loads(apps_path.read_text()) == []
+    archive_path = tmp_path / "artifacts" / "applications_archive.json"
+    archived = json.loads(archive_path.read_text())
+    assert archived[0]["id"] == "1"
+
+
+def test_recent_auto_rejected_job_is_not_archived(tmp_path: Path) -> None:
+    jobs = [{"id": "1", "state": "archived", "archived_at": _iso(5)}]
     apps_path = _write_jobs(tmp_path, jobs)
     archived_count = JobArchiver(tmp_path, rejected_after_days=30).run()
 
