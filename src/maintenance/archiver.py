@@ -8,7 +8,10 @@ from pathlib import Path
 
 from core.store import ApplicationStore
 
-_REJECTED_STATE = "rejected"
+# "rejected" = location hard-block (EvaluateConsumer._reject_job, stamps vetted_at).
+# "archived" = score-based auto-reject (EvaluateConsumer._archive_job, stamps archived_at).
+# Both are terminal, no-future-value outcomes and are candidates for archival.
+_ARCHIVABLE_STATES = frozenset({"rejected", "archived"})
 
 
 class JobArchiver:
@@ -37,7 +40,7 @@ class JobArchiver:
         return len(archive)
 
     def _should_archive(self, job: dict) -> bool:
-        if job.get("state") != _REJECTED_STATE:
+        if job.get("state") not in _ARCHIVABLE_STATES:
             return False
         age_days = self._age_in_days(job)
         if age_days is None:
@@ -46,7 +49,7 @@ class JobArchiver:
 
     @staticmethod
     def _age_in_days(job: dict) -> float | None:
-        timestamp = job.get("vetted_at") or job.get("updated_at")
+        timestamp = job.get("archived_at") or job.get("vetted_at") or job.get("updated_at")
         if not timestamp:
             return None
         try:
