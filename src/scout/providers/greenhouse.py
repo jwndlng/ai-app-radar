@@ -18,7 +18,7 @@ class GreenhouseProvider(BaseProvider):
         for job in data.get("jobs", []):
             title = job.get("title")
             job_id = job.get("id")
-            url = self._build_job_url(careers_url, job_id) or job.get("absolute_url")
+            url = job.get("absolute_url") or self._build_job_url(careers_url, job_id)
             location = job.get("location", {}).get("name", "Remote/Global")
 
             if self.filter_job(title, filters):
