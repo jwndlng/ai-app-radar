@@ -18,24 +18,25 @@ class JobArchiver:
     def __init__(self, root_dir: Path, rejected_after_days: int) -> None:
         self._root = root_dir
         self._rejected_after_days = rejected_after_days
-        self._store = ApplicationStore(root_dir / "artifacts" / "applications.json")
+        self._store = ApplicationStore(root_dir / "artifacts" / "radar.db")
         self._archive_path = root_dir / "artifacts" / "applications_archive.json"
 
     def run(self) -> int:
         jobs = self._store.load()
-        keep: list[dict] = []
         archive: list[dict] = []
 
         for job in jobs:
             if self._should_archive(job):
                 archive.append(job)
-            else:
-                keep.append(job)
 
         if not archive:
             return 0
 
-        self._store.save(keep)
+        for job in archive:
+            jid = job.get("id")
+            if jid:
+                self._store.delete_job(jid)
+
         self._append_to_archive(archive)
         return len(archive)
 

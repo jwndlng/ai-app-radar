@@ -122,10 +122,24 @@ async def restore_profile_backup(
 # ── Jobs ──────────────────────────────────────────────────────────────────────
 
 @router.get("/jobs")
-async def list_jobs(runner: PipelineRunner = Depends(get_runner)):
+async def list_jobs(
+    state: str | None = None,
+    status: str | None = None,
+    runner: PipelineRunner = Depends(get_runner),
+):
     try:
-        jobs = runner._store().load()
+        store = runner._store()
+        jobs = store.list_jobs(state=state, status=status)
         return {"jobs": jobs, "total": len(jobs)}
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"ok": False, "error": str(e)})
+
+
+@router.get("/jobs/stats")
+async def get_job_stats(runner: PipelineRunner = Depends(get_runner)):
+    try:
+        stats = runner._store().state_counts()
+        return stats
     except Exception as e:
         return JSONResponse(status_code=500, content={"ok": False, "error": str(e)})
 
@@ -133,11 +147,9 @@ async def list_jobs(runner: PipelineRunner = Depends(get_runner)):
 @router.delete("/jobs/{job_id}")
 async def delete_job(job_id: str, runner: PipelineRunner = Depends(get_runner)):
     store = runner._store()
-    jobs = store.load()
-    remaining = [j for j in jobs if j.get("id") != job_id]
-    if len(remaining) == len(jobs):
+    deleted = store.delete_job(job_id)
+    if not deleted:
         return JSONResponse(status_code=404, content={"detail": "Job not found"})
-    store.save(remaining)
     return {"ok": True, "id": job_id}
 
 
@@ -348,8 +360,7 @@ async def set_job_state(
     if body.state not in _ALLOWED_MANUAL_STATES:
         return JSONResponse(status_code=400, content={"detail": f"Invalid state: {body.state}"})
     store = runner._store()
-    jobs = store.load()
-    job = next((j for j in jobs if j.get("id") == job_id), None)
+    job = store.get_by_id(job_id)
     if job is None:
         return JSONResponse(status_code=404, content={"detail": f"Job not found: {job_id}"})
     job["prev_state"] = job.get("state")
@@ -359,7 +370,7 @@ async def set_job_state(
     elif body.state != "rejected":
         job.pop("rejection_reason", None)
     StateMachine.touch_updated(job)
-    store.save(jobs)
+    store.save_job(job)
     return {"ok": True, "id": job_id, "state": body.state}
 
 
@@ -371,12 +382,11 @@ async def toggle_favorite(
     runner: PipelineRunner = Depends(get_runner),
 ):
     store = runner._store()
-    jobs = store.load()
-    job = next((j for j in jobs if j.get("id") == job_id), None)
+    job = store.get_by_id(job_id)
     if job is None:
         return JSONResponse(status_code=404, content={"detail": f"Job not found: {job_id}"})
     job["favorited"] = not job.get("favorited", False)
-    store.save(jobs)
+    store.save_job(job)
     return {"ok": True, "id": job_id, "favorited": job["favorited"]}
 
 
@@ -388,14 +398,15 @@ async def undo_by_state(
     runner: PipelineRunner = Depends(get_runner),
 ):
     store = runner._store()
-    jobs = store.load()
+    jobs = store.list_jobs(state=body.state)
     count = 0
+    to_save = []
     for job in jobs:
-        if job.get("state") == body.state:
-            if runner.undo_job(job) is not None:
-                count += 1
-    if count:
-        store.save(jobs)
+        if runner.undo_job(job) is not None:
+            count += 1
+            to_save.append(job)
+    if to_save:
+        store.save(to_save)
     return {"ok": True, "state": body.state, "count": count}
 
 
@@ -405,15 +416,14 @@ async def undo_job(
     runner: PipelineRunner = Depends(get_runner),
 ):
     store = runner._store()
-    jobs = store.load()
-    job = next((j for j in jobs if j.get("id") == job_id), None)
+    job = store.get_by_id(job_id)
     if job is None:
         return JSONResponse(status_code=404, content={"detail": f"Job not found: {job_id}"})
     result = runner.undo_job(job)
     if result is None:
         return JSONResponse(status_code=400, content={"detail": "Cannot undo from discovered state"})
     StateMachine.touch_updated(job)
-    store.save(jobs)
+    store.save_job(job)
     return {"ok": True, "id": job_id, "state": job["state"]}
 
 

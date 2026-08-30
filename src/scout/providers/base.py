@@ -48,8 +48,15 @@ class BaseProvider(ABC):
 
     def filter_job(self, title: str, filters: dict) -> bool:
         title_lower = title.lower()
-        positives = [re.compile(r"\b" + re.escape(p.lower()) + r"\b") for p in filters.get("positive", [])]
-        negatives = [re.compile(r"\b" + re.escape(n.lower()) + r"\b") for n in filters.get("negative", [])]
+
+        def _make_pattern(term: str) -> re.Pattern:
+            t = term.lower()
+            prefix = r"\b" if t[0].isalnum() else r"(?:^|\s|[^\w])"
+            suffix = r"\b" if t[-1].isalnum() else r"(?:$|\s|[^\w])"
+            return re.compile(prefix + re.escape(t) + suffix)
+
+        positives = [_make_pattern(p) for p in filters.get("positive", [])]
+        negatives = [_make_pattern(n) for n in filters.get("negative", [])]
         return (
             any(p.search(title_lower) for p in positives)
             and not any(n.search(title_lower) for n in negatives)
