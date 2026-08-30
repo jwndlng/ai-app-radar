@@ -26,7 +26,7 @@ class PipelineRunner:
 
     def _store(self):
         from core.store import ApplicationStore
-        return ApplicationStore(self._root / "artifacts" / "applications.json")
+        return ApplicationStore(self._root / "artifacts" / "radar.db")
 
     def _company_names(self) -> set[str]:
         from core.config import AppConfigLoader

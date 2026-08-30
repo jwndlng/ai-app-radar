@@ -89,7 +89,7 @@ class RepairOrchestrator:
                 print(f"           {detail}")
 
     def _fix_enrich(self, errors: list[LogError]) -> None:
-        store = ApplicationStore(self._root / "artifacts" / "applications.json")
+        store = ApplicationStore(self._root / "artifacts" / "radar.db")
         all_apps = store.load()
 
         error_names = {e.name for e in errors}
