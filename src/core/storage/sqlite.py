@@ -33,6 +33,11 @@ _SUMMARY_COLUMNS: tuple[str, ...] = (
 
 _KNOWN_COLUMNS: frozenset[str] = frozenset(_SUMMARY_COLUMNS)
 
+# Fields that live in the data JSON blob but that the job-list UI renders on
+# collapsed cards; exposed in the summary projection via json_extract. They are
+# not real columns, so they must stay out of _KNOWN_COLUMNS.
+_SUMMARY_DATA_FIELDS: tuple[str, ...] = ("score", "salary_range", "compensation_score")
+
 _SORT_COLUMNS: dict[str, str] = {
     "score": "final_score",
     "final_score": "final_score",
@@ -160,7 +165,13 @@ class SQLiteStorageProvider(DatabaseProvider):
         offset: int = 0,
     ) -> list[dict]:
         is_summary = projection == "summary"
-        select_cols = ", ".join(_SUMMARY_COLUMNS) if is_summary else "*"
+        if is_summary:
+            select_cols = ", ".join(_SUMMARY_COLUMNS)
+            select_cols += ", " + ", ".join(
+                f"json_extract(data, '$.{f}') AS {f}" for f in _SUMMARY_DATA_FIELDS
+            )
+        else:
+            select_cols = "*"
         query = f"SELECT {select_cols} FROM applications"
         params: list[object] = []
         clauses: list[str] = []
@@ -185,9 +196,10 @@ class SQLiteStorageProvider(DatabaseProvider):
         direction = "ASC" if sort_order.lower() == "asc" else "DESC"
         query += f" ORDER BY {col_name} {direction} NULLS LAST"
 
-        if limit is not None:
+        if limit is not None or offset > 0:
+            # SQLite requires a LIMIT clause before OFFSET; -1 means unlimited.
             query += " LIMIT ?"
-            params.append(limit)
+            params.append(limit if limit is not None else -1)
             if offset > 0:
                 query += " OFFSET ?"
                 params.append(offset)

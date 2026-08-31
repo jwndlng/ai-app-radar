@@ -5,7 +5,6 @@ from __future__ import annotations
 import json
 import logging
 import re
-import shutil
 from pathlib import Path
 
 from core.storage.base import DatabaseProvider
@@ -58,10 +57,12 @@ class LegacyJsonMigrator:
 
             provider.upsert_batch(jobs)
 
-            # Preserve backup copy
+            # Move (not copy) the legacy file out of the way: if it stayed in
+            # place, any later moment where the table legitimately empties
+            # (archiver, manual deletes) would silently re-import this stale
+            # snapshot and resurrect deleted jobs.
             backup_path = self._root / "artifacts" / "applications.json.migrated.bak"
-            if not backup_path.exists():
-                shutil.copy2(json_path, backup_path)
+            json_path.replace(backup_path)
 
             logger.info("Migrated %d legacy job records from %s into database", len(jobs), json_path)
             return len(jobs)

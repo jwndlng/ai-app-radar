@@ -251,3 +251,55 @@ def test_application_store_delegation(tmp_path: Path) -> None:
 
     assert store.delete_job("app-1") is True
     assert len(store.load()) == 0
+
+
+def test_summary_projection_exposes_ui_data_fields(memory_provider: SQLiteStorageProvider) -> None:
+    """score, salary_range, and compensation_score live in the data blob but
+    are rendered on collapsed job cards, so the summary projection must
+    surface them."""
+    memory_provider.upsert({
+        "id": "acme-eng",
+        "company": "Acme",
+        "title": "Engineer",
+        "state": "review",
+        "status": "ok",
+        "score": 7.2,
+        "salary_range": "100-120k",
+        "compensation_score": 6.0,
+        "description": "long text",
+    })
+
+    rows = memory_provider.list_jobs(projection="summary")
+    assert rows[0]["score"] == 7.2
+    assert rows[0]["salary_range"] == "100-120k"
+    assert rows[0]["compensation_score"] == 6.0
+    assert "description" not in rows[0]
+
+
+def test_list_jobs_offset_without_limit(memory_provider: SQLiteStorageProvider) -> None:
+    for i in range(5):
+        memory_provider.upsert({
+            "id": f"c-{i}", "company": "C", "title": f"T{i}",
+            "state": "discovered", "status": "ok",
+            "updated_at": f"2026-08-0{i + 1}T00:00:00",
+        })
+
+    page = memory_provider.list_jobs(offset=3)
+    assert len(page) == 2
+
+
+def test_migrator_moves_legacy_file_so_it_cannot_reimport(tmp_path: Path) -> None:
+    artifacts = tmp_path / "artifacts"
+    artifacts.mkdir()
+    legacy = artifacts / "applications.json"
+    legacy.write_text(json.dumps([{"id": "old-1", "company": "A", "title": "T", "state": "rejected", "status": "ok"}]))
+
+    provider = SQLiteStorageProvider(artifacts / "radar.db")
+    assert LegacyJsonMigrator(tmp_path).migrate_if_needed(provider) == 1
+    # Original moved to backup: an emptied table must not resurrect the jobs.
+    assert not legacy.exists()
+    assert (artifacts / "applications.json.migrated.bak").exists()
+
+    provider.delete("old-1")
+    assert LegacyJsonMigrator(tmp_path).migrate_if_needed(provider) == 0
+    assert provider.count_all() == 0
