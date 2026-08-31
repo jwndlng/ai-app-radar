@@ -13,6 +13,7 @@ from enrich.agent import EnrichResult
 from notifications.notifier import NullNotifier, Notifier
 
 _MAX_JD_CHARS = 40_000
+_MAX_ENRICH_ATTEMPTS = 3
 
 # Scout already sets title/company/location on discovered jobs; exclude them
 # so undo from parsed does not wipe the original scout-provided values.
@@ -37,6 +38,7 @@ class EnrichConsumer(BaseConsumer[dict]):
         self._notifier = notifier if notifier is not None else NullNotifier()
         self._success = 0
         self._failed = 0
+        self._touched: list[dict] = []
 
     async def on_start(self, total: int) -> None:
         self._log.start(total=total)
@@ -48,14 +50,20 @@ class EnrichConsumer(BaseConsumer[dict]):
     async def consume(self, job: dict) -> None:
         name = f"{job.get('company', '?')} — {job.get('title', '?')}"
         t0 = time.monotonic()
+        self._touched.append(job)
         try:
             enriched = await self._fetch_and_extract(job.get("url"))
             elapsed = time.monotonic() - t0
             if "_fetch_error" not in enriched:
-                job.update(enriched)
+                # Never let empty LLM output wipe the scout-provided values.
+                job.update({
+                    k: v for k, v in enriched.items()
+                    if not (k in _SCOUT_FIELDS and not v)
+                })
                 job["state"] = "parsed"
                 job["status"] = "ok"
                 job.pop("error_message", None)
+                job.pop("enrich_attempts", None)
                 StateMachine.touch_updated(job)
                 self._success += 1
                 self._log.item_ok(name, label="enrich", detail="parsed", elapsed=elapsed)
@@ -73,10 +81,12 @@ class EnrichConsumer(BaseConsumer[dict]):
             )
 
     async def checkpoint(self) -> None:
-        self._store.save(self._all_apps)
+        # Save only jobs this run touched: re-saving the full start-of-run
+        # snapshot would overwrite any concurrent edits made via the API.
+        self._store.save(self._touched)
 
     async def finalize(self) -> None:
-        self._store.save(self._all_apps)
+        self._store.save(self._touched)
         self._log.finish(f"{self._success} parsed, {self._failed} failed")
         await self._notifier.on_enrich_summary(self._success)
 
@@ -128,3 +138,4 @@ class EnrichConsumer(BaseConsumer[dict]):
     def _mark_failed(job: dict, reason: str) -> None:
         job["status"] = "failed"
         job["error_message"] = reason
+        job["enrich_attempts"] = job.get("enrich_attempts", 0) + 1

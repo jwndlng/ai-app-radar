@@ -45,6 +45,7 @@ class EvaluateConsumer(BaseConsumer[dict]):
         self._notifier = notifier if notifier is not None else NullNotifier()
         self._matched = 0
         self._reviewed = 0
+        self._touched: list[dict] = []
 
     async def on_start(self, total: int) -> None:
         self._log.start(total=total)
@@ -56,6 +57,7 @@ class EvaluateConsumer(BaseConsumer[dict]):
     async def consume(self, job: dict) -> None:
         name = f"{job.get('company', '?')} — {job.get('title', '?')}"
         t0 = time.monotonic()
+        self._touched.append(job)
 
         # Phase 1: location pre-filter
         passed, reason = self._vetter.vet(job)
@@ -115,7 +117,7 @@ class EvaluateConsumer(BaseConsumer[dict]):
             self._log.item_warn(name, label="evaluate",
                                 detail=f"→ auto-reject [score {final_score}/10 below threshold]",
                                 elapsed=elapsed)
-        elif final_score > self._auto_match:
+        elif final_score >= self._auto_match:
             job["state"] = "match"
             job["status"] = "ok"
             job.pop("error_message", None)
@@ -140,10 +142,12 @@ class EvaluateConsumer(BaseConsumer[dict]):
             await self._notifier.on_review(job, final_score, result.reasons)
 
     async def checkpoint(self) -> None:
-        self._store.save(self._all_apps)
+        # Save only jobs this run touched: re-saving the full start-of-run
+        # snapshot would overwrite any concurrent edits made via the API.
+        self._store.save(self._touched)
 
     async def finalize(self) -> None:
-        self._store.save(self._all_apps)
+        self._store.save(self._touched)
         self._log.finish(f"{self._reviewed} jobs moved to match/review")
         await self._notifier.on_run_summary(self._matched, self._reviewed - self._matched)
 
@@ -157,7 +161,8 @@ class EvaluateConsumer(BaseConsumer[dict]):
         job.pop("error_message", None)
         job.pop("jd", None)
         job.pop("jd_content", None)
-        job.pop("description", None)
+        # description is kept: it is small, and popping it here would leave a
+        # job undone from archived with no description to re-evaluate against.
 
     @staticmethod
     def _reject_job(job: dict, reason: str) -> None:

@@ -181,6 +181,7 @@ class AppConfigLoader:
         return EvaluateConfig(
             auto_reject_threshold=s.auto_reject_threshold,
             auto_match_threshold=s.auto_match_threshold,
+            location_reject_threshold=s.location_reject_threshold,
             scoring_weights=s.scoring_weights,
             model=s.model or os.environ.get("EVALUATE_MODEL") or None,
         )

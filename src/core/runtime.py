@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import random
 from typing import Any, Callable
 
 from core.task import BaseTask
+
+logger = logging.getLogger(__name__)
 
 
 class PipelineRuntime:
@@ -84,17 +87,25 @@ class PipelineRuntime:
                 queue.task_done()
                 continue
 
+            # An exception escaping this block would kill the worker while its
+            # sentinel is still queued, deadlocking queue.join() forever — so
+            # catch everything, log, and keep the worker alive.
             try:
                 if task.start_gap is not None:
                     await self._acquire_start_slot(lock, last_started, task.start_gap)
                 await consumer.consume(item)
+            except Exception:
+                logger.exception("Worker error while consuming item")
             finally:
                 queue.task_done()
                 completed["count"] += 1
                 if on_progress:
                     on_progress(completed["count"], total)
                 if completed["count"] % task.checkpoint_every == 0:
-                    await consumer.checkpoint()
+                    try:
+                        await consumer.checkpoint()
+                    except Exception:
+                        logger.exception("Worker error during checkpoint")
 
     @staticmethod
     async def _acquire_start_slot(

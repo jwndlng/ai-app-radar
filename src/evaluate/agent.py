@@ -12,6 +12,8 @@ from core.agent import BaseAgent
 
 class FitResult(BaseModel):
     score: float = Field(
+        ge=0.0,
+        le=10.0,
         description=(
             "Candidate fit score on a 0.1–10.0 scale. "
             "10 = perfect match, 1 = no meaningful overlap."
@@ -22,6 +24,8 @@ class FitResult(BaseModel):
         description="Concise role archetype label derived from the job's actual domain and level.",
     )
     location_score: float = Field(
+        ge=0.0,
+        le=10.0,
         description=(
             "How feasible is it for the candidate to work this role? "
             "Cross-reference BOTH `remote_policy` AND `location` against the candidate's "
@@ -50,6 +54,8 @@ class FitResult(BaseModel):
         ),
     )
     seniority_score: float = Field(
+        ge=0.0,
+        le=10.0,
         description=(
             "How well does the role's seniority match the candidate's target level "
             "from the CANDIDATE PROFILE? Score 0.1–10.0. "
@@ -63,6 +69,8 @@ class FitResult(BaseModel):
         description="One sentence explaining the seniority_score.",
     )
     compensation_score: float = Field(
+        ge=0.0,
+        le=10.0,
         description=(
             "How well does salary_range match the candidate's compensation targets? "
             "Score 0.1–10.0. "

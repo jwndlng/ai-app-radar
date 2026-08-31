@@ -56,3 +56,16 @@ def test_vet_full_pipeline_blocked_location(vetter: Vetter) -> None:
     job = {"title": "Senior Security Engineer", "location": "Remote US"}
     passed, reason = vetter.vet(job)
     assert passed is False
+
+
+def test_vet_diacritics_normalized(vetter: Vetter) -> None:
+    """'Zürich' in the job data must match the profile's 'zurich'."""
+    passed, reason = vetter.vet({"location": "Zürich"})
+    assert passed is True
+    assert "zurich" in reason.lower()
+
+
+def test_vet_diacritics_in_profile_pattern() -> None:
+    profile = {"location_preferences": {"accepted": ["Zürich"]}}
+    passed, _ = Vetter(profile).vet({"location": "Zurich, Switzerland"})
+    assert passed is True

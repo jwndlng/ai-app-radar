@@ -102,6 +102,7 @@ class RepairOrchestrator:
             if name in error_names:
                 job["status"] = "ok"
                 job.pop("error_message", None)
+                job.pop("enrich_attempts", None)
                 reset_count += 1
 
         if reset_count:
