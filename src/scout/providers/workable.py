@@ -11,23 +11,33 @@ class WorkableProvider(BaseProvider):
         company_name = company_config.get("name")
         slug = self._resolve_slug(company_config)
 
-        response = await self._post(_WORKABLE_API.format(slug=slug), json={})
-        data = response.json()
-
         jobs: list[dict] = []
-        for job in data.get("results", []):
-            title = job.get("title", "")
-            shortcode = job.get("shortcode", "")
-            job_url = _WORKABLE_JOB_URL.format(slug=slug, shortcode=shortcode)
-            location = self._extract_location(job)
+        payload: dict = {}
+        while True:
+            response = await self._post(_WORKABLE_API.format(slug=slug), json=payload)
+            data = response.json()
 
-            if self.filter_job(title, filters):
-                jobs.append({
-                    "title": title,
-                    "url": job_url,
-                    "company": company_name,
-                    "location": location,
-                })
+            results = data.get("results", [])
+            for job in results:
+                title = job.get("title", "")
+                shortcode = job.get("shortcode", "")
+                job_url = _WORKABLE_JOB_URL.format(slug=slug, shortcode=shortcode)
+                location = self._extract_location(job)
+
+                if self.filter_job(title, filters):
+                    jobs.append({
+                        "title": title,
+                        "url": job_url,
+                        "company": company_name,
+                        "location": location,
+                    })
+
+            # The v3 endpoint is token-paginated (~10 results per page);
+            # follow nextPage or most postings are silently missed.
+            next_token = data.get("nextPage")
+            if not next_token or not results:
+                break
+            payload = {"token": next_token}
         return jobs
 
     @staticmethod

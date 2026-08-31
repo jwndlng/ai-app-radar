@@ -128,6 +128,10 @@ class WebsearchProvider(BaseProvider):
                     if count == 0:
                         print(f"  [~] {company_name}: selector {content_selector!r} matched nothing, falling back to body")
                         target = page.locator("body").first
+                    else:
+                        # .first avoids a strict-mode violation when the
+                        # selector matches more than one element.
+                        target = target.first
                 else:
                     target = page.locator("body").first
 
