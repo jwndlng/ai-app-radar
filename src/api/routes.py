@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+from datetime import datetime
 
 from fastapi import APIRouter, BackgroundTasks, Body, Depends
 from fastapi.responses import JSONResponse
@@ -152,6 +153,17 @@ async def list_jobs(
         return JSONResponse(status_code=500, content={"ok": False, "error": str(e)})
 
 
+# /jobs/stats must be registered before /jobs/{job_id}, or FastAPI matches
+# "stats" as a job_id and the endpoint 404s.
+@router.get("/jobs/stats")
+async def get_job_stats(runner: PipelineRunner = Depends(get_runner)):
+    try:
+        stats = runner._store().state_counts()
+        return stats
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"ok": False, "error": str(e)})
+
+
 @router.get("/jobs/{job_id}")
 async def get_job_detail(
     job_id: str,
@@ -163,15 +175,6 @@ async def get_job_detail(
         if job is None:
             return JSONResponse(status_code=404, content={"detail": f"Job not found: {job_id}"})
         return job
-    except Exception as e:
-        return JSONResponse(status_code=500, content={"ok": False, "error": str(e)})
-
-
-@router.get("/jobs/stats")
-async def get_job_stats(runner: PipelineRunner = Depends(get_runner)):
-    try:
-        stats = runner._store().state_counts()
-        return stats
     except Exception as e:
         return JSONResponse(status_code=500, content={"ok": False, "error": str(e)})
 
@@ -397,9 +400,13 @@ async def set_job_state(
         return JSONResponse(status_code=404, content={"detail": f"Job not found: {job_id}"})
     job["prev_state"] = job.get("state")
     job["state"] = body.state
-    if body.state == "rejected" and body.reason:
-        job["rejection_reason"] = body.reason
-    elif body.state != "rejected":
+    if body.state == "rejected":
+        # Stamp the rejection time: the archiver ages rejected jobs from
+        # vetted_at, which otherwise still holds the original evaluation time.
+        job["vetted_at"] = datetime.now().isoformat()
+        if body.reason:
+            job["rejection_reason"] = body.reason
+    else:
         job.pop("rejection_reason", None)
     StateMachine.touch_updated(job)
     store.save_job(job)
@@ -430,12 +437,15 @@ async def undo_by_state(
     runner: PipelineRunner = Depends(get_runner),
 ):
     store = runner._store()
-    jobs = store.list_jobs(state=body.state)
+    # Full projection is required: saving summary rows back would rewrite each
+    # job's data column from the projected dict and wipe all extended fields.
+    jobs = store.list_jobs(state=body.state, projection="full")
     count = 0
     to_save = []
     for job in jobs:
         if runner.undo_job(job) is not None:
             count += 1
+            StateMachine.touch_updated(job)
             to_save.append(job)
     if to_save:
         store.save(to_save)

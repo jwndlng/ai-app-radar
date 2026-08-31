@@ -285,9 +285,21 @@ class PipelineRunner:
         from core.config import AppConfigLoader
         return dataclasses.asdict(AppConfigLoader(self._root).settings())
 
+    # Sections the settings UI actually edits. Anything else in settings.yaml
+    # (notably notifications.telegram, whose nested shape the flat AppSettings
+    # dataclass doesn't mirror) must survive a save untouched.
+    _EDITABLE_SETTINGS_SECTIONS = ("scout", "enrich", "evaluate", "archival")
+
     def save_settings(self, data: dict) -> None:
-        self._settings_path().write_text(
-            yaml.dump(data, allow_unicode=True, sort_keys=False, default_flow_style=False)
+        path = self._settings_path()
+        existing: dict = {}
+        if path.exists():
+            existing = yaml.safe_load(path.read_text()) or {}
+        for section in self._EDITABLE_SETTINGS_SECTIONS:
+            if section in data:
+                existing[section] = data[section]
+        path.write_text(
+            yaml.dump(existing, allow_unicode=True, sort_keys=False, default_flow_style=False)
         )
 
     # ── Profile management ────────────────────────────────────────────────────
