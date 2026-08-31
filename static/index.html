@@ -2152,7 +2152,7 @@
         </div>
       </template>
 
-      <template x-for="(job, i) in visibleJobs" :key="job.id + '-' + i">
+      <template x-for="job in visibleJobs" :key="job.id">
         <div class="job-card" @click="toggleExpand(job.id)">
 
           <!-- Card header -->
@@ -3212,7 +3212,7 @@
     function appData() {
       return {
         jobs: [],
-        stats: { total: 0, discovered: 0, parsed: 0, match: 0, review: 0, applied: 0, rejected: 0, archived: 0, failed: 0 },
+        _filteredJobsCache: [],
         apiTasks: [],
         jobsLoaded: false,
         prevTaskStatuses: {},
@@ -3304,6 +3304,10 @@
         },
 
         get filteredJobs() {
+          return this._filteredJobsCache
+        },
+
+        _recomputeFilteredJobs() {
           const q = this.search.toLowerCase()
           const filtered = this.jobs.filter(j => {
             const matchSearch = !q
@@ -3316,7 +3320,7 @@
           })
           const key = this.sortKey
           const asc = this.sortAsc
-          return filtered.slice().sort((a, b) => {
+          this._filteredJobsCache = filtered.sort((a, b) => {
             let va, vb
             if (key === 'score') {
               va = (a.final_score ?? a.score) ?? -1
@@ -3338,7 +3342,7 @@
         },
 
         get visibleJobs() {
-          return this.filteredJobs.slice(0, this.visibleCount)
+          return this._filteredJobsCache.slice(0, this.visibleCount)
         },
 
         get activeTasks() {
@@ -3401,14 +3405,15 @@
           fetch('/api/tasks/' + id, { method: 'DELETE' })
         },
 
-        async loadStats() {
-          try {
-            const r = await fetch('/api/jobs/stats')
-            if (r.ok) {
-              const d = await r.json()
-              this.stats = { ...this.stats, ...d }
-            }
-          } catch(e) { console.error('loadStats failed', e) }
+        get stats() {
+          const s = { total: 0, discovered: 0, parsed: 0, match: 0, review: 0, applied: 0, rejected: 0, archived: 0, failed: 0 }
+          for (const j of this.jobs) {
+            s.total++
+            if (j.status === 'failed') { s.failed++; continue }
+            const state = j.state || 'discovered'
+            if (state in s) s[state]++
+          }
+          return s
         },
 
         async init() {
@@ -3417,8 +3422,11 @@
           await Promise.all([this.loadJobs(), this.loadStats(), this.loadTasks(), this.loadSettings(), this.loadCompanies()])
           setInterval(() => this.loadTasks(), 5000)
           setInterval(() => this.now = Date.now(), 1000)
-          this.$watch('statusFilter', () => { this.visibleCount = 50 })
-          this.$watch('search', () => { this.visibleCount = 50 })
+          this.$watch('statusFilter', () => { this.visibleCount = 50; this._recomputeFilteredJobs() })
+          this.$watch('search', () => { this.visibleCount = 50; this._recomputeFilteredJobs() })
+          this.$watch('favoritesOnly', () => this._recomputeFilteredJobs())
+          this.$watch('sortKey', () => this._recomputeFilteredJobs())
+          this.$watch('sortAsc', () => this._recomputeFilteredJobs())
         },
 
         async loadSettings() {
@@ -3470,6 +3478,7 @@
               return old ? Object.assign(old, nj) : nj
             })
             this.jobsLoaded = true
+            this._recomputeFilteredJobs()
           } catch(e) { console.error('loadJobs failed', e) }
         },
 
@@ -3626,12 +3635,14 @@
           if (!job._armedDelete) return
           const idx = this.jobs.findIndex(j => j.id === job.id)
           this.jobs.splice(idx, 1)
+          this._recomputeFilteredJobs()
           try {
             const r = await fetch(`/api/jobs/${job.id}`, { method: 'DELETE' })
             if (!r.ok) throw new Error('delete failed')
             await this.loadStats()
           } catch(e) {
             this.jobs.splice(idx, 0, job)
+            this._recomputeFilteredJobs()
             job._armedDelete = false
             job._deleteError = true
             setTimeout(() => { job._deleteError = false }, 1500)
@@ -3642,7 +3653,7 @@
           try {
             const r = await fetch(`/api/jobs/${job.id}/favorite`, { method: 'PATCH' })
             const d = await r.json()
-            if (d.ok) job.favorited = d.favorited
+            if (d.ok) { job.favorited = d.favorited; if (this.favoritesOnly) this._recomputeFilteredJobs() }
           } catch(e) { console.error('toggleFavorite failed', e) }
         },
 
