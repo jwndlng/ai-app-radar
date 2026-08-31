@@ -125,12 +125,44 @@ async def restore_profile_backup(
 async def list_jobs(
     state: str | None = None,
     status: str | None = None,
+    search: str | None = None,
+    favorited_only: bool = False,
+    sort_by: str = "updated_at",
+    sort_order: str = "desc",
+    projection: str = "summary",
+    limit: int | None = None,
+    offset: int = 0,
     runner: PipelineRunner = Depends(get_runner),
 ):
     try:
         store = runner._store()
-        jobs = store.list_jobs(state=state, status=status)
+        jobs = store.list_jobs(
+            state=state,
+            status=status,
+            search=search,
+            favorited_only=favorited_only,
+            sort_by=sort_by,
+            sort_order=sort_order,
+            projection=projection,
+            limit=limit,
+            offset=offset,
+        )
         return {"jobs": jobs, "total": len(jobs)}
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"ok": False, "error": str(e)})
+
+
+@router.get("/jobs/{job_id}")
+async def get_job_detail(
+    job_id: str,
+    runner: PipelineRunner = Depends(get_runner),
+):
+    try:
+        store = runner._store()
+        job = store.get_by_id(job_id)
+        if job is None:
+            return JSONResponse(status_code=404, content={"detail": f"Job not found: {job_id}"})
+        return job
     except Exception as e:
         return JSONResponse(status_code=500, content={"ok": False, "error": str(e)})
 

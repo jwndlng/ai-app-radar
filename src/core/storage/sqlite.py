@@ -1,8 +1,9 @@
-"""SQLite storage provider implementation with WAL mode and hybrid JSON schema."""
+"""SQLite storage provider implementation with WAL mode, hybrid schema, and query projections."""
 
 from __future__ import annotations
 
 import json
+import re
 import sqlite3
 from contextlib import contextmanager
 from pathlib import Path
@@ -10,7 +11,7 @@ from typing import Generator
 
 from core.storage.base import DatabaseProvider
 
-_KNOWN_COLUMNS: frozenset[str] = frozenset({
+_SUMMARY_COLUMNS: tuple[str, ...] = (
     "id",
     "hash_id",
     "company",
@@ -28,7 +29,18 @@ _KNOWN_COLUMNS: frozenset[str] = frozenset({
     "vetted_at",
     "archived_at",
     "error_message",
-})
+)
+
+_KNOWN_COLUMNS: frozenset[str] = frozenset(_SUMMARY_COLUMNS)
+
+_SORT_COLUMNS: dict[str, str] = {
+    "score": "final_score",
+    "final_score": "final_score",
+    "updated_at": "updated_at",
+    "discovered_at": "discovered_at",
+    "title": "title",
+    "company": "company",
+}
 
 _STATE_MIGRATION: dict[str, tuple[str, str]] = {
     "new": ("discovered", "ok"),
@@ -41,7 +53,7 @@ _STATE_MIGRATION: dict[str, tuple[str, str]] = {
 
 
 class SQLiteStorageProvider(DatabaseProvider):
-    """Concrete SQLite implementation of DatabaseProvider with WAL mode."""
+    """Concrete SQLite implementation of DatabaseProvider with WAL mode and query projections."""
 
     def __init__(self, db_path: Path | str) -> None:
         self._path = Path(db_path) if isinstance(db_path, (str, Path)) else db_path
@@ -123,7 +135,7 @@ class SQLiteStorageProvider(DatabaseProvider):
                 "SELECT * FROM applications WHERE id = ? LIMIT 1;", (job_id,)
             )
             row = cursor.fetchone()
-            return self._row_to_dict(row) if row else None
+            return self._row_to_dict(row, full=True) if row else None
 
     def get_by_url(self, url: str) -> dict | None:
         if not url:
@@ -133,30 +145,45 @@ class SQLiteStorageProvider(DatabaseProvider):
                 "SELECT * FROM applications WHERE url = ? LIMIT 1;", (url,)
             )
             row = cursor.fetchone()
-            return self._row_to_dict(row) if row else None
+            return self._row_to_dict(row, full=True) if row else None
 
     def list_jobs(
         self,
         state: str | None = None,
         status: str | None = None,
+        search: str | None = None,
+        favorited_only: bool = False,
+        sort_by: str = "updated_at",
+        sort_order: str = "desc",
+        projection: str = "summary",
         limit: int | None = None,
         offset: int = 0,
     ) -> list[dict]:
-        query = "SELECT * FROM applications"
+        is_summary = projection == "summary"
+        select_cols = ", ".join(_SUMMARY_COLUMNS) if is_summary else "*"
+        query = f"SELECT {select_cols} FROM applications"
         params: list[object] = []
         clauses: list[str] = []
 
-        if state is not None:
+        if state is not None and state != "all":
             clauses.append("state = ?")
             params.append(state)
-        if status is not None:
+        if status is not None and status != "all":
             clauses.append("status = ?")
             params.append(status)
+        if favorited_only:
+            clauses.append("favorited = 1")
+        if search and search.strip():
+            search_param = f"%{search.strip().lower()}%"
+            clauses.append("(LOWER(title) LIKE ? OR LOWER(company) LIKE ? OR LOWER(COALESCE(location, '')) LIKE ?)")
+            params.extend([search_param, search_param, search_param])
 
         if clauses:
             query += " WHERE " + " AND ".join(clauses)
 
-        query += " ORDER BY updated_at DESC, discovered_at DESC"
+        col_name = _SORT_COLUMNS.get(sort_by.lower(), "updated_at")
+        direction = "ASC" if sort_order.lower() == "asc" else "DESC"
+        query += f" ORDER BY {col_name} {direction} NULLS LAST"
 
         if limit is not None:
             query += " LIMIT ?"
@@ -167,7 +194,7 @@ class SQLiteStorageProvider(DatabaseProvider):
 
         with self._connection() as conn:
             cursor = conn.execute(query, params)
-            return [self._row_to_dict(row) for row in cursor.fetchall()]
+            return [self._row_to_dict(row, full=not is_summary) for row in cursor.fetchall()]
 
     def upsert(self, job: dict) -> None:
         self.upsert_batch([job])
@@ -255,7 +282,6 @@ class SQLiteStorageProvider(DatabaseProvider):
         """Translate legacy fields and ensure id, state, and status are well-formed."""
         job_copy = dict(job)
         if not job_copy.get("id"):
-            import re
             c = re.sub(r"\W+", "", (job_copy.get("company") or "").lower().strip())
             t = re.sub(r"\W+", "", (job_copy.get("title") or "").lower().strip())
             job_copy["id"] = f"{c}-{t}" if (c or t) else (job_copy.get("url") or "unknown")
@@ -301,12 +327,14 @@ class SQLiteStorageProvider(DatabaseProvider):
         )
 
     @staticmethod
-    def _row_to_dict(row: sqlite3.Row) -> dict:
-        data_str = row["data"] if "data" in row.keys() else "{}"
-        try:
-            out = json.loads(data_str) if data_str else {}
-        except Exception:
-            out = {}
+    def _row_to_dict(row: sqlite3.Row, full: bool = True) -> dict:
+        out: dict = {}
+        if full and "data" in row.keys():
+            data_str = row["data"]
+            try:
+                out = json.loads(data_str) if data_str else {}
+            except Exception:
+                out = {}
 
         for col in row.keys():
             if col == "data":

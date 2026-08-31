@@ -1908,7 +1908,7 @@
 
       <div class="filter-group">
         <label>Search</label>
-        <input type="search" x-model="search" placeholder="Role, company…" />
+        <input type="search" x-model.debounce.300ms="search" placeholder="Role, company…" />
       </div>
     </div>
 
@@ -3210,6 +3210,7 @@
     function appData() {
       return {
         jobs: [],
+        stats: { total: 0, discovered: 0, parsed: 0, match: 0, review: 0, applied: 0, rejected: 0, archived: 0, failed: 0 },
         apiTasks: [],
         prevTaskStatuses: {},
         dismissedTaskIds: {},
@@ -3397,27 +3398,20 @@
           fetch('/api/tasks/' + id, { method: 'DELETE' })
         },
 
-        get stats() {
-          return {
-            total: this.jobs.length,
-            discovered: this.jobs.filter(j => j.state === 'discovered').length,
-            parsed: this.jobs.filter(j => j.state === 'parsed').length,
-            match: this.jobs.filter(j => j.state === 'match').length,
-            review: this.jobs.filter(j => j.state === 'review').length,
-            applied: this.jobs.filter(j => j.state === 'applied').length,
-            rejected: this.jobs.filter(j => j.state === 'rejected').length,
-            archived: this.jobs.filter(j => j.state === 'archived').length,
-            failed: this.jobs.filter(j => j.status === 'failed').length,
-          }
+        async loadStats() {
+          try {
+            const r = await fetch('/api/jobs/stats')
+            if (r.ok) {
+              const d = await r.json()
+              this.stats = { ...this.stats, ...d }
+            }
+          } catch(e) { console.error('loadStats failed', e) }
         },
 
         async init() {
           if (window.innerWidth < 768) this.sidebarOpen = false
           fetch('/api/version').then(r => r.json()).then(d => { this.appVersion = d.version })
-          await this.loadJobs()
-          await this.loadTasks()
-          await this.loadSettings()
-          await this.loadCompanies()
+          await Promise.all([this.loadJobs(), this.loadStats(), this.loadTasks(), this.loadSettings(), this.loadCompanies()])
           setInterval(() => this.loadTasks(), 5000)
           setInterval(() => this.now = Date.now(), 1000)
           this.$watch('statusFilter', () => { this.visibleCount = 50 })
@@ -3525,7 +3519,9 @@
             this.prevTaskStatuses = Object.fromEntries(tasks.map(t => [t.id, t.status]))
             this.apiTasks = tasks
 
-            if (needsRefresh) await this.loadJobs()
+            if (needsRefresh) {
+              await Promise.all([this.loadJobs(), this.loadStats()])
+            }
           } catch(e) { console.error('loadTasks failed', e) }
         },
 
@@ -3585,14 +3581,14 @@
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ state })
             })
-            await this.loadJobs()
+            await Promise.all([this.loadJobs(), this.loadStats()])
           } catch(e) { console.error('undoByState failed', e) }
         },
 
         async undoJob(jobId) {
           try {
             await fetch(`/api/jobs/${jobId}/undo`, { method: 'POST' })
-            await this.loadJobs()
+            await Promise.all([this.loadJobs(), this.loadStats()])
           } catch(e) { console.error('undoJob failed', e) }
         },
 
@@ -3623,6 +3619,7 @@
           try {
             const r = await fetch(`/api/jobs/${job.id}`, { method: 'DELETE' })
             if (!r.ok) throw new Error('delete failed')
+            await this.loadStats()
           } catch(e) {
             this.jobs.splice(idx, 0, job)
             job._armedDelete = false
@@ -3646,7 +3643,7 @@
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ state, reason: reason || null })
             })
-            await this.loadJobs()
+            await Promise.all([this.loadJobs(), this.loadStats()])
           } catch(e) { console.error('setJobState failed', e) }
         },
 
@@ -3664,8 +3661,22 @@
           await this.setJobState(jobId, 'rejected', reason)
         },
 
-        toggleExpand(jobId) {
-          this.expandedJobId = this.expandedJobId === jobId ? null : jobId
+        async toggleExpand(jobId) {
+          if (this.expandedJobId === jobId) {
+            this.expandedJobId = null
+            return
+          }
+          this.expandedJobId = jobId
+          const job = this.jobs.find(j => j.id === jobId)
+          if (job && !job._detailsLoaded) {
+            try {
+              const r = await fetch('/api/jobs/' + encodeURIComponent(jobId))
+              if (r.ok) {
+                const full = await r.json()
+                Object.assign(job, full, { _detailsLoaded: true })
+              }
+            } catch(e) { console.error('Failed to load job details', e) }
+          }
         },
 
         setSort(key) {

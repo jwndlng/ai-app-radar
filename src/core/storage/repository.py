@@ -27,13 +27,28 @@ class JobRepository:
         self,
         state: str | None = None,
         status: str | None = None,
+        search: str | None = None,
+        favorited_only: bool = False,
+        sort_by: str = "updated_at",
+        sort_order: str = "desc",
+        projection: str = "summary",
         limit: int | None = None,
         offset: int = 0,
     ) -> list[dict[str, Any]]:
-        return self._provider.list_jobs(state=state, status=status, limit=limit, offset=offset)
+        return self._provider.list_jobs(
+            state=state,
+            status=status,
+            search=search,
+            favorited_only=favorited_only,
+            sort_by=sort_by,
+            sort_order=sort_order,
+            projection=projection,
+            limit=limit,
+            offset=offset,
+        )
 
-    def load_all(self) -> list[dict[str, Any]]:
-        return self._provider.list_jobs()
+    def load_all(self, projection: str = "full") -> list[dict[str, Any]]:
+        return self._provider.list_jobs(projection=projection)
 
     def save(self, job: dict[str, Any]) -> None:
         self._provider.upsert(job)
@@ -52,4 +67,3 @@ class JobRepository:
 
     def count(self) -> int:
         return self._provider.count_all()
-
