@@ -54,11 +54,11 @@ class PipelineCLI:
         p_enrich = sub.add_parser("enrich", help="Extract metadata from discovered roles")
         p_enrich.add_argument("--limit", type=int, default=None,
                               help="Max number of jobs to enrich (default: all)")
-        p_enrich.add_argument("--concurrency", type=int, default=5,
-                              help="Parallel workers (default: 5)")
-        p_enrich.add_argument("--checkpoint-every", type=int, default=5,
+        p_enrich.add_argument("--concurrency", type=int, default=None,
+                              help="Parallel workers (default: from settings.yaml)")
+        p_enrich.add_argument("--checkpoint-every", type=int, default=None,
                               dest="checkpoint_every",
-                              help="Save every N completions (default: 5)")
+                              help="Save every N completions (default: from settings.yaml)")
 
         sub.add_parser("evaluate", help="Score and triage enriched roles")
         sub.add_parser("sync", help="Run the full pipeline: scout → enrich → evaluate")
@@ -94,7 +94,9 @@ class PipelineCLI:
         return NullNotifier()
 
     async def _run_scout(self, company: str | None = None) -> None:
-        from core.config import AppConfigLoader, ScoutConfig
+        import dataclasses
+
+        from core.config import AppConfigLoader
         from core.runtime import PipelineRuntime
         from scout.task import ScoutTask
 
@@ -105,10 +107,9 @@ class PipelineCLI:
             if not match:
                 print(f"[-] No company named {company!r} found in configs/companies.json")
                 sys.exit(1)
-            config = ScoutConfig(
-                title_filter=config.title_filter,
-                tracked_companies=match,
-            )
+            # replace() keeps the loaded settings (respect_robots, max_pages,
+            # model, worker_count) instead of resetting them to defaults.
+            config = dataclasses.replace(config, tracked_companies=match)
             print(f"[*] Scoping scout to: {match[0]['name']}")
 
         await PipelineRuntime(ScoutTask(config, self._root, notifier=self._notifier())).run()
@@ -116,13 +117,14 @@ class PipelineCLI:
     async def _run_enrich(
         self,
         limit: int | None = None,
-        concurrency: int = 5,
-        checkpoint_every: int = 5,
+        concurrency: int | None = None,
+        checkpoint_every: int | None = None,
     ) -> None:
         from core.runtime import PipelineRuntime
         from enrich.task import EnrichTask
         await PipelineRuntime(
-            EnrichTask(self._root, limit=limit, notifier=self._notifier())
+            EnrichTask(self._root, limit=limit, notifier=self._notifier(),
+                       concurrency=concurrency, checkpoint_every=checkpoint_every)
         ).run()
 
     async def _run_evaluate(self) -> None:
