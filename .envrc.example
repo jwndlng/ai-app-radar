@@ -13,7 +13,7 @@
 # Option B: Anthropic Claude (direct)
 # Get a key at https://console.anthropic.com/settings/keys
 # export ANTHROPIC_API_KEY=""
-# export ADK_MODEL="anthropic/claude-haiku-4-5"
+# export ADK_MODEL="anthropic/claude-sonnet-5"
 
 # Option C: Groq (direct) — free tier available
 # Get a free key at https://console.groq.com/keys

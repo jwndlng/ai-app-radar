@@ -38,7 +38,7 @@ class JudgeResult(BaseModel):
 
 
 class TuneJudge(BaseAgent[JudgeResult]):
-    _JUDGE_MODEL = "claude-sonnet-4-6"
+    _JUDGE_MODEL = "anthropic/claude-sonnet-5"
 
     def __init__(self) -> None:
         super().__init__(output_type=JudgeResult, model_name=self._JUDGE_MODEL)
