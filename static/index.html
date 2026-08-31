@@ -2415,10 +2415,13 @@
         </div>
       </template>
 
+      <!-- Sentinel for scroll-based auto-loading; must live outside the
+           x-if so the IntersectionObserver target always exists. -->
+      <div id="jobs-scroll-sentinel" style="height:1px;"></div>
       <template x-if="visibleCount < filteredJobs.length">
         <div style="text-align:center; padding:var(--padding-md) 0;">
           <button class="btn btn-ghost"
-                  @click="visibleCount += 50"
+                  @click="visibleCount += pageSize"
                   x-text="'Load more (' + (filteredJobs.length - visibleCount) + ' remaining)'">
           </button>
         </div>
@@ -3229,7 +3232,8 @@
         now: Date.now(),
         sortKey: 'updated_at',
         sortAsc: false,
-        visibleCount: 50,
+        visibleCount: 30,
+        pageSize: 30,
         sidebarOpen: true,
         navOpen: false,
         filtersOpen: false,
@@ -3423,11 +3427,30 @@
           await Promise.all([this.loadJobs(), this.loadStats(), this.loadTasks(), this.loadSettings(), this.loadCompanies()])
           setInterval(() => this.loadTasks(), 5000)
           setInterval(() => this.now = Date.now(), 1000)
-          this.$watch('statusFilter', () => { this.visibleCount = 50; this._recomputeFilteredJobs() })
-          this.$watch('search', () => { this.visibleCount = 50; this._recomputeFilteredJobs() })
+          this.$watch('statusFilter', () => { this.visibleCount = this.pageSize; this._recomputeFilteredJobs() })
+          this.$watch('search', () => { this.visibleCount = this.pageSize; this._recomputeFilteredJobs() })
           this.$watch('favoritesOnly', () => this._recomputeFilteredJobs())
           this.$watch('sortKey', () => this._recomputeFilteredJobs())
           this.$watch('sortAsc', () => this._recomputeFilteredJobs())
+
+          const sentinel = document.getElementById('jobs-scroll-sentinel')
+          if (sentinel) {
+            new IntersectionObserver(entries => {
+              if (entries.some(e => e.isIntersecting)) this._loadMoreIfNearBottom()
+            }, { rootMargin: '600px' }).observe(sentinel)
+          }
+        },
+
+        _loadMoreIfNearBottom() {
+          const sentinel = document.getElementById('jobs-scroll-sentinel')
+          // offsetParent is null when the jobs view is hidden (display:none)
+          if (!sentinel || sentinel.offsetParent === null) return
+          if (this.visibleCount >= this._filteredJobsCache.length) return
+          if (sentinel.getBoundingClientRect().top > window.innerHeight + 600) return
+          this.visibleCount += this.pageSize
+          // Keep filling until the sentinel is pushed out of the preload zone
+          // (a single observer callback fires only on the threshold crossing).
+          this.$nextTick(() => this._loadMoreIfNearBottom())
         },
 
         async loadSettings() {

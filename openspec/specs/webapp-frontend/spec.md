@@ -171,6 +171,17 @@ Since the job list switched to the summary projection (which omits the heavy `re
 - **WHEN** a job card is rendered collapsed from the summary listing
 - **THEN** the fit-score tag, sub-score tags, and salary badge SHALL still be visible without expanding
 
+### Requirement: Job list paginates by scrolling
+The job list SHALL render 30 jobs initially and load 30 more automatically when the user scrolls near the bottom (IntersectionObserver on a sentinel, with a preload margin), with the "Load more" button retained as a manual fallback. Changing the state filter or search SHALL reset the visible count to the first page. The header SHALL show the total filtered count and how many are currently shown.
+
+#### Scenario: Scrolling loads the next page
+- **WHEN** the user scrolls to the bottom of the job list and more filtered jobs remain
+- **THEN** the next 30 jobs SHALL be appended without a click
+
+#### Scenario: Filter change resets to the first page
+- **WHEN** the user switches the state filter or edits the search
+- **THEN** the list SHALL show the first 30 matching jobs again
+
 ### Requirement: Job list state survives background refreshes
 Refreshing the job list (initial load, post-task refresh, post-mutation refresh) SHALL merge fresh summary records into the existing job objects by `id`, preserving any detail fields already loaded for an expanded card. The empty list SHALL distinguish "still loading" from "no jobs exist".
 
