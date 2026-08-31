@@ -2,11 +2,11 @@ scout:
   respect_robots: false
   max_pages: 10
   worker_count: 10
-  model: null
+  model: anthropic/claude-sonnet-5
 enrich:
   concurrency: 5
   checkpoint_every: 5
-  model: null
+  model: anthropic/claude-sonnet-5
 evaluate:
   auto_reject_threshold: 4
   auto_match_threshold: 7.5
@@ -16,7 +16,7 @@ evaluate:
     location: 0.2
     seniority: 0.2
     compensation: 0.1
-  model: null
+  model: anthropic/claude-sonnet-5
 archival:
   rejected_after_days: 30
 notifications:
