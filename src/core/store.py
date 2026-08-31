@@ -82,11 +82,26 @@ class ApplicationStore:
         self,
         state: str | None = None,
         status: str | None = None,
+        search: str | None = None,
+        favorited_only: bool = False,
+        sort_by: str = "updated_at",
+        sort_order: str = "desc",
+        projection: str = "summary",
         limit: int | None = None,
         offset: int = 0,
     ) -> list[dict[str, Any]]:
-        """List jobs with optional state/status filtering."""
-        return self._repo.list_jobs(state=state, status=status, limit=limit, offset=offset)
+        """List jobs with optional filtering, search, sorting, and projection."""
+        return self._repo.list_jobs(
+            state=state,
+            status=status,
+            search=search,
+            favorited_only=favorited_only,
+            sort_by=sort_by,
+            sort_order=sort_order,
+            projection=projection,
+            limit=limit,
+            offset=offset,
+        )
 
     def state_counts(self) -> dict[str, int]:
         """Return state count aggregations."""

@@ -100,6 +100,69 @@ def test_sqlite_batch_upsert_and_state_counts(memory_provider: SQLiteStorageProv
     assert {j["id"] for j in discovered} == {"j1", "j4"}
 
 
+def test_sqlite_projections_and_search(memory_provider: SQLiteStorageProvider) -> None:
+    job1 = {
+        "id": "j-sec",
+        "company": "Anthropic",
+        "title": "Software Security Engineer",
+        "location": "Remote",
+        "state": "match",
+        "status": "ok",
+        "final_score": 9.5,
+        "favorited": True,
+        "description": "Deep security engineering analysis text...",
+        "reasons": ["Top tier match", "Python & Rust"],
+        "tech_stack": ["Python", "Rust"],
+    }
+    job2 = {
+        "id": "j-infra",
+        "company": "OpenAI",
+        "title": "Infrastructure Architect",
+        "location": "San Francisco",
+        "state": "match",
+        "status": "ok",
+        "final_score": 7.0,
+        "favorited": False,
+        "description": "Large scale cluster management...",
+        "reasons": ["Good fit"],
+        "tech_stack": ["Kubernetes"],
+    }
+
+    memory_provider.upsert_batch([job1, job2])
+
+    # Summary projection should omit deep fields
+    summaries = memory_provider.list_jobs(projection="summary")
+    assert len(summaries) == 2
+    for s in summaries:
+        assert "description" not in s
+        assert "reasons" not in s
+        assert "tech_stack" not in s
+        assert "company" in s
+        assert "title" in s
+
+    # Full projection should include deep fields
+    full_jobs = memory_provider.list_jobs(projection="full")
+    assert len(full_jobs) == 2
+    sec_job = next(j for j in full_jobs if j["id"] == "j-sec")
+    assert sec_job["description"] == "Deep security engineering analysis text..."
+    assert sec_job["reasons"] == ["Top tier match", "Python & Rust"]
+
+    # Search filter
+    search_results = memory_provider.list_jobs(search="security")
+    assert len(search_results) == 1
+    assert search_results[0]["id"] == "j-sec"
+
+    # Favorited only
+    fav_results = memory_provider.list_jobs(favorited_only=True)
+    assert len(fav_results) == 1
+    assert fav_results[0]["id"] == "j-sec"
+
+    # Sorting
+    sorted_by_score = memory_provider.list_jobs(sort_by="score", sort_order="desc")
+    assert sorted_by_score[0]["id"] == "j-sec"
+    assert sorted_by_score[1]["id"] == "j-infra"
+
+
 def test_job_repository_operations(memory_provider: SQLiteStorageProvider) -> None:
     repo = JobRepository(memory_provider)
     repo.save({"id": "repo-1", "company": "Anthropic", "title": "Security SWE", "state": "discovered"})
@@ -188,4 +251,3 @@ def test_application_store_delegation(tmp_path: Path) -> None:
 
     assert store.delete_job("app-1") is True
     assert len(store.load()) == 0
-

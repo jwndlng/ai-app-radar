@@ -33,10 +33,15 @@ class DatabaseProvider(ABC):
         self,
         state: str | None = None,
         status: str | None = None,
+        search: str | None = None,
+        favorited_only: bool = False,
+        sort_by: str = "updated_at",
+        sort_order: str = "desc",
+        projection: str = "summary",
         limit: int | None = None,
         offset: int = 0,
     ) -> list[dict]:
-        """List job records with optional state/status filtering and pagination."""
+        """List job records with optional filtering, search, sorting, and projection."""
         raise NotImplementedError
 
     @abstractmethod
@@ -63,4 +68,3 @@ class DatabaseProvider(ABC):
     def count_all(self) -> int:
         """Return total number of stored jobs."""
         raise NotImplementedError
-
