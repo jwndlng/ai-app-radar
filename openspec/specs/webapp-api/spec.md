@@ -72,11 +72,15 @@ The system SHALL maintain a `TaskRegistry` that records all pipeline operations 
 - **THEN** the registry starts empty and a warning is logged; the server starts successfully
 
 ### Requirement: Task listing endpoint
-The system SHALL expose `GET /api/tasks` returning all task records ordered by `started_at` descending.
+The system SHALL expose `GET /api/tasks` returning all task records ordered by `started_at` descending, as summary records: full event logs SHALL NOT be included (the endpoint is polled every 5 seconds). Running/cancelling tasks include at most their last 100 events; finished tasks include an empty `events` list. Every summary record carries an `event_count`. Stored events per task are capped at 500 (oldest dropped) to bound the record and the persisted `tasks.json`.
 
 #### Scenario: Tasks returned
 - **WHEN** `GET /api/tasks` is called
 - **THEN** the response has status 200 and body `{"tasks": [...], "total": N}`
+
+#### Scenario: Finished tasks ship no event log
+- **WHEN** `GET /api/tasks` is called and a finished task has recorded events
+- **THEN** its summary record has `events: []` and the full log remains available via `GET /api/tasks/{task_id}`
 
 #### Scenario: Empty task list
 - **WHEN** no operations have been run since server start

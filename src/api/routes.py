@@ -192,7 +192,10 @@ async def delete_job(job_id: str, runner: PipelineRunner = Depends(get_runner)):
 
 @router.get("/tasks")
 async def list_tasks(registry: TaskRegistry = Depends(get_registry)):
-    tasks = [t.to_dict() for t in registry.all()]
+    # Summary projection: the frontend polls this every 5 seconds, so full
+    # event logs (MBs across 100 records) must not be shipped here — the
+    # detail endpoint below returns them for a single task.
+    tasks = [t.to_summary_dict() for t in registry.all()]
     return {"tasks": tasks, "total": len(tasks)}
 
 
