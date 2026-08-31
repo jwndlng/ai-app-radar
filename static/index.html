@@ -2297,7 +2297,7 @@
               <div style="background:var(--bg-card); border:1px solid var(--border-color); border-radius:var(--radius-md); padding:12px 16px; margin-bottom:8px;">
                 <div style="font-size:0.72rem; font-weight:700; color:var(--accent-primary); letter-spacing:0.05em; text-transform:uppercase; margin-bottom:6px;">Fit Score</div>
                 <div style="display:flex; align-items:baseline; gap:10px; margin-bottom:8px;">
-                  <span style="font-size:1.1rem; font-weight:700; color:var(--text-primary);" x-text="(job.final_score ?? job.score).toFixed(1) + '/10'"></span>
+                  <span style="font-size:1.1rem; font-weight:700; color:var(--text-primary);" x-text="((job.final_score ?? job.score) ?? 0).toFixed(1) + '/10'"></span>
                   <span x-show="job.archetype" style="font-size:0.8rem; color:var(--text-secondary);" x-text="job.archetype"></span>
                 </div>
                 <template x-if="job.reasons && job.reasons.length">
@@ -3405,15 +3405,16 @@
           fetch('/api/tasks/' + id, { method: 'DELETE' })
         },
 
-        get stats() {
-          const s = { total: 0, discovered: 0, parsed: 0, match: 0, review: 0, applied: 0, rejected: 0, archived: 0, failed: 0 }
-          for (const j of this.jobs) {
-            s.total++
-            if (j.status === 'failed') { s.failed++; continue }
-            const state = j.state || 'discovered'
-            if (state in s) s[state]++
-          }
-          return s
+        stats: { total: 0, discovered: 0, parsed: 0, match: 0, review: 0, applied: 0, rejected: 0, archived: 0, failed: 0 },
+
+        async loadStats() {
+          try {
+            const r = await fetch('/api/jobs/stats')
+            if (r.ok) {
+              const d = await r.json()
+              this.stats = { ...this.stats, ...d }
+            }
+          } catch(e) { console.error('loadStats failed', e) }
         },
 
         async init() {
