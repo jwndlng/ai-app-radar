@@ -32,12 +32,15 @@ class JobArchiver:
         if not archive:
             return 0
 
+        # Write the archive file first, then delete from the store: the reverse
+        # order loses the jobs permanently if the archive write fails.
+        self._append_to_archive(archive)
+
         for job in archive:
             jid = job.get("id")
             if jid:
                 self._store.delete_job(jid)
 
-        self._append_to_archive(archive)
         return len(archive)
 
     def _should_archive(self, job: dict) -> bool:
@@ -58,14 +61,26 @@ class JobArchiver:
         except ValueError:
             return None
         if parsed.tzinfo is None:
-            parsed = parsed.replace(tzinfo=timezone.utc)
+            # Pipeline timestamps are naive local time; astimezone() on a
+            # naive datetime attaches the local timezone.
+            parsed = parsed.astimezone()
         delta = datetime.now(timezone.utc) - parsed
         return delta.total_seconds() / 86400
 
     def _append_to_archive(self, archive: list[dict]) -> None:
         existing: list[dict] = []
         if self._archive_path.exists():
-            with self._archive_path.open() as f:
-                existing = json.load(f)
-        with self._archive_path.open("w") as f:
+            try:
+                with self._archive_path.open() as f:
+                    existing = json.load(f)
+            except (json.JSONDecodeError, OSError):
+                # Preserve the unreadable archive instead of overwriting it.
+                corrupt_path = self._archive_path.with_suffix(".json.corrupt")
+                self._archive_path.replace(corrupt_path)
+                existing = []
+        # Write to a temp file and rename so a crash mid-write cannot
+        # truncate the existing archive.
+        tmp_path = self._archive_path.with_suffix(".json.tmp")
+        with tmp_path.open("w") as f:
             json.dump(existing + archive, f, indent=2)
+        tmp_path.replace(self._archive_path)

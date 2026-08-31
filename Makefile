@@ -38,7 +38,7 @@ tune:           ## Run scout tuning harness: make tune CASE=google
 ifndef CASE
 	$(error CASE is required — usage: make tune CASE=google)
 endif
-	PYTHONPATH=src python -m tuning.runner $(CASE)
+	PYTHONPATH=src uv run python -m tuning.runner $(CASE)
 
 # ── Help ───────────────────────────────────────────────────────────────────────
 

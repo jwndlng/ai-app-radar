@@ -26,6 +26,10 @@ The CLI SHALL expose subcommands `scout`, `enrich`, `evaluate`, and `sync`. Each
 - **WHEN** `uv run python -m main scout` is run
 - **THEN** the scout flow is invoked with its default arguments
 
+#### Scenario: single-company scout keeps configured settings
+- **WHEN** `uv run python -m main scout --company X` is run
+- **THEN** the run SHALL retain the loaded settings (`respect_robots`, `max_pages`, `worker_count`, `model`) and only narrow the tracked-companies list — it SHALL NOT reset those values to dataclass defaults
+
 #### Scenario: evaluate subcommand with limit
 - **WHEN** `uv run python -m main evaluate --limit 5` is run
 - **THEN** the evaluate flow is invoked with `limit=5`

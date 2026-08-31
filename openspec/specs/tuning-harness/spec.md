@@ -16,6 +16,14 @@ The `TuneRunner` SHALL execute `WebsearchProvider.scout()` once per model define
 - **WHEN** multiple models are configured
 - **THEN** each model run SHALL complete before the next begins
 
+#### Scenario: Provider mirrors production scout settings
+- **WHEN** the runner constructs the `WebsearchProvider`
+- **THEN** it SHALL pass the production `respect_robots` and `max_pages` values from `configs/settings.yaml`, so tuning measures the same behavior the real scout flow runs with
+
+#### Scenario: Extracted jobs are not lost to title filtering
+- **WHEN** the runner invokes `scout()` with empty filters
+- **THEN** all extracted jobs SHALL be counted (empty positive filters mean accept-all, not reject-all)
+
 ### Requirement: Runner scores each model against expected outcomes
 For each model run the runner SHALL compute a pass/fail score against the case's `expected_pages`, `jobs_min`, and `jobs_max` fields.
 

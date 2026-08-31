@@ -2142,8 +2142,8 @@
 
     <div class="job-list">
       <template x-if="jobs.length === 0">
-        <div style="text-align:center; padding:3rem; color:var(--text-secondary);">
-          Loading jobs…
+        <div style="text-align:center; padding:3rem; color:var(--text-secondary);"
+             x-text="jobsLoaded ? 'No jobs yet — run scout to discover roles.' : 'Loading jobs…'">
         </div>
       </template>
       <template x-if="jobs.length > 0 && filteredJobs.length === 0">
@@ -2263,20 +2263,22 @@
             <div class="detail-section">
               <h4>Role Details</h4>
               <div class="detail-grid">
+                <!-- Each pair needs a single root element (x-if clones only the
+                     first child); display:contents keeps the grid layout intact. -->
                 <template x-if="job.location && !job.location.includes('BLANK')">
-                  <><span class="detail-label">Location</span><span class="detail-value" x-text="job.location"></span></>
+                  <div style="display:contents"><span class="detail-label">Location</span><span class="detail-value" x-text="job.location"></span></div>
                 </template>
                 <template x-if="job.remote_policy">
-                  <><span class="detail-label">Remote Policy</span><span class="detail-value" x-text="job.remote_policy"></span></>
+                  <div style="display:contents"><span class="detail-label">Remote Policy</span><span class="detail-value" x-text="job.remote_policy"></span></div>
                 </template>
                 <template x-if="job.salary_range">
-                  <><span class="detail-label">Salary</span><span class="detail-value" x-text="job.salary_range"></span></>
+                  <div style="display:contents"><span class="detail-label">Salary</span><span class="detail-value" x-text="job.salary_range"></span></div>
                 </template>
                 <template x-if="job.team">
-                  <><span class="detail-label">Team</span><span class="detail-value" x-text="job.team"></span></>
+                  <div style="display:contents"><span class="detail-label">Team</span><span class="detail-value" x-text="job.team"></span></div>
                 </template>
                 <template x-if="job.rejection_reason">
-                  <><span class="detail-label" style="color:var(--status-rejected-text);">Rejected</span><span class="detail-value" x-text="job.rejection_reason"></span></>
+                  <div style="display:contents"><span class="detail-label" style="color:var(--status-rejected-text);">Rejected</span><span class="detail-value" x-text="job.rejection_reason"></span></div>
                 </template>
               </div>
               <div class="links-container" style="margin-top:10px;">
@@ -3212,6 +3214,7 @@
         jobs: [],
         _filteredJobsCache: [],
         apiTasks: [],
+        jobsLoaded: false,
         prevTaskStatuses: {},
         dismissedTaskIds: {},
         search: '',
@@ -3397,7 +3400,7 @@
         },
 
         cancelTask(id) {
-          const task = this.tasks.find(t => t.id === id)
+          const task = this.apiTasks.find(t => t.id === id)
           if (task) task.status = 'cancelling'
           fetch('/api/tasks/' + id, { method: 'DELETE' })
         },
@@ -3467,7 +3470,14 @@
           try {
             const r = await fetch('/api/jobs')
             const d = await r.json()
-            this.jobs = d.jobs || []
+            // Merge fresh summaries into existing job objects so an expanded
+            // card keeps its loaded detail fields across background refreshes.
+            const byId = new Map(this.jobs.map(j => [j.id, j]))
+            this.jobs = (d.jobs || []).map(nj => {
+              const old = byId.get(nj.id)
+              return old ? Object.assign(old, nj) : nj
+            })
+            this.jobsLoaded = true
             this._recomputeFilteredJobs()
           } catch(e) { console.error('loadJobs failed', e) }
         },

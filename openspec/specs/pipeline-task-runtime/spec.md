@@ -48,6 +48,17 @@ Each pipeline stage SHALL implement `BaseTask[T]` by providing a producer that y
 - **WHEN** a consumer has no intermediate state to persist (e.g. ScoutConsumer before ingest)
 - **THEN** `checkpoint()` SHALL complete without error and without writing to disk
 
+### Requirement: Worker errors never stall the run
+An exception escaping `consumer.consume()` or `consumer.checkpoint()` SHALL be caught and logged inside the worker loop. The worker SHALL continue processing remaining items, and the run SHALL always reach `consumer.finalize()`.
+
+#### Scenario: Consumer exception is contained
+- **WHEN** `consumer.consume(item)` raises for one item
+- **THEN** the error SHALL be logged, that item counts as completed, all other items SHALL still be processed, and `finalize()` SHALL run
+
+#### Scenario: Checkpoint exception is contained
+- **WHEN** `consumer.checkpoint()` raises (e.g. the database is briefly locked)
+- **THEN** the error SHALL be logged and processing SHALL continue; the run SHALL NOT deadlock or hang
+
 ### Requirement: Staggered worker starts when start_gap is configured
 When a task sets `start_gap`, the runtime SHALL introduce a random delay between worker launches to avoid bursty outbound requests.
 

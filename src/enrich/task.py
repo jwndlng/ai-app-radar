@@ -18,11 +18,14 @@ class EnrichTask(BaseTask[dict]):
     start_gap: tuple[float, float] | None = (0.25, 1.0)
 
     def __init__(self, root_dir: Path, limit: int | None = None, on_event=None,
-                 notifier: Notifier = None) -> None:
+                 notifier: Notifier = None, concurrency: int | None = None,
+                 checkpoint_every: int | None = None) -> None:
         from core.config import AppConfigLoader
         cfg = AppConfigLoader(root_dir).enrich(limit=limit)
-        self.concurrency = cfg.concurrency
-        self.checkpoint_every = cfg.checkpoint_every
+        self.concurrency = concurrency if concurrency is not None else cfg.concurrency
+        self.checkpoint_every = (
+            checkpoint_every if checkpoint_every is not None else cfg.checkpoint_every
+        )
         if limit is not None:
             self.limit = limit
 

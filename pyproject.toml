@@ -3,7 +3,7 @@ name = "ai-app-radar"
 version = "0.1.0"
 description = "AI-powered Application Radar — automated job discovery, enrichment, and fit scoring pipeline with a web dashboard."
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 dependencies = [
     "beautifulsoup4>=4.14.3",
     "google-adk[extensions]>=0.5.0",

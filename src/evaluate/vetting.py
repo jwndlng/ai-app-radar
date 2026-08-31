@@ -2,19 +2,27 @@
 
 from __future__ import annotations
 
+import unicodedata
+
 
 class Vetter:
     def __init__(self, profile: dict) -> None:
         loc_prefs = profile.get("location_preferences", {})
-        self._accepted = [p.lower() for p in loc_prefs.get("accepted", [])]
+        self._accepted = [self._normalize(p) for p in loc_prefs.get("accepted", [])]
 
     def vet(self, job: dict) -> tuple[bool, str]:
         """Location gate. Returns (passed, reason)."""
         return self._vet_location(job)
 
+    @staticmethod
+    def _normalize(text: str) -> str:
+        """Lowercase and strip diacritics so 'Zürich' matches 'zurich'."""
+        decomposed = unicodedata.normalize("NFKD", text.lower())
+        return "".join(c for c in decomposed if not unicodedata.combining(c))
+
     def _vet_location(self, job: dict) -> tuple[bool, str]:
-        location = (job.get("location") or "").lower()
-        remote_policy = (job.get("remote_policy") or "").lower()
+        location = self._normalize(job.get("location") or "")
+        remote_policy = self._normalize(job.get("remote_policy") or "")
         combined = f"{location} {remote_policy}"
 
         # Accept if location or remote_policy matches any accepted pattern.

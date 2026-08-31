@@ -26,3 +26,21 @@ def test_filter_job_no_match(provider, mock_filters):
 
 def test_filter_job_case_insensitivity(provider, mock_filters):
     assert provider.filter_job("security engineer", mock_filters) is True
+
+
+def test_filter_job_empty_positive_accepts_all(provider):
+    # No positive filters configured means "accept everything"; a missing
+    # scout_filters section must not silently reject every job.
+    assert provider.filter_job("Frontend Developer", {}) is True
+    assert provider.filter_job("Anything At All", {"positive": []}) is True
+
+
+def test_filter_job_empty_positive_still_applies_negatives(provider):
+    filters = {"positive": [], "negative": ["Junior"]}
+    assert provider.filter_job("Junior Engineer", filters) is False
+    assert provider.filter_job("Staff Engineer", filters) is True
+
+
+def test_filter_job_ignores_empty_terms(provider):
+    filters = {"positive": ["Security", ""], "negative": [""]}
+    assert provider.filter_job("Security Engineer", filters) is True

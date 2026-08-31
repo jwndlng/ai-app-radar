@@ -26,18 +26,18 @@ class StateTracker:
         return self.url_index.get(url)
 
     def _load_state(self) -> None:
-        try:
-            store = ApplicationStore(self._root / "artifacts" / "radar.db")
-            jobs = store.load()
-            for job in jobs:
-                if not isinstance(job, dict):
-                    continue
-                url = job.get("url", "")
-                if url:
-                    self.url_index[url] = job
-                jid_fresh = self.generate_id(job.get("company", ""), job.get("title", ""))
-                jid_stored = job.get("id") or jid_fresh
-                self.known_jobs[jid_fresh] = job
-                self.known_jobs[jid_stored] = job
-        except Exception as e:
-            print(f"Warning: Could not load jobs in StateTracker: {e}")
+        # A load failure must abort the scout run: continuing with empty state
+        # would make every rediscovered job look brand-new, and ingest would
+        # then upsert stripped-down "discovered" records over enriched ones.
+        store = ApplicationStore(self._root / "artifacts" / "radar.db")
+        jobs = store.load()
+        for job in jobs:
+            if not isinstance(job, dict):
+                continue
+            url = job.get("url", "")
+            if url:
+                self.url_index[url] = job
+            jid_fresh = self.generate_id(job.get("company", ""), job.get("title", ""))
+            jid_stored = job.get("id") or jid_fresh
+            self.known_jobs[jid_fresh] = job
+            self.known_jobs[jid_stored] = job

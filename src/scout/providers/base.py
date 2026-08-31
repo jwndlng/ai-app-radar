@@ -55,9 +55,11 @@ class BaseProvider(ABC):
             suffix = r"\b" if t[-1].isalnum() else r"(?:$|\s|[^\w])"
             return re.compile(prefix + re.escape(t) + suffix)
 
-        positives = [_make_pattern(p) for p in filters.get("positive", [])]
-        negatives = [_make_pattern(n) for n in filters.get("negative", [])]
+        positives = [_make_pattern(p) for p in filters.get("positive", []) if p]
+        negatives = [_make_pattern(n) for n in filters.get("negative", []) if n]
+        # No positive filters configured means "accept everything" — otherwise
+        # a missing scout_filters section silently rejects every job.
         return (
-            any(p.search(title_lower) for p in positives)
+            (not positives or any(p.search(title_lower) for p in positives))
             and not any(n.search(title_lower) for n in negatives)
         )

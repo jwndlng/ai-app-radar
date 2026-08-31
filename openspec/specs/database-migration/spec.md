@@ -17,9 +17,13 @@ The system SHALL provide an automated migration mechanism that reads `artifacts/
 - **THEN** the migration runner SHALL skip re-importing to prevent overwriting updated records.
 
 ### Requirement: Migration Backup Preservation
-The migration process SHALL preserve the original JSON data by creating a backup copy before completing the migration.
+The migration process SHALL preserve the original JSON data by moving the file to a backup path when migration completes. The original `applications.json` SHALL NOT remain in place: because migration triggers whenever the database is empty, a leftover legacy file would silently re-import stale data (resurrecting deleted or archived jobs) the next time the table legitimately empties.
 
 #### Scenario: Preserving JSON backup
 - **WHEN** the migration of `applications.json` completes successfully
-- **THEN** the original file SHALL be safely backed up to `artifacts/applications.json.migrated.bak`.
+- **THEN** the original file SHALL be moved to `artifacts/applications.json.migrated.bak` and SHALL no longer exist at its original path.
+
+#### Scenario: Emptied database does not re-import
+- **WHEN** all rows are removed from the database after a completed migration
+- **THEN** constructing the store SHALL NOT re-import the legacy data.
 

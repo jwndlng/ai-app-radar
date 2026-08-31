@@ -68,6 +68,7 @@ class TuneRunner:
         self._print_table(results, judge_result)
 
     async def _run_model(self, model: str) -> ModelResult:
+        from core.config import AppConfigLoader
         from scout.providers.websearch import WebsearchProvider
 
         company_config = {
@@ -75,7 +76,14 @@ class TuneRunner:
             "careers_url": self._case.careers_url,
             "scan_method_config": self._case.scan_method_config,
         }
-        provider = WebsearchProvider(model=model)
+        # Mirror production scout settings (respect_robots, max_pages) so the
+        # tuner measures the same behavior the real scout flow runs with.
+        scout_settings = AppConfigLoader(Path(__file__).parent.parent).settings().scout
+        provider = WebsearchProvider(
+            model=model,
+            max_pages=scout_settings.max_pages,
+            respect_robots=scout_settings.respect_robots,
+        )
         print(f"  [{model}] scouting…")
         start = time.monotonic()
         jobs = await provider.scout(company_config, filters={})

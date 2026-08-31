@@ -92,9 +92,10 @@ class ScraperProvider(BaseProvider):
                 if not jobs:
                     jobs = await self._extract_by_links(page, url, company_name, filters)
 
-            except Exception as e:
-                print(f"  [!] Scraper error for {company_name}: {e}")
             finally:
+                # Errors propagate to the consumer, which logs a per-company
+                # failure — swallowing them here would disguise hard failures
+                # (timeouts, blocked pages) as "no matches".
                 await browser.close()
 
         return jobs

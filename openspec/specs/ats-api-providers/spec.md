@@ -13,7 +13,7 @@ Each ATS provider (Ashby, Lever, Workable) SHALL fetch job listings by calling a
 The endpoint per provider:
 - **Ashby**: `https://jobs.ashbyhq.com/api/non-user-facing/job-board/named-account/jobs?organizationHostedJobsPageName={slug}`
 - **Lever**: `https://api.lever.co/v0/postings/{slug}?mode=json`
-- **Workable**: `https://apply.workable.com/api/v1/widget/accounts/{slug}/vacancies`
+- **Workable**: `https://apply.workable.com/api/v3/accounts/{slug}/jobs` (POST, token-paginated)
 
 #### Scenario: Successful fetch returns filtered jobs
 - **WHEN** the API returns a valid JSON response with job listings
@@ -22,6 +22,21 @@ The endpoint per provider:
 #### Scenario: No jobs pass the keyword filter
 - **WHEN** the API returns jobs but none match the keyword filter
 - **THEN** the provider SHALL return an empty list without error
+
+### Requirement: Paginated ATS endpoints fetch all pages
+Providers whose endpoint paginates (Workable via `nextPage` token, SmartRecruiters via `offset`/`totalFound`, Workday via `offset`/`total`) SHALL follow pagination until all postings are retrieved, and SHALL terminate on an empty page even when the reported total has not been reached.
+
+#### Scenario: Workable follows nextPage tokens
+- **WHEN** the Workable v3 response contains a `nextPage` token
+- **THEN** the provider SHALL request the next page with that token and accumulate results until no token remains
+
+#### Scenario: Empty page terminates pagination
+- **WHEN** a paginated response returns no postings while the reported total suggests more remain
+- **THEN** the provider SHALL stop paginating rather than re-requesting the same page indefinitely
+
+#### Scenario: Missing total does not truncate results
+- **WHEN** a Workday response omits the `total` field
+- **THEN** the provider SHALL continue fetching pages until an empty page is returned
 
 #### Scenario: API request fails — falls back to websearch
 - **WHEN** the endpoint returns a non-200 response or a network error occurs

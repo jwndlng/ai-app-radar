@@ -36,3 +36,21 @@ Example values: `"Cloud Security"`, `"AI Security"`, `"Blockchain"`, `"Web3"`, `
 #### Scenario: Single-domain role receives one label
 - **WHEN** a job description is clearly scoped to one domain (e.g. network security only)
 - **THEN** `domains` SHALL contain a single appropriate label
+
+### Requirement: Scout-provided fields survive enrichment
+Applying an `EnrichResult` to a job SHALL NOT overwrite the scout-provided `title`, `company`, or `location` with empty extraction output. A non-empty extracted value MAY replace the scout value; an empty one SHALL be ignored.
+
+#### Scenario: Empty extracted location is ignored
+- **WHEN** the extraction returns `location: ""` for a job whose scout record has `location: "Zurich"`
+- **THEN** the job SHALL keep `location: "Zurich"` after enrichment
+
+### Requirement: Failed enrichment attempts are bounded
+Each failed fetch/extract attempt SHALL increment an `enrich_attempts` counter on the job. Jobs with 3 or more failed attempts SHALL be excluded from subsequent enrich runs (dead or expired listings must not consume fetch and LLM cost indefinitely). A successful enrichment SHALL clear the counter, and the repair flow's reset SHALL also clear it so a repaired job becomes eligible again.
+
+#### Scenario: Repeatedly dead listing stops being retried
+- **WHEN** a job has failed enrichment 3 times
+- **THEN** the enrich producer SHALL skip it on subsequent runs
+
+#### Scenario: Repair makes a failed job eligible again
+- **WHEN** the repair flow resets a failed job
+- **THEN** its `enrich_attempts` counter SHALL be cleared and the next enrich run SHALL include it

@@ -25,6 +25,11 @@ class SmartRecruitersProvider(BaseProvider):
             )
             data = response.json()
 
+            # Guard against an empty page while offset < totalFound (stale
+            # totals), which would otherwise loop forever without advancing.
+            if not data.get("content"):
+                break
+
             for job in data.get("content", []):
                 title = job.get("name", "")
                 job_id = job.get("id")

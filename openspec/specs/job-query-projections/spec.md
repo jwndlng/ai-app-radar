@@ -10,6 +10,14 @@ The database provider and repository SHALL support a `projection` parameter (`su
 - **WHEN** `list_jobs` is called with `projection="summary"`
 - **THEN** returned records SHALL contain card-level metadata (`id`, `company`, `title`, `url`, `location`, `state`, `status`, `final_score`, `location_score`, `seniority_score`, `favorited`, `discovered_at`, `updated_at`, `vetted_at`, `archived_at`, `error_message`) and SHALL omit large unstructured text fields (`description`, `key_responsibilities`, `required_qualifications`, `reasons`).
 
+#### Scenario: Summary projection includes card-rendered data fields
+- **WHEN** `list_jobs` is called with `projection="summary"`
+- **THEN** returned records SHALL also include `score`, `salary_range`, and `compensation_score` (extracted from the data payload), because collapsed job cards render them without fetching the full record.
+
+#### Scenario: Summary records must not be saved back
+- **WHEN** a caller mutates records obtained with `projection="summary"` and intends to persist them
+- **THEN** the caller SHALL re-fetch with `projection="full"` before saving, because upserting a summary record rewrites the job's data payload from the projected dict and destroys all omitted fields.
+
 #### Scenario: Full projection includes all payload data
 - **WHEN** `list_jobs` is called with `projection="full"`
 - **THEN** returned records SHALL include all deserialized JSON fields.
@@ -31,4 +39,8 @@ The `list_jobs` method and `GET /api/jobs` endpoint SHALL support server-side fi
 #### Scenario: Filtering by state and search keyword
 - **WHEN** `GET /api/jobs?state=match&search=security` is requested
 - **THEN** only matching jobs with `state="match"` and title/company/location containing "security" SHALL be returned.
+
+#### Scenario: Offset applies with or without a limit
+- **WHEN** `list_jobs` is called with `offset=N` and no `limit`
+- **THEN** the first N records SHALL still be skipped (offset SHALL NOT be silently ignored when `limit` is absent).
 

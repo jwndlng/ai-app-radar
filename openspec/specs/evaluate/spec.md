@@ -20,6 +20,10 @@ Roles failing the location check SHALL be transitioned to `status: archived` wit
 - **WHEN** `Vetter.vet()` returns `(True, reason)` for a location-accepted role
 - **THEN** the job SHALL proceed to LLM fit scoring
 
+#### Scenario: Accepted-location matching is diacritics-insensitive
+- **WHEN** the job's location contains an accented spelling of an accepted location (e.g. `Zürich` vs the profile's `Zurich`)
+- **THEN** the vetting check SHALL normalize diacritics on both sides and accept the match
+
 ### Requirement: LLM Fit Scoring
 The evaluate flow SHALL use a single LLM call to assess candidate fit and produce a structured
 `FitResult` containing a fit score, role archetype, and reasoning.
@@ -76,7 +80,7 @@ and `reasons`.
 Roles SHALL be transitioned in status based on the thresholds in `configs/settings.yaml` (under `evaluate:`, read by `AppConfigLoader` / `EvaluateSettings`):
 - **Auto-Reject (score < auto_reject threshold)**: Set `status: archived`.
 - **Manual Review (score between thresholds)**: Set `status: review`.
-- **Auto-Match (score > auto_match threshold)**: Set `status: in_progress`.
+- **Auto-Match (score >= auto_match threshold)**: Set `status: in_progress`. A score exactly equal to the configured threshold qualifies as a match.
 
 #### Scenario: Low-scoring job is archived
 - **WHEN** the LLM fit score is below the `auto_reject` threshold
@@ -87,7 +91,7 @@ Roles SHALL be transitioned in status based on the thresholds in `configs/settin
 - **THEN** the job SHALL be set to `status: review` and `vetted_at` SHALL be recorded
 
 #### Scenario: High-scoring job moved to in_progress
-- **WHEN** the LLM fit score exceeds the `auto_match` threshold
+- **WHEN** the LLM fit score meets or exceeds the `auto_match` threshold
 - **THEN** the job SHALL be set to `status: in_progress` and `vetted_at` SHALL be recorded
 
 ### Requirement: Evaluate processes jobs concurrently in random order

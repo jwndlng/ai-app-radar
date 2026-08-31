@@ -17,4 +17,6 @@ services:
       - SCOUT_MODEL
       - ENRICH_MODEL
       - EVALUATE_MODEL
+      - TELEGRAM_BOT_TOKEN
+      - TELEGRAM_CHAT_ID
     restart: unless-stopped

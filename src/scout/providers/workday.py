@@ -56,7 +56,8 @@ class WorkdayProvider(BaseProvider):
                     })
 
             offset += len(postings)
-            if offset >= total:
+            # When no page supplied a total, keep going until an empty page.
+            if total and offset >= total:
                 break
 
         return jobs

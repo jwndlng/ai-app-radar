@@ -128,7 +128,10 @@ class ScoutConsumer(BaseConsumer[dict]):
                 if not any(s["url"] == url for s in sources):
                     sources.append(discovery_entry)
                     existing["sources"] = sources
-                    if is_direct:
+                    # Only jobs still in "discovered" may have their canonical
+                    # URL replaced; a job the user is already tracking through
+                    # the pipeline must keep the URL it was enriched from.
+                    if is_direct and existing.get("state", "discovered") == "discovered":
                         existing["url"] = url
                 self._discovered_pool[jid] = existing
             else:
@@ -163,11 +166,22 @@ class ScoutConsumer(BaseConsumer[dict]):
 
         store = ApplicationStore(self._root / "artifacts" / "applications.json")
 
+        # URLs shared by several distinct pool entries (e.g. a careers-page
+        # fallback URL) cannot identify a job — skip URL-based dedup for them,
+        # or the second job would silently merge into (and vanish behind) the first.
+        url_counts: dict[str, int] = {}
+        for job in self._discovered_pool.values():
+            if job.get("url"):
+                url_counts[job["url"]] = url_counts.get(job["url"], 0) + 1
+
         new_count = 0
         updated_count = 0
+        touched: list[dict] = []
 
         for jid, job in self._discovered_pool.items():
-            existing_id = url_to_id.get(job.get("url")) or (jid if jid in master_map else None)
+            url = job.get("url")
+            url_match = url_to_id.get(url) if url and url_counts.get(url, 0) == 1 else None
+            existing_id = url_match or (jid if jid in master_map else None)
             if existing_id:
                 master_map[existing_id]["sources"] = job["sources"]
                 if job.get("url") and not master_map[existing_id].get("url"):
@@ -177,13 +191,17 @@ class ScoutConsumer(BaseConsumer[dict]):
                         master_map[existing_id]["status"] = "ok"
                         master_map[existing_id].pop("error_message", None)
                 StateMachine.touch_updated(master_map[existing_id])
+                touched.append(master_map[existing_id])
                 updated_count += 1
             else:
                 master_map[jid] = job
                 if job.get("url"):
                     url_to_id[job["url"]] = jid
+                touched.append(job)
                 new_count += 1
 
-        store.save(list(master_map.values()))
+        # Save only jobs this run touched: re-saving the entire start-of-run
+        # snapshot would overwrite concurrent edits made via the API.
+        store.save(touched)
         self._log.finish(f"{new_count} new, {updated_count} updated")
         return new_count
