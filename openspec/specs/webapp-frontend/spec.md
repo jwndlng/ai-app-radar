@@ -156,17 +156,28 @@ The frontend SHALL support dark and light themes toggleable by the user, persist
 - **WHEN** the user enables dark mode and reloads the page
 - **THEN** the page loads in dark mode
 
-### Requirement: Fit reasons visible on list card
-The job list card SHALL render the `reasons` array as a plain bulleted list below the score-tag row whenever the job has been evaluated and `reasons` is non-empty. The list SHALL use the same font size as the detail drawer's Fit Reasons section (`0.85rem`). The section SHALL be hidden (via `x-show`) when `reasons` is absent or empty, producing no layout shift for unevaluated jobs.
+### Requirement: Fit reasons visible in the expanded detail panel
+Since the job list switched to the summary projection (which omits the heavy `reasons` text), fit reasons SHALL be rendered as a bulleted list inside the expanded detail panel's Fit Score box, populated from the full job record fetched on expand. The collapsed card SHALL still show the evaluated sub-score tags (`score`, `location_score`, `seniority_score`, `compensation_score`) and `salary_range`, which the summary projection provides.
 
-#### Scenario: Evaluated job shows fit reasons on card
-- **WHEN** a job card is rendered and the job has a non-empty `reasons` array
-- **THEN** the reasons are displayed as a bulleted list below the score tags, without requiring the card to be expanded
+#### Scenario: Evaluated job shows fit reasons on expand
+- **WHEN** the user expands an evaluated job with a non-empty `reasons` array
+- **THEN** the reasons are displayed as a bulleted list inside the Fit Score box of the detail panel
 
 #### Scenario: Unevaluated job shows no reasons section
-- **WHEN** a job card is rendered and the job has no `reasons` array or an empty array
-- **THEN** no reasons section is visible and the card height is unchanged
+- **WHEN** an expanded job has no `reasons` array or an empty array
+- **THEN** no reasons list is visible
 
-#### Scenario: Reasons match detail drawer content
-- **WHEN** the user compares the fit reasons on the card to those in the expanded detail drawer
-- **THEN** the same bullet points appear in both places
+#### Scenario: Collapsed card keeps score and salary badges
+- **WHEN** a job card is rendered collapsed from the summary listing
+- **THEN** the fit-score tag, sub-score tags, and salary badge SHALL still be visible without expanding
+
+### Requirement: Job list state survives background refreshes
+Refreshing the job list (initial load, post-task refresh, post-mutation refresh) SHALL merge fresh summary records into the existing job objects by `id`, preserving any detail fields already loaded for an expanded card. The empty list SHALL distinguish "still loading" from "no jobs exist".
+
+#### Scenario: Expanded card details survive a background refresh
+- **WHEN** a job card is expanded (details loaded) and a background task completion triggers a job list refresh
+- **THEN** the expanded card SHALL keep showing its detail sections without requiring re-expansion
+
+#### Scenario: Empty store shows an empty state, not a spinner
+- **WHEN** the job list has loaded and contains zero jobs
+- **THEN** the UI SHALL show an explicit empty-state message instead of a perpetual "Loading jobs…" text

@@ -26,6 +26,24 @@ The system SHALL expose `GET /api/jobs` returning the full list of job records f
 - **WHEN** the JSON store is empty or absent
 - **THEN** `GET /api/jobs` returns `{"jobs": [], "total": 0}` with status 200
 
+### Requirement: Job stats endpoint
+The system SHALL expose `GET /api/jobs/stats` returning per-state job counts (`total`, `discovered`, `parsed`, `match`, `review`, `applied`, `rejected`, `archived`, `failed`). The route SHALL be registered before the parameterized `GET /api/jobs/{job_id}` route so the literal path is not captured as a job ID.
+
+#### Scenario: Stats returned successfully
+- **WHEN** `GET /api/jobs/stats` is called
+- **THEN** the response has status 200 with a count per state, computed via a database aggregation (not by loading all records)
+
+#### Scenario: Stats path never shadowed by job detail
+- **WHEN** `GET /api/jobs/stats` is called
+- **THEN** the request SHALL NOT be routed to the job-detail handler with `job_id="stats"`
+
+### Requirement: Bulk undo by state preserves job data
+The system SHALL expose `POST /api/jobs/undo-by-state` accepting `{"state": "<state>"}` that reverts every job in that state to its previous state. The operation SHALL load jobs with the full projection before saving them back, so no extended fields (description, sources, scores metadata, `prev_state`) are lost.
+
+#### Scenario: Bulk undo keeps extended fields
+- **WHEN** `POST /api/jobs/undo-by-state` is called for a state containing jobs with extended data fields
+- **THEN** each reverted job SHALL retain all fields not explicitly stripped by the undo transition itself
+
 ### Requirement: Task registry tracks background operation status
 The system SHALL maintain a `TaskRegistry` that records all pipeline operations and persists records to `artifacts/tasks.json`. Each task record SHALL include: `id` (8-char UUID prefix), `operation` (name of the operation), `status` (`running` / `done` / `failed`), `started_at`, `finished_at`, and `result` or `error`. The registry SHALL keep at most 100 records, dropping the oldest on overflow.
 
@@ -184,11 +202,15 @@ The system SHALL expose `GET /api/settings` returning the full current settings 
 - **THEN** the response body contains `{"scout": {"respect_robots": false, ...other defaults...}, ...}`
 
 ### Requirement: Settings write endpoint
-The system SHALL expose `PUT /api/settings` accepting a full settings JSON object and writing it to `configs/settings.yaml`. On success it SHALL return `{"ok": true}`.
+The system SHALL expose `PUT /api/settings` accepting a full settings JSON object and writing the editable sections (`scout`, `enrich`, `evaluate`, `archival`) to `configs/settings.yaml`. Sections not managed by the settings UI (notably `notifications`) SHALL be preserved from the existing file rather than overwritten. On success it SHALL return `{"ok": true}`.
 
 #### Scenario: Settings saved successfully
 - **WHEN** `PUT /api/settings` is called with a valid settings body
 - **THEN** `configs/settings.yaml` is written with the provided values and the response is `{"ok": true}` with status 200
+
+#### Scenario: Save preserves the notifications section
+- **WHEN** `configs/settings.yaml` contains a `notifications.telegram` block and `PUT /api/settings` is called
+- **THEN** the saved file SHALL still contain the original `notifications.telegram` block unchanged
 
 #### Scenario: Subsequent GET reflects saved values
 - **WHEN** `PUT /api/settings` is called with `{"scout": {"max_pages": 15}, ...}` followed by `GET /api/settings`

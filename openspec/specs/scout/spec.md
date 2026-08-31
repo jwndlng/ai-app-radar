@@ -28,6 +28,18 @@ Discovered roles SHALL be added to `artifacts/applications.json` in a deduplicat
 - **WHEN** a role is found
 - **THEN** it SHALL be silently skipped if the URL exists in `artifacts/applications.json` regardless of its current status.
 
+#### Scenario: Shared fallback URLs do not merge distinct jobs
+- **WHEN** several distinct discoveries in one run carry the same URL (e.g. a careers-page fallback URL used when no per-job link exists)
+- **THEN** that URL SHALL NOT be used for deduplication, so each distinct company+title job is ingested separately.
+
+#### Scenario: Canonical URL protected once a job progresses
+- **WHEN** a job whose state is beyond `discovered` is rediscovered with a different URL
+- **THEN** the stored canonical `url` SHALL NOT be overwritten; the new URL is recorded only as an additional source.
+
+#### Scenario: Ingest writes only touched jobs
+- **WHEN** scout finalizes a run
+- **THEN** only jobs that were newly discovered or updated in this run SHALL be persisted; jobs untouched by the run SHALL NOT be rewritten from the run's start-of-run snapshot (protecting concurrent edits made via the API).
+
 ### Requirement: Liveness Verification
 For results originating from the **Search Tier**, the scout SHALL perform a liveness check using Playwright to confirm the role is still open.
 

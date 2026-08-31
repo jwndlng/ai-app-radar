@@ -7,7 +7,7 @@ TBD — manages persistent pipeline configuration overrides stored in `configs/s
 ## Requirements
 
 ### Requirement: Settings file stores pipeline configuration overrides
-The system SHALL read pipeline configuration from `configs/settings.yaml`. The file is optional — if absent or a key is missing, the system SHALL fall back to the hardcoded dataclass default for that field. The file is always written in full on save (no sparse partial writes).
+The system SHALL read pipeline configuration from `configs/settings.yaml`. The file is optional — if absent or a key is missing, the system SHALL fall back to the hardcoded dataclass default for that field. On save, the editable sections (`scout`, `enrich`, `evaluate`, `archival`) are written in full; other top-level sections (e.g. `notifications`) SHALL be preserved from the existing file.
 
 #### Scenario: Missing file uses all defaults
 - **WHEN** `configs/settings.yaml` does not exist
@@ -46,7 +46,7 @@ evaluate:
 
 #### Scenario: Full settings file round-trips correctly
 - **WHEN** `GET /api/settings` is called, then the result is POSTed back via `PUT /api/settings`
-- **THEN** the file content is identical to what was received (all defaults preserved)
+- **THEN** the editable sections round-trip unchanged and any existing `notifications` block in the file is preserved (the GET payload's flat notifications object is never written back over it)
 
 ### Requirement: Model setting per pipeline stage falls back to environment variable
 When a stage's `model` key is `null` or absent in `settings.yaml`, the system SHALL fall back to the corresponding environment variable (`SCOUT_MODEL`, `ENRICH_MODEL`, `EVALUATE_MODEL`). When set to a non-null string, the settings file value SHALL take precedence over the env var.
