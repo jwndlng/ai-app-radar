@@ -19,6 +19,24 @@ _MAX_ENRICH_ATTEMPTS = 3
 # so undo from parsed does not wipe the original scout-provided values.
 _SCOUT_FIELDS: frozenset[str] = frozenset({"title", "company", "location"})
 
+# LLM output that means "I couldn't find it" — must never overwrite the
+# scout-provided values (a '<UNKNOWN>' title makes distinct jobs look like
+# duplicates in the UI).
+_PLACEHOLDER_VALUES: frozenset[str] = frozenset(
+    {"", "unknown", "<unknown>", "n/a", "none", "null", "not specified", "not stated"}
+)
+
+
+def _is_placeholder(value: object) -> bool:
+    if not value:
+        return True
+    if not isinstance(value, str):
+        return False
+    normalized = value.strip().strip("<>").strip().lower()
+    # "Multiple Open Roles …" is what the extractor produces when the fetched
+    # page was a job board rather than a single posting.
+    return normalized in _PLACEHOLDER_VALUES or normalized.startswith("multiple open roles")
+
 
 class EnrichConsumer(BaseConsumer[dict]):
     STATE_FIELDS: frozenset[str] = frozenset(EnrichResult.model_fields) - _SCOUT_FIELDS
@@ -55,10 +73,11 @@ class EnrichConsumer(BaseConsumer[dict]):
             enriched = await self._fetch_and_extract(job.get("url"))
             elapsed = time.monotonic() - t0
             if "_fetch_error" not in enriched:
-                # Never let empty LLM output wipe the scout-provided values.
+                # Never let empty or placeholder LLM output wipe the
+                # scout-provided values.
                 job.update({
                     k: v for k, v in enriched.items()
-                    if not (k in _SCOUT_FIELDS and not v)
+                    if not (k in _SCOUT_FIELDS and _is_placeholder(v))
                 })
                 job["state"] = "parsed"
                 job["status"] = "ok"
@@ -103,7 +122,7 @@ class EnrichConsumer(BaseConsumer[dict]):
 
         from enrich.agent import EnrichAgent
         result = await EnrichAgent(model=self._model).extract(page_text)
-        if result.company.lower() in ("unknown", "", "n/a"):
+        if _is_placeholder(result.company):
             err = "Job page returned no valid content (soft 404 or expired listing)"
             return {"_fetch_error": err}
         return result.model_dump()

@@ -37,6 +37,20 @@ The system SHALL expose `GET /api/jobs/stats` returning per-state job counts (`t
 - **WHEN** `GET /api/jobs/stats` is called
 - **THEN** the request SHALL NOT be routed to the job-detail handler with `job_id="stats"`
 
+### Requirement: Bulk job editing
+The system SHALL expose `POST /api/jobs/bulk` accepting `{"ids": [...], "action": "set_state"|"favorite"|"unfavorite"|"delete", "state"?: str, "reason"?: str}` and applying the action to every listed job in one request. `set_state` follows the single-job route's semantics (records `prev_state`; a rejection stamps `vetted_at` and stores the optional reason). Unknown IDs are reported in a `missing` list without failing the request; invalid actions or states return 400.
+
+#### Scenario: Bulk rejection
+- **WHEN** `POST /api/jobs/bulk` is called with `action: "set_state"`, `state: "rejected"`, and three IDs of which one does not exist
+- **THEN** the two existing jobs are rejected with `prev_state`, `vetted_at`, and the reason recorded, and the response reports `updated: 2` with the unknown ID in `missing`
+
+### Requirement: On-demand maintenance cleanup
+The system SHALL expose `POST /api/maintenance/cleanup` that runs the job archiver with the configured thresholds and returns `{"ok": true, "archived": N}`.
+
+#### Scenario: Cleanup archives old terminal and failed jobs
+- **WHEN** `POST /api/maintenance/cleanup` is called and jobs qualify under `rejected_after_days` or `failed_after_days`
+- **THEN** those jobs are moved to the archive file and removed from the active store, and the count is returned
+
 ### Requirement: Bulk undo by state preserves job data
 The system SHALL expose `POST /api/jobs/undo-by-state` accepting `{"state": "<state>"}` that reverts every job in that state to its previous state. The operation SHALL load jobs with the full projection before saving them back, so no extended fields (description, sources, scores metadata, `prev_state`) are lost.
 

@@ -15,9 +15,15 @@ _ARCHIVABLE_STATES = frozenset({"rejected", "archived"})
 
 
 class JobArchiver:
-    def __init__(self, root_dir: Path, rejected_after_days: int) -> None:
+    def __init__(
+        self,
+        root_dir: Path,
+        rejected_after_days: int,
+        failed_after_days: int | None = None,
+    ) -> None:
         self._root = root_dir
         self._rejected_after_days = rejected_after_days
+        self._failed_after_days = failed_after_days
         self._store = ApplicationStore(root_dir / "artifacts" / "radar.db")
         self._archive_path = root_dir / "artifacts" / "applications_archive.json"
 
@@ -44,12 +50,16 @@ class JobArchiver:
         return len(archive)
 
     def _should_archive(self, job: dict) -> bool:
-        if job.get("state") not in _ARCHIVABLE_STATES:
-            return False
         age_days = self._age_in_days(job)
         if age_days is None:
             return False
-        return age_days > self._rejected_after_days
+        if job.get("state") in _ARCHIVABLE_STATES:
+            return age_days > self._rejected_after_days
+        # Permanently failed jobs (dead listings, repeated fetch errors) are
+        # cleaned up on their own, longer threshold.
+        if self._failed_after_days is not None and job.get("status") == "failed":
+            return age_days > self._failed_after_days
+        return False
 
     @staticmethod
     def _age_in_days(job: dict) -> float | None:

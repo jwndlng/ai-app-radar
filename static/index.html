@@ -2129,6 +2129,8 @@
       <h3 style="font-size:1rem;"
           x-text="filteredJobs.length + ' Roles' + (visibleCount < filteredJobs.length ? ' (showing ' + visibleCount + ')' : '')"></h3>
       <div class="sort-bar" style="display:flex; gap:8px; align-items:center;">
+        <span class="sort-btn" :class="{active: selectMode}" @click="toggleSelectMode()"
+              :title="selectMode ? 'Exit selection mode' : 'Select multiple jobs to edit at once'">☑ Select</span>
         <span class="sort-btn" :class="{active: favoritesOnly}" @click="favoritesOnly = !favoritesOnly"
               :title="favoritesOnly ? 'Show all jobs' : 'Show favorites only'">★ Favorites</span>
         <span style="font-size:0.8rem; color:var(--text-secondary); margin-left:4px;">Sort:</span>
@@ -2138,6 +2140,41 @@
         <span class="sort-btn" :class="{active: sortKey==='company'}"   @click="setSort('company')">Company</span>
         <span class="sort-btn" x-text="sortAsc ? '↑' : '↓'" @click="sortAsc = !sortAsc" style="min-width:18px;"></span>
       </div>
+    </div>
+
+    <!-- Bulk action bar -->
+    <div x-show="selectMode" x-transition
+         style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; padding:8px 12px; margin-bottom:10px;
+                background:var(--bg-card); border:1px solid var(--accent-primary); border-radius:var(--radius-md);">
+      <strong style="font-size:0.85rem;" x-text="selectedCount + ' selected'"></strong>
+      <button class="btn btn-ghost btn-sm" @click="selectAllShown()">Select all shown</button>
+      <button class="btn btn-ghost btn-sm" @click="selectedIds = {}" x-show="selectedCount > 0">Clear</button>
+      <span style="flex:1;"></span>
+      <template x-if="!bulkRejectOpen">
+        <div style="display:flex; gap:8px; align-items:center;">
+          <button class="btn btn-secondary btn-sm" :disabled="!selectedCount || bulkBusy"
+                  @click="bulkAction('favorite')">★ Favorite</button>
+          <button class="btn btn-secondary btn-sm" :disabled="!selectedCount || bulkBusy"
+                  @click="bulkAction('unfavorite')">☆ Unfavorite</button>
+          <button class="btn btn-danger btn-sm" :disabled="!selectedCount || bulkBusy"
+                  @click="bulkRejectOpen = true">Reject…</button>
+          <button class="btn-delete" :class="{armed: bulkDeleteArmed}" :disabled="!selectedCount || bulkBusy"
+                  @click="bulkDeleteArmed ? bulkAction('delete') : bulkDeleteArmed = true"
+                  @click.outside="bulkDeleteArmed = false"
+                  x-text="bulkDeleteArmed ? 'Delete ' + selectedCount + ' — sure?' : 'Delete'"></button>
+        </div>
+      </template>
+      <template x-if="bulkRejectOpen">
+        <div style="display:flex; gap:8px; align-items:center;">
+          <input type="text" x-model="bulkRejectReason" placeholder="optional reason…"
+                 @keydown.enter.stop="bulkAction('set_state', 'rejected', bulkRejectReason || null)"
+                 @keydown.escape.stop="bulkRejectOpen = false" />
+          <button class="btn btn-danger btn-sm" :disabled="bulkBusy"
+                  @click="bulkAction('set_state', 'rejected', bulkRejectReason || null)"
+                  x-text="'Reject ' + selectedCount"></button>
+          <button class="btn btn-ghost btn-sm" @click="bulkRejectOpen = false">Cancel</button>
+        </div>
+      </template>
     </div>
 
     <div class="job-list">
@@ -2153,10 +2190,14 @@
       </template>
 
       <template x-for="job in visibleJobs" :key="job.id">
-        <div class="job-card" @click="toggleExpand(job.id)">
+        <div class="job-card" @click="selectMode ? toggleSelect(job.id) : toggleExpand(job.id)"
+             :style="selectMode && selectedIds[job.id] ? 'outline: 2px solid var(--accent-primary);' : ''">
 
           <!-- Card header -->
           <div class="job-header">
+            <input type="checkbox" x-show="selectMode" :checked="!!selectedIds[job.id]"
+                   @click.stop="toggleSelect(job.id)"
+                   style="margin-right:10px; align-self:center; width:16px; height:16px; cursor:pointer; flex-shrink:0;" />
             <div style="flex:1; min-width:0;">
               <div style="display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; min-width:0;">
                 <div class="job-title" x-text="job.title"></div>
@@ -3140,10 +3181,10 @@
           <label>Model</label>
           <select x-model="settings.scout.model" class="settings-input">
             <option :value="null">Default (env / SCOUT_MODEL)</option>
+            <option value="anthropic/claude-sonnet-5">anthropic/claude-sonnet-5</option>
+            <option value="anthropic/claude-haiku-4-5">anthropic/claude-haiku-4-5</option>
             <option value="gemini-2.5-flash">gemini-2.5-flash</option>
             <option value="gemini-2.5-pro">gemini-2.5-pro</option>
-            <option value="claude-sonnet-4-6">claude-sonnet-4-6</option>
-            <option value="claude-haiku-4-5-20251001">claude-haiku-4-5-20251001</option>
           </select>
         </div>
         <button class="settings-save-btn" @click="saveSettings()" :class="{saved: settingsSaved}">
@@ -3162,10 +3203,10 @@
           <label>Model</label>
           <select x-model="settings.enrich.model" class="settings-input">
             <option :value="null">Default (env / ENRICH_MODEL)</option>
+            <option value="anthropic/claude-sonnet-5">anthropic/claude-sonnet-5</option>
+            <option value="anthropic/claude-haiku-4-5">anthropic/claude-haiku-4-5</option>
             <option value="gemini-2.5-flash">gemini-2.5-flash</option>
             <option value="gemini-2.5-pro">gemini-2.5-pro</option>
-            <option value="claude-sonnet-4-6">claude-sonnet-4-6</option>
-            <option value="claude-haiku-4-5-20251001">claude-haiku-4-5-20251001</option>
           </select>
         </div>
         <button class="settings-save-btn" @click="saveSettings()" :class="{saved: settingsSaved}">
@@ -3186,10 +3227,10 @@
           <label>Model</label>
           <select x-model="settings.evaluate.model" class="settings-input">
             <option :value="null">Default (env / EVALUATE_MODEL)</option>
+            <option value="anthropic/claude-sonnet-5">anthropic/claude-sonnet-5</option>
+            <option value="anthropic/claude-haiku-4-5">anthropic/claude-haiku-4-5</option>
             <option value="gemini-2.5-flash">gemini-2.5-flash</option>
             <option value="gemini-2.5-pro">gemini-2.5-pro</option>
-            <option value="claude-sonnet-4-6">claude-sonnet-4-6</option>
-            <option value="claude-haiku-4-5-20251001">claude-haiku-4-5-20251001</option>
           </select>
         </div>
         <h3 class="settings-subsection-title">Scoring Weights <span class="weights-sum" :class="{'weights-ok': weightsSum == '1.00', 'weights-warn': weightsSum != '1.00'}">sum = <span x-text="weightsSum"></span></span></h3>
@@ -3206,6 +3247,27 @@
         <button class="settings-save-btn" @click="saveSettings()" :class="{saved: settingsSaved}">
           <span x-text="settingsSaved ? 'Saved ✓' : 'Save Evaluate Settings'"></span>
         </button>
+      </div>
+
+      <!-- Archival -->
+      <div class="settings-section">
+        <h2 class="settings-section-title">Archival</h2>
+        <div class="settings-grid">
+          <label>Archive rejected/auto-rejected after (days)</label>
+          <input type="number" min="1" max="365" x-model.number="settings.archival.rejected_after_days" class="settings-input">
+          <label>Archive failed jobs after (days)</label>
+          <input type="number" min="1" max="365" x-model.number="settings.archival.failed_after_days" class="settings-input">
+        </div>
+        <div style="display:flex; gap:10px; align-items:center; margin-top:8px;">
+          <button class="settings-save-btn" @click="saveSettings()" :class="{saved: settingsSaved}">
+            <span x-text="settingsSaved ? 'Saved ✓' : 'Save Archival Settings'"></span>
+          </button>
+          <button class="btn btn-secondary btn-sm" @click="runCleanup()"
+                  title="Move qualifying old jobs out of the active store into applications_archive.json now">
+            Run cleanup now
+          </button>
+          <span style="font-size:0.8rem; color:var(--text-secondary);" x-text="cleanupResult"></span>
+        </div>
       </div>
     </div> <!-- end settings view -->
 
@@ -3257,8 +3319,16 @@
           enrich: { concurrency: 5, checkpoint_every: 5, model: null },
           evaluate: { auto_reject_threshold: 4.0, auto_match_threshold: 8.5, location_reject_threshold: 2.0,
             scoring_weights: { fit: 0.5, location: 0.2, seniority: 0.2, compensation: 0.1 },
-            model: null }
+            model: null },
+          archival: { rejected_after_days: 30, failed_after_days: 60 }
         },
+        cleanupResult: '',
+        selectMode: false,
+        selectedIds: {},
+        bulkRejectOpen: false,
+        bulkRejectReason: '',
+        bulkDeleteArmed: false,
+        bulkBusy: false,
         settingsSaved: false,
         expandedEduIdx: null,
         expandedCertIdx: null,
@@ -3438,6 +3508,58 @@
             new IntersectionObserver(entries => {
               if (entries.some(e => e.isIntersecting)) this._loadMoreIfNearBottom()
             }, { rootMargin: '600px' }).observe(sentinel)
+          }
+        },
+
+        get selectedCount() {
+          return Object.keys(this.selectedIds).length
+        },
+
+        toggleSelectMode() {
+          this.selectMode = !this.selectMode
+          this.selectedIds = {}
+          this.bulkRejectOpen = false
+          this.bulkRejectReason = ''
+          this.bulkDeleteArmed = false
+        },
+
+        toggleSelect(id) {
+          if (this.selectedIds[id]) delete this.selectedIds[id]
+          else this.selectedIds[id] = true
+        },
+
+        selectAllShown() {
+          for (const j of this.visibleJobs) this.selectedIds[j.id] = true
+        },
+
+        async bulkAction(action, state = null, reason = null) {
+          const ids = Object.keys(this.selectedIds)
+          if (!ids.length || this.bulkBusy) return
+          this.bulkBusy = true
+          try {
+            await fetch('/api/jobs/bulk', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ ids, action, state, reason })
+            })
+            await Promise.all([this.loadJobs(), this.loadStats()])
+            this.selectedIds = {}
+            this.bulkRejectOpen = false
+            this.bulkRejectReason = ''
+            this.bulkDeleteArmed = false
+          } catch(e) { console.error('bulk action failed', e) }
+          finally { this.bulkBusy = false }
+        },
+
+        async runCleanup() {
+          this.cleanupResult = 'Running…'
+          try {
+            const r = await fetch('/api/maintenance/cleanup', { method: 'POST' })
+            const d = await r.json()
+            this.cleanupResult = d.ok ? `Archived ${d.archived} job(s)` : `Cleanup failed: ${d.error || r.status}`
+            await Promise.all([this.loadJobs(), this.loadStats()])
+          } catch(e) {
+            this.cleanupResult = 'Cleanup failed (network error)'
           }
         },
 

@@ -157,8 +157,12 @@ class PipelineCLI:
         from maintenance.archiver import JobArchiver
 
         try:
-            threshold = AppConfigLoader(self._root).settings().archival.rejected_after_days
-            archived_count = JobArchiver(self._root, rejected_after_days=threshold).run()
-            print(f"[sync] Archived {archived_count} old rejected job(s).")
+            archival = AppConfigLoader(self._root).settings().archival
+            archived_count = JobArchiver(
+                self._root,
+                rejected_after_days=archival.rejected_after_days,
+                failed_after_days=archival.failed_after_days,
+            ).run()
+            print(f"[sync] Archived {archived_count} old rejected/failed job(s).")
         except Exception as e:
             print(f"[sync] Warning: archival step failed: {e}")
