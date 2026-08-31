@@ -30,6 +30,11 @@ class TaskRecord:
     progress_total: int | None = None
     events: list[dict] = field(default_factory=list)
 
+    # The UI's Running Tasks panel only renders recent events of active tasks,
+    # so the list endpoint must not ship full event logs: 100 task records with
+    # complete pipeline logs add up to tens of MB, polled every 5 seconds.
+    _SUMMARY_EVENTS = 100
+
     def to_dict(self) -> dict:
         return {
             "id": self.id,
@@ -43,6 +48,15 @@ class TaskRecord:
             "progress_total": self.progress_total,
             "events": self.events,
         }
+
+    def to_summary_dict(self) -> dict:
+        d = self.to_dict()
+        if self.status in {"running", "cancelling"}:
+            d["events"] = self.events[-self._SUMMARY_EVENTS:]
+        else:
+            d["events"] = []
+        d["event_count"] = len(self.events)
+        return d
 
     @classmethod
     def from_dict(cls, d: dict) -> TaskRecord:
@@ -62,6 +76,9 @@ class TaskRecord:
 
 class TaskRegistry:
     _MAX = 100
+    # Cap events kept per task so records (and the persisted tasks.json,
+    # rewritten on every flush) stay bounded instead of growing without limit.
+    _MAX_EVENTS = 500
 
     def __init__(self, path: Path | None = None) -> None:
         self._path = path
@@ -72,6 +89,10 @@ class TaskRegistry:
                 data = json.loads(self._path.read_text())
                 for record_dict in reversed(data):
                     record = TaskRecord.from_dict(record_dict)
+                    # Trim oversized histories written before the event cap
+                    # existed; the next flush shrinks the file accordingly.
+                    if len(record.events) > self._MAX_EVENTS:
+                        record.events = record.events[-self._MAX_EVENTS:]
                     if record.status in {"running", "cancelling"}:
                         record.status = "cancelled"
                         record.finished_at = record.finished_at or datetime.now(timezone.utc)
@@ -120,6 +141,8 @@ class TaskRegistry:
         record = self._get(task_id)
         if record:
             record.events.append(event)
+            if len(record.events) > self._MAX_EVENTS:
+                del record.events[: -self._MAX_EVENTS]
 
     def register_event(self, task_id: str, event: asyncio.Event) -> None:
         self._cancel_events[task_id] = event

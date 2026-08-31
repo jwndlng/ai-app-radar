@@ -91,3 +91,41 @@ def test_manual_reject_stamps_vetted_at(client: TestClient, store: ApplicationSt
     # The archiver ages rejected jobs from vetted_at; it must reflect the
     # rejection time, not the original evaluation time.
     assert job["vetted_at"] > "2020-01-01T00:00:00"
+
+
+def test_tasks_list_is_summary_projection(client: TestClient) -> None:
+    """The 5s-polled list endpoint must not ship full event logs; the
+    detail endpoint returns them."""
+    from api.app import app
+    from api.tasks import TaskRegistry
+
+    registry = TaskRegistry(None)
+    app.state.registry = registry
+    done_id = registry.create("pipeline_run_all")
+    for i in range(300):
+        registry.add_event(done_id, {"type": "item_ok", "name": f"job {i}"})
+    registry.complete(done_id, {"scout": 1})
+    running_id = registry.create("scout_all")
+    for i in range(150):
+        registry.add_event(running_id, {"type": "item_ok", "name": f"co {i}"})
+
+    tasks = {t["id"]: t for t in client.get("/api/tasks").json()["tasks"]}
+    assert tasks[done_id]["events"] == []
+    assert tasks[done_id]["event_count"] == 300
+    assert len(tasks[running_id]["events"]) == 100
+    assert tasks[running_id]["events"][-1]["name"] == "co 149"
+
+    detail = client.get(f"/api/tasks/{done_id}").json()
+    assert len(detail["events"]) == 300
+
+
+def test_task_events_are_capped() -> None:
+    from api.tasks import TaskRegistry
+
+    registry = TaskRegistry(None)
+    task_id = registry.create("scout_all")
+    for i in range(700):
+        registry.add_event(task_id, {"i": i})
+    events = registry.get(task_id).events
+    assert len(events) == 500
+    assert events[0]["i"] == 200 and events[-1]["i"] == 699
