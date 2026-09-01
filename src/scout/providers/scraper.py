@@ -90,7 +90,12 @@ class ScraperProvider(BaseProvider):
                     )
 
                 if not jobs:
-                    jobs = await self._extract_by_links(page, url, company_name, filters)
+                    # Fallback after configured extraction found nothing:
+                    # restrict to job-like hrefs so a company with zero real
+                    # openings doesn't ingest nav/footer links as jobs.
+                    jobs = await self._extract_by_links(
+                        page, url, company_name, filters, require_joblike_href=True
+                    )
 
             finally:
                 # Errors propagate to the consumer, which logs a per-company
@@ -217,19 +222,29 @@ class ScraperProvider(BaseProvider):
                 })
         return jobs
 
+    # Href fragments that indicate an actual job posting link, used when link
+    # harvesting runs as a fallback after configured selectors found nothing —
+    # otherwise nav/footer/product links whose text passes the title filter
+    # would be ingested as jobs.
+    _JOBLIKE_HREF = ("/job/", "/jobs/", "/careers/", "/career/", "/position", "/opening", "/vacanc", "gh_jid", "lever.co", "ashbyhq", "workday")
+
     async def _extract_by_links(
-        self, page: Page, base_url: str, company_name: str, filters: dict
+        self, page: Page, base_url: str, company_name: str, filters: dict,
+        require_joblike_href: bool = False,
     ) -> list[dict]:
         jobs: list[dict] = []
         elements = await page.query_selector_all("a")
         for el in elements:
             title_text = await el.inner_text()
             href = await el.get_attribute("href")
-            if title_text and href and self.filter_job(title_text, filters):
-                jobs.append({
-                    "title": title_text.strip().split("\n")[0],
-                    "url": urljoin(base_url, href),
-                    "company": company_name,
-                    "location": "See URL",
-                })
+            if not (title_text and href and self.filter_job(title_text, filters)):
+                continue
+            if require_joblike_href and not any(m in href.lower() for m in self._JOBLIKE_HREF):
+                continue
+            jobs.append({
+                "title": title_text.strip().split("\n")[0],
+                "url": urljoin(base_url, href),
+                "company": company_name,
+                "location": "See URL",
+            })
         return jobs
