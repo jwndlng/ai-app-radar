@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 import json
 from datetime import datetime, timezone
 from pathlib import Path
@@ -23,10 +24,15 @@ def get_registry(request: Request):
 class PipelineRunner:
     def __init__(self, root_dir: Path) -> None:
         self._root = root_dir
+        self._store_instance = None
 
     def _store(self):
-        from core.store import ApplicationStore
-        return ApplicationStore(self._root / "artifacts" / "radar.db")
+        # One store per runner: rebuilding it per request re-runs table/index
+        # creation and the legacy-migration check on every API call.
+        if self._store_instance is None:
+            from core.store import ApplicationStore
+            self._store_instance = ApplicationStore(self._root / "artifacts" / "radar.db")
+        return self._store_instance
 
     def _company_names(self) -> set[str]:
         from core.config import AppConfigLoader
@@ -57,42 +63,41 @@ class PipelineRunner:
         from scout.task import ScoutTask
 
         config = AppConfigLoader(self._root).scout()
-        ids_before = {j["id"] for j in self._store().load()}
+        ids_before = {j["id"] for j in self._store().list_jobs(projection="summary")}
         await PipelineRuntime(ScoutTask(config, self._root, on_event=on_event,
                                         notifier=self._notifier())).run(
             on_progress=on_progress, should_cancel=should_cancel)
-        return sum(1 for j in self._store().load() if j["id"] not in ids_before)
+        return sum(
+            1 for j in self._store().list_jobs(projection="summary")
+            if j["id"] not in ids_before
+        )
 
     async def scout_next(
         self, limit: int, on_progress: Callable[[int, int], None] | None = None,
         on_event: Callable[[dict], None] | None = None,
         should_cancel: Callable[[], bool] | None = None,
     ) -> int:
-        from core.config import AppConfigLoader, ScoutConfig
+        from core.config import AppConfigLoader
         from core.runtime import PipelineRuntime
         from scout.task import ScoutTask
 
         config = AppConfigLoader(self._root).scout()
-        filtered = ScoutConfig(
-            title_filter=config.title_filter,
-            tracked_companies=config.tracked_companies[:limit],
-            max_pages=config.max_pages,
-            respect_robots=config.respect_robots,
-            model=config.model,
-            worker_count=config.worker_count,
-        )
-        ids_before = {j["id"] for j in self._store().load()}
+        filtered = dataclasses.replace(config, tracked_companies=config.tracked_companies[:limit])
+        ids_before = {j["id"] for j in self._store().list_jobs(projection="summary")}
         await PipelineRuntime(ScoutTask(filtered, self._root, on_event=on_event,
                                         notifier=self._notifier())).run(
             on_progress=on_progress, should_cancel=should_cancel)
-        return sum(1 for j in self._store().load() if j["id"] not in ids_before)
+        return sum(
+            1 for j in self._store().list_jobs(projection="summary")
+            if j["id"] not in ids_before
+        )
 
     async def scout_company(
         self, company_name: str, on_progress: Callable[[int, int], None] | None = None,
         on_event: Callable[[dict], None] | None = None,
         should_cancel: Callable[[], bool] | None = None,
     ) -> int | None:
-        from core.config import AppConfigLoader, ScoutConfig
+        from core.config import AppConfigLoader
         from core.runtime import PipelineRuntime
         from scout.task import ScoutTask
 
@@ -101,15 +106,17 @@ class PipelineRunner:
         if not match:
             return None
 
-        filtered = ScoutConfig(
-            title_filter=config.title_filter,
-            tracked_companies=match,
-        )
-        ids_before = {j["id"] for j in self._store().load()}
+        # replace() keeps the loaded settings (respect_robots, max_pages,
+        # model, worker_count) instead of resetting them to defaults.
+        filtered = dataclasses.replace(config, tracked_companies=match)
+        ids_before = {j["id"] for j in self._store().list_jobs(projection="summary")}
         await PipelineRuntime(ScoutTask(filtered, self._root, on_event=on_event,
                                         notifier=self._notifier())).run(
             on_progress=on_progress, should_cancel=should_cancel)
-        return sum(1 for j in self._store().load() if j["id"] not in ids_before)
+        return sum(
+            1 for j in self._store().list_jobs(projection="summary")
+            if j["id"] not in ids_before
+        )
 
     async def enrich_all(self, on_progress: Callable[[int, int], None] | None = None,
                          on_event: Callable[[dict], None] | None = None,
@@ -117,7 +124,7 @@ class PipelineRunner:
         from core.runtime import PipelineRuntime
         from enrich.task import EnrichTask
 
-        count = sum(1 for j in self._store().load() if j.get("state") == "discovered")
+        count = self._store().state_counts().get("discovered", 0)
         await PipelineRuntime(EnrichTask(self._root, on_event=on_event,
                                          notifier=self._notifier())).run(
             on_progress=on_progress, should_cancel=should_cancel)
@@ -131,7 +138,7 @@ class PipelineRunner:
         from core.runtime import PipelineRuntime
         from enrich.task import EnrichTask
 
-        available = sum(1 for j in self._store().load() if j.get("state") == "discovered")
+        available = self._store().state_counts().get("discovered", 0)
         await PipelineRuntime(EnrichTask(self._root, limit=limit, on_event=on_event,
                                          notifier=self._notifier())).run(
             on_progress=on_progress, should_cancel=should_cancel)
@@ -161,14 +168,13 @@ class PipelineRunner:
         from enrich.consumer import EnrichConsumer
 
         store = self._store()
-        all_apps = store.load()
-        job = next((j for j in all_apps if j.get("id") == job_id), None)
+        job = store.get_by_id(job_id)
         if job is None:
             return False
 
         cfg = AppConfigLoader(self._root).enrich()
         log = RunLogger("enrich", self._root, on_event=on_event)
-        consumer = EnrichConsumer(all_apps, store, log, model=cfg.model, notifier=self._notifier())
+        consumer = EnrichConsumer([job], store, log, model=cfg.model, notifier=self._notifier())
         await consumer.on_start(1)
         await consumer.consume(job)
         await consumer.finalize()
@@ -180,7 +186,7 @@ class PipelineRunner:
         from core.runtime import PipelineRuntime
         from evaluate.task import EvaluateTask
 
-        count = sum(1 for j in self._store().load() if j.get("state") == "parsed")
+        count = self._store().state_counts().get("parsed", 0)
         await PipelineRuntime(EvaluateTask(self._root, on_event=on_event, notifier=self._notifier())).run(
             on_progress=on_progress, should_cancel=should_cancel)
         return count
@@ -207,7 +213,7 @@ class PipelineRunner:
         from core.runtime import PipelineRuntime
         from evaluate.task import EvaluateTask
 
-        available = sum(1 for j in self._store().load() if j.get("state") == "parsed")
+        available = self._store().state_counts().get("parsed", 0)
         task = EvaluateTask(self._root, on_event=on_event, notifier=self._notifier())
         task.limit = limit
         await PipelineRuntime(task).run(on_progress=on_progress, should_cancel=should_cancel)
@@ -221,8 +227,7 @@ class PipelineRunner:
         from evaluate.vetting import Vetter
 
         store = self._store()
-        all_apps = store.load()
-        job = next((j for j in all_apps if j.get("id") == job_id), None)
+        job = store.get_by_id(job_id)
         if job is None:
             return False
 
@@ -235,7 +240,7 @@ class PipelineRunner:
         log = RunLogger("evaluate", self._root, on_event=on_event)
 
         consumer = EvaluateConsumer(
-            all_apps=all_apps,
+            all_apps=[job],
             store=store,
             fit_scorer=fit_scorer,
             profile_input=profile_input,
@@ -254,8 +259,7 @@ class PipelineRunner:
     async def run_job(self, job_id: str,
                       on_event: Callable[[dict], None] | None = None) -> list[str] | None:
         store = self._store()
-        all_apps = store.load()
-        job = next((j for j in all_apps if j.get("id") == job_id), None)
+        job = store.get_by_id(job_id)
         if job is None:
             return None
 
@@ -265,7 +269,7 @@ class PipelineRunner:
         if state == "discovered":
             await self.enrich_job(job_id, on_event=on_event)
             steps_run.append("enrich")
-            refreshed = next((j for j in store.load() if j.get("id") == job_id), None)
+            refreshed = store.get_by_id(job_id)
             if refreshed and refreshed.get("state") == "parsed":
                 await self.evaluate_job(job_id, on_event=on_event)
                 steps_run.append("evaluate")
