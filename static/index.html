@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Outfit:wght@600;700&display=swap" rel="stylesheet">
+  <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.14.1/dist/cdn.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
   <style>
     /* ── Design Tokens ─────────────────────────────────────────────────────── */
@@ -27,6 +28,10 @@
       --text-secondary: hsl(210, 15%, 35%);
       --accent-primary: hsl(250, 60%, 55%);
       --accent-glow: hsla(250, 60%, 55%, 0.1);
+
+      --score-good: hsl(140, 60%, 35%);
+      --score-mid: hsl(35, 90%, 38%);
+      --score-bad: hsl(0, 70%, 45%);
       --expandable-bg: hsl(210, 20%, 96%);
 
       --status-discovered-bg: hsl(45, 100%, 94%);
@@ -52,6 +57,9 @@
     }
 
     [data-theme="dark"] {
+      --score-good: hsl(140, 55%, 55%);
+      --score-mid: hsl(35, 90%, 60%);
+      --score-bad: hsl(0, 80%, 65%);
       --bg-main: hsl(220, 25%, 8%);
       --bg-card: hsl(220, 25%, 12%);
       --bg-sidebar: hsla(220, 25%, 10%, 0.8);
@@ -1089,7 +1097,8 @@
     }
 
     .hash-chip:hover { color: var(--accent-primary); border-color: var(--accent-primary); }
-    .hash-chip.copied { color: hsl(140,60%,35%); border-color: hsl(140,60%,35%); background: hsl(140,60%,95%); }
+    .hash-chip.copied { color: var(--score-good); border-color: var(--score-good); background: var(--bg-hover, transparent); }
+    .badge-salary { background: var(--bg-sidebar); color: var(--text-secondary); border: 1px solid var(--border-color); }
 
     .btn-delete {
       padding: 1px 6px; border-radius: 4px; font-size: 0.72rem; font-weight: 600; line-height: 1.6;
@@ -1192,6 +1201,8 @@
       .nav-mobile-toggle { display: flex; margin-left: 0; }
       .sidebar-toggle { display: none; }
       .nav-title { margin-right: auto; font-size: 0.85rem; }
+
+      .sidebar-expand { display: none; }
 
       /* Sidebar: always visible inline, no slide animation */
       .sidebar {
@@ -1975,7 +1986,12 @@
   </aside>
 
   <!-- ── Main ───────────────────────────────────────────────────────────── -->
-  <main class="main-content" :class="{'sidebar-collapsed': !sidebarOpen}">
+  <main class="main-content" :class="{'sidebar-collapsed': !sidebarOpen, 'full-width': currentView === 'settings' || currentView === 'tasks'}">
+    <div x-show="uiError" x-transition
+         style="position:sticky; top:0; z-index:50; margin-bottom:10px; padding:10px 14px;
+                background:var(--bg-card); border:1px solid var(--score-bad); border-radius:var(--radius-sm);
+                color:var(--score-bad); font-size:0.85rem;"
+         x-text="uiError"></div>
 
     <!-- Jobs View -->
     <div x-show="currentView === 'jobs'">
@@ -2272,7 +2288,7 @@
                     @click="setJobState(job.id, 'match')">Promote to match</button>
             <button class="btn btn-danger btn-sm"
                     x-show="job.state !== 'rejected'"
-                    @click.stop="openRejectPrompt(job.id)">Reject</button>
+                    @click.stop="openRejectPrompt(job.id, $event)">Reject</button>
             <button class="btn btn-ghost btn-sm"
                     x-show="job.state !== 'discovered'"
                     @click="job.state === 'parsed' ? reEnrich(job.id) : reEvaluate(job.id)"
@@ -3180,7 +3196,7 @@
           <input type="number" min="1" max="50" x-model.number="settings.scout.worker_count" class="settings-input">
           <label>Model</label>
           <select x-model="settings.scout.model" class="settings-input">
-            <option :value="null">Default (env / SCOUT_MODEL)</option>
+            <option value="">Default (env / SCOUT_MODEL)</option>
             <option value="anthropic/claude-sonnet-5">anthropic/claude-sonnet-5</option>
             <option value="anthropic/claude-haiku-4-5">anthropic/claude-haiku-4-5</option>
             <option value="gemini-2.5-flash">gemini-2.5-flash</option>
@@ -3202,7 +3218,7 @@
           <input type="number" min="1" max="50" x-model.number="settings.enrich.checkpoint_every" class="settings-input">
           <label>Model</label>
           <select x-model="settings.enrich.model" class="settings-input">
-            <option :value="null">Default (env / ENRICH_MODEL)</option>
+            <option value="">Default (env / ENRICH_MODEL)</option>
             <option value="anthropic/claude-sonnet-5">anthropic/claude-sonnet-5</option>
             <option value="anthropic/claude-haiku-4-5">anthropic/claude-haiku-4-5</option>
             <option value="gemini-2.5-flash">gemini-2.5-flash</option>
@@ -3226,7 +3242,7 @@
           <input type="number" min="0" max="10" step="0.5" x-model.number="settings.evaluate.location_reject_threshold" class="settings-input">
           <label>Model</label>
           <select x-model="settings.evaluate.model" class="settings-input">
-            <option :value="null">Default (env / EVALUATE_MODEL)</option>
+            <option value="">Default (env / EVALUATE_MODEL)</option>
             <option value="anthropic/claude-sonnet-5">anthropic/claude-sonnet-5</option>
             <option value="anthropic/claude-haiku-4-5">anthropic/claude-haiku-4-5</option>
             <option value="gemini-2.5-flash">gemini-2.5-flash</option>
@@ -3323,6 +3339,7 @@
           archival: { rejected_after_days: 30, failed_after_days: 60 }
         },
         cleanupResult: '',
+        uiError: '',
         selectMode: false,
         selectedIds: {},
         bulkRejectOpen: false,
@@ -3497,9 +3514,9 @@
           await Promise.all([this.loadJobs(), this.loadStats(), this.loadTasks(), this.loadSettings(), this.loadCompanies()])
           setInterval(() => this.loadTasks(), 5000)
           setInterval(() => this.now = Date.now(), 1000)
-          this.$watch('statusFilter', () => { this.visibleCount = this.pageSize; this._recomputeFilteredJobs() })
-          this.$watch('search', () => { this.visibleCount = this.pageSize; this._recomputeFilteredJobs() })
-          this.$watch('favoritesOnly', () => this._recomputeFilteredJobs())
+          this.$watch('statusFilter', () => { this.visibleCount = this.pageSize; this.selectedIds = {}; this._recomputeFilteredJobs(); this.$nextTick(() => this._loadMoreIfNearBottom()) })
+          this.$watch('search', () => { this.visibleCount = this.pageSize; this.selectedIds = {}; this._recomputeFilteredJobs(); this.$nextTick(() => this._loadMoreIfNearBottom()) })
+          this.$watch('favoritesOnly', () => { this.selectedIds = {}; this._recomputeFilteredJobs() })
           this.$watch('sortKey', () => this._recomputeFilteredJobs())
           this.$watch('sortAsc', () => this._recomputeFilteredJobs())
 
@@ -3532,22 +3549,35 @@
           for (const j of this.visibleJobs) this.selectedIds[j.id] = true
         },
 
+        showError(message) {
+          this.uiError = message
+          setTimeout(() => { this.uiError = '' }, 6000)
+        },
+
         async bulkAction(action, state = null, reason = null) {
           const ids = Object.keys(this.selectedIds)
           if (!ids.length || this.bulkBusy) return
           this.bulkBusy = true
           try {
-            await fetch('/api/jobs/bulk', {
+            const r = await fetch('/api/jobs/bulk', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ ids, action, state, reason })
             })
+            const d = await r.json()
+            if (!r.ok) throw new Error(d.detail || 'HTTP ' + r.status)
+            if (d.missing && d.missing.length) {
+              this.showError(`${d.missing.length} selected job(s) no longer exist and were skipped`)
+            }
             await Promise.all([this.loadJobs(), this.loadStats()])
             this.selectedIds = {}
             this.bulkRejectOpen = false
             this.bulkRejectReason = ''
             this.bulkDeleteArmed = false
-          } catch(e) { console.error('bulk action failed', e) }
+          } catch(e) {
+            console.error('bulk action failed', e)
+            this.showError('Bulk action failed: ' + e.message)
+          }
           finally { this.bulkBusy = false }
         },
 
@@ -3578,20 +3608,34 @@
         async loadSettings() {
           try {
             const r = await fetch('/api/settings')
-            this.settings = await r.json()
+            const d = await r.json()
+            // Selects use '' as the "default model" sentinel (binding null
+            // would DOM-coerce to the string "null").
+            for (const section of ['scout', 'enrich', 'evaluate']) {
+              if (d[section] && d[section].model == null) d[section].model = ''
+            }
+            this.settings = { ...this.settings, ...d }
           } catch(e) { console.error('loadSettings failed', e) }
         },
 
         async saveSettings() {
           try {
-            await fetch('/api/settings', {
+            const payload = JSON.parse(JSON.stringify(this.settings))
+            for (const section of ['scout', 'enrich', 'evaluate']) {
+              if (payload[section] && !payload[section].model) payload[section].model = null
+            }
+            const r = await fetch('/api/settings', {
               method: 'PUT',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(this.settings)
+              body: JSON.stringify(payload)
             })
+            if (!r.ok) throw new Error('HTTP ' + r.status)
             this.settingsSaved = true
             setTimeout(() => { this.settingsSaved = false }, 2000)
-          } catch(e) { console.error('saveSettings failed', e) }
+          } catch(e) {
+            console.error('saveSettings failed', e)
+            this.showError('Saving settings failed — changes are NOT persisted')
+          }
         },
 
         applyPreset(name) {
@@ -3618,11 +3662,24 @@
             const d = await r.json()
             // Merge fresh summaries into existing job objects so an expanded
             // card keeps its loaded detail fields across background refreshes.
+            // Keys the server clears (undo pops scores, promote pops the
+            // rejection reason) are absent from the row, not null — delete
+            // them or the UI keeps rendering stale values.
+            const CLEARABLE = ['final_score', 'location_score', 'seniority_score', 'score',
+                               'salary_range', 'compensation_score', 'vetted_at', 'archived_at',
+                               'error_message', 'rejection_reason']
             const byId = new Map(this.jobs.map(j => [j.id, j]))
             this.jobs = (d.jobs || []).map(nj => {
               const old = byId.get(nj.id)
-              return old ? Object.assign(old, nj) : nj
+              if (!old) return nj
+              for (const k of CLEARABLE) if (!(k in nj) && k in old) delete old[k]
+              return Object.assign(old, nj)
             })
+            // Drop selections pointing at jobs that no longer exist.
+            const liveIds = new Set(this.jobs.map(j => j.id))
+            for (const id of Object.keys(this.selectedIds)) {
+              if (!liveIds.has(id)) delete this.selectedIds[id]
+            }
             this.jobsLoaded = true
             this._recomputeFilteredJobs()
           } catch(e) { console.error('loadJobs failed', e) }
@@ -3701,7 +3758,11 @@
           try {
             const opts = { method: 'POST', headers: { 'Content-Type': 'application/json' } }
             if (body) opts.body = JSON.stringify(body)
-            await fetch(url, opts)
+            const r = await fetch(url, opts)
+            if (!r.ok) {
+              const d = await r.json().catch(() => ({}))
+              this.showError(d.detail || `Operation failed (HTTP ${r.status})`)
+            }
             await this.loadTasks()
           } catch(e) { console.error('fireOperation failed', e) }
         },
@@ -3750,9 +3811,16 @@
           } catch(e) { console.error('undoByState failed', e) }
         },
 
+        _invalidateDetails(jobId) {
+          // Force a detail refetch on next expand after a server-side change.
+          const job = this.jobs.find(j => j.id === jobId)
+          if (job) job._detailsLoaded = false
+        },
+
         async undoJob(jobId) {
           try {
             await fetch(`/api/jobs/${jobId}/undo`, { method: 'POST' })
+            this._invalidateDetails(jobId)
             await Promise.all([this.loadJobs(), this.loadStats()])
           } catch(e) { console.error('undoJob failed', e) }
         },
@@ -3760,6 +3828,7 @@
         async reEnrich(jobId) {
           try {
             await fetch(`/api/jobs/${jobId}/undo`, { method: 'POST' })
+            this._invalidateDetails(jobId)
             await this.fireOperation(`/api/enrich/${jobId}`)
           } catch(e) { console.error('reEnrich failed', e) }
         },
@@ -3767,6 +3836,7 @@
         async reEvaluate(jobId) {
           try {
             await fetch(`/api/jobs/${jobId}/undo`, { method: 'POST' })
+            this._invalidateDetails(jobId)
             await this.fireOperation(`/api/evaluate/${jobId}`)
           } catch(e) { console.error('reEvaluate failed', e) }
         },
@@ -3780,6 +3850,7 @@
           event.stopPropagation()
           if (!job._armedDelete) return
           const idx = this.jobs.findIndex(j => j.id === job.id)
+          if (idx < 0) return
           this.jobs.splice(idx, 1)
           this._recomputeFilteredJobs()
           try {
@@ -3787,7 +3858,10 @@
             if (!r.ok) throw new Error('delete failed')
             await this.loadStats()
           } catch(e) {
-            this.jobs.splice(idx, 0, job)
+            // Re-resolve: a background refresh may have rebuilt the array.
+            if (!this.jobs.some(j => j.id === job.id)) {
+              this.jobs.splice(Math.min(idx, this.jobs.length), 0, job)
+            }
             this._recomputeFilteredJobs()
             job._armedDelete = false
             job._deleteError = true
@@ -3814,10 +3888,11 @@
           } catch(e) { console.error('setJobState failed', e) }
         },
 
-        openRejectPrompt(jobId) {
+        openRejectPrompt(jobId, event = null) {
           this.rejectPrompt = { jobId, reason: '' }
           this.$nextTick(() => {
-            const input = document.querySelector('.reject-prompt input')
+            const card = event ? event.target.closest('.job-card') : null
+            const input = (card || document).querySelector('.reject-prompt input')
             if (input) input.focus()
           })
         },
@@ -3862,9 +3937,9 @@
 
         subScoreColor(v) {
           if (v == null) return 'var(--text-secondary)'
-          if (v >= 7) return 'var(--tag-matched-bg, #16a34a)'
-          if (v >= 4) return '#b45309'
-          return 'var(--danger, #dc2626)'
+          if (v >= 7) return 'var(--score-good)'
+          if (v >= 4) return 'var(--score-mid)'
+          return 'var(--score-bad)'
         },
 
         toggleBlock(blockId) {
@@ -3900,6 +3975,7 @@
           if (labels[op]) return labels[op]
           if (op.startsWith('enrich_next_')) return `Enrich Next ${op.slice(12)}`
           if (op.startsWith('evaluate_next_')) return `Evaluate Next ${op.slice(14)}`
+          if (op.startsWith('scout_next_')) return `Discovery Next ${op.slice(11)}`
           if (op.startsWith('scout_')) return `Discovery: ${op.slice(6)}`
           if (op.startsWith('enrich_')) return 'Enrich Job'
           if (op.startsWith('evaluate_')) return 'Evaluate Job'
@@ -3944,14 +4020,19 @@
 
         async saveProfile() {
           try {
-            await fetch('/api/profile', {
+            const r = await fetch('/api/profile', {
               method: 'PUT',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(this.profile),
             })
+            if (!r.ok) throw new Error('HTTP ' + r.status)
             this.profileSaveMsg = 'Saved ✓'
             setTimeout(() => { this.profileSaveMsg = '' }, 2000)
-          } catch(e) { console.error('saveProfile failed', e) }
+          } catch(e) {
+            console.error('saveProfile failed', e)
+            this.profileSaveMsg = ''
+            this.showError('Saving profile failed — changes are NOT persisted')
+          }
         },
 
         async saveSection(section) {
