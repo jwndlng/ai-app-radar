@@ -30,10 +30,13 @@ class TaskRecord:
     progress_total: int | None = None
     events: list[dict] = field(default_factory=list)
 
-    # The UI's Running Tasks panel only renders recent events of active tasks,
-    # so the list endpoint must not ship full event logs: 100 task records with
-    # complete pipeline logs add up to tens of MB, polled every 5 seconds.
-    _SUMMARY_EVENTS = 100
+    # The list endpoint must not ship full event logs (100 records with
+    # complete pipeline logs add up to tens of MB, polled every 5 seconds),
+    # but the UI renders events for BOTH running and finished tasks from the
+    # polled list — so finished tasks keep a short tail (summaries, failures)
+    # rather than nothing.
+    _SUMMARY_EVENTS_RUNNING = 100
+    _SUMMARY_EVENTS_FINISHED = 20
 
     def to_dict(self) -> dict:
         return {
@@ -52,9 +55,9 @@ class TaskRecord:
     def to_summary_dict(self) -> dict:
         d = self.to_dict()
         if self.status in {"running", "cancelling"}:
-            d["events"] = self.events[-self._SUMMARY_EVENTS:]
+            d["events"] = self.events[-self._SUMMARY_EVENTS_RUNNING:]
         else:
-            d["events"] = []
+            d["events"] = self.events[-self._SUMMARY_EVENTS_FINISHED:]
         d["event_count"] = len(self.events)
         return d
 
@@ -82,7 +85,9 @@ class TaskRegistry:
 
     def __init__(self, path: Path | None = None) -> None:
         self._path = path
-        self._records: deque[TaskRecord] = deque(maxlen=self._MAX)
+        # No maxlen: eviction is manual so a still-running task is never
+        # silently dropped (which would leave its run headless/uncancellable).
+        self._records: deque[TaskRecord] = deque()
         self._cancel_events: dict[str, asyncio.Event] = {}
         if self._path and self._path.exists():
             try:
@@ -98,6 +103,7 @@ class TaskRegistry:
                         record.finished_at = record.finished_at or datetime.now(timezone.utc)
                         record.error = "interrupted by server restart"
                     self._records.appendleft(record)
+                self._evict()
             except Exception as exc:
                 logger.warning("Could not load task history from %s: %s — starting empty", self._path, exc)
 
@@ -106,8 +112,22 @@ class TaskRegistry:
         self._records.appendleft(
             TaskRecord(id=task_id, operation=operation, status="running", started_at=datetime.now(timezone.utc))
         )
+        self._evict()
         self._flush()
         return task_id
+
+    def _evict(self) -> None:
+        """Drop oldest finished records beyond _MAX; running tasks are kept."""
+        if len(self._records) <= self._MAX:
+            return
+        keep: list[TaskRecord] = []
+        overflow = len(self._records) - self._MAX
+        for record in reversed(self._records):
+            if overflow > 0 and record.status not in {"running", "cancelling"}:
+                overflow -= 1
+                continue
+            keep.append(record)
+        self._records = deque(reversed(keep))
 
     def complete(self, task_id: str, result: dict | None = None) -> None:
         record = self._get(task_id)
