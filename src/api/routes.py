@@ -15,8 +15,48 @@ from api.tasks import TaskRegistry, make_event_callback, make_progress_callback,
 from core.state_machine import StateMachine
 
 _ALLOWED_MANUAL_STATES = {"rejected", "applied", "match"}
+_KNOWN_STATES = {"discovered", "parsed", "match", "review", "applied", "rejected", "archived"}
+
+# Operations that process the whole store; running two concurrently would
+# double-process jobs (and double LLM spend) via stale start-of-run snapshots.
+_EXCLUSIVE_OPERATIONS = ("pipeline_run_all", "scout", "enrich", "evaluate")
 
 router = APIRouter()
+
+
+def _reject_if_pipeline_running(registry: TaskRegistry) -> JSONResponse | None:
+    running = [
+        r.operation for r in registry.all()
+        if r.status in {"running", "cancelling"}
+        and r.operation.startswith(_EXCLUSIVE_OPERATIONS)
+    ]
+    if running:
+        return JSONResponse(
+            status_code=409,
+            content={"detail": f"A pipeline operation is already running: {running[0]}"},
+        )
+    return None
+
+
+def _apply_manual_state(job: dict, state: str, reason: str | None) -> None:
+    """Shared manual state-transition semantics for single and bulk routes."""
+    if job.get("state") != state:
+        # Only record prev_state on an actual transition — re-applying the
+        # current state would clobber the job's real origin state.
+        job["prev_state"] = job.get("state")
+    job["state"] = state
+    # A stale archived_at would otherwise win over the fresh rejection stamp
+    # in the archiver's age computation.
+    job.pop("archived_at", None)
+    if state == "rejected":
+        # Stamp the rejection time: the archiver ages rejected jobs from
+        # vetted_at, which otherwise still holds the original evaluation time.
+        job["vetted_at"] = datetime.now().isoformat()
+        if reason:
+            job["rejection_reason"] = reason
+    else:
+        job.pop("rejection_reason", None)
+    StateMachine.touch_updated(job)
 
 
 @router.get("/version")
@@ -244,6 +284,8 @@ async def scout_all(
     runner: PipelineRunner = Depends(get_runner),
     registry: TaskRegistry = Depends(get_registry),
 ):
+    if (conflict := _reject_if_pipeline_running(registry)) is not None:
+        return conflict
     task_id = registry.create("scout_all")
     event = asyncio.Event()
     registry.register_event(task_id, event)
@@ -282,6 +324,8 @@ async def enrich_all(
     runner: PipelineRunner = Depends(get_runner),
     registry: TaskRegistry = Depends(get_registry),
 ):
+    if (conflict := _reject_if_pipeline_running(registry)) is not None:
+        return conflict
     task_id = registry.create("enrich_all")
     event = asyncio.Event()
     registry.register_event(task_id, event)
@@ -336,6 +380,8 @@ async def evaluate_all(
     runner: PipelineRunner = Depends(get_runner),
     registry: TaskRegistry = Depends(get_registry),
 ):
+    if (conflict := _reject_if_pipeline_running(registry)) is not None:
+        return conflict
     task_id = registry.create("evaluate_all")
     event = asyncio.Event()
     registry.register_event(task_id, event)
@@ -401,17 +447,7 @@ async def set_job_state(
     job = store.get_by_id(job_id)
     if job is None:
         return JSONResponse(status_code=404, content={"detail": f"Job not found: {job_id}"})
-    job["prev_state"] = job.get("state")
-    job["state"] = body.state
-    if body.state == "rejected":
-        # Stamp the rejection time: the archiver ages rejected jobs from
-        # vetted_at, which otherwise still holds the original evaluation time.
-        job["vetted_at"] = datetime.now().isoformat()
-        if body.reason:
-            job["rejection_reason"] = body.reason
-    else:
-        job.pop("rejection_reason", None)
-    StateMachine.touch_updated(job)
+    _apply_manual_state(job, body.state, body.reason)
     store.save_job(job)
     return {"ok": True, "id": job_id, "state": body.state}
 
@@ -473,22 +509,14 @@ async def bulk_edit_jobs(
             continue
 
         if body.action == "set_state":
-            job["prev_state"] = job.get("state")
-            job["state"] = body.state
-            if body.state == "rejected":
-                # Same semantics as the single-job route: stamp the rejection
-                # time so the archiver ages from it.
-                job["vetted_at"] = datetime.now().isoformat()
-                if body.reason:
-                    job["rejection_reason"] = body.reason
-            else:
-                job.pop("rejection_reason", None)
-        elif body.action == "favorite":
-            job["favorited"] = True
-        elif body.action == "unfavorite":
-            job["favorited"] = False
+            _apply_manual_state(job, body.state, body.reason)
+        else:
+            if body.action == "favorite":
+                job["favorited"] = True
+            elif body.action == "unfavorite":
+                job["favorited"] = False
+            StateMachine.touch_updated(job)
 
-        StateMachine.touch_updated(job)
         to_save.append(job)
         updated += 1
 
@@ -515,6 +543,10 @@ async def undo_by_state(
     body: StateBody,
     runner: PipelineRunner = Depends(get_runner),
 ):
+    # Reject unknown states and the "all" wildcard, which list_jobs would
+    # otherwise treat as "no filter" — undoing the entire database.
+    if body.state not in _KNOWN_STATES:
+        return JSONResponse(status_code=400, content={"detail": f"Invalid state: {body.state}"})
     store = runner._store()
     # Full projection is required: saving summary rows back would rewrite each
     # job's data column from the projected dict and wipe all extended fields.
@@ -556,6 +588,8 @@ async def pipeline_all(
     runner: PipelineRunner = Depends(get_runner),
     registry: TaskRegistry = Depends(get_registry),
 ):
+    if (conflict := _reject_if_pipeline_running(registry)) is not None:
+        return conflict
     task_id = registry.create("pipeline_run_all")
     event = asyncio.Event()
     registry.register_event(task_id, event)
