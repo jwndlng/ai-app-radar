@@ -38,11 +38,15 @@ Example values: `"Cloud Security"`, `"AI Security"`, `"Blockchain"`, `"Web3"`, `
 - **THEN** `domains` SHALL contain a single appropriate label
 
 ### Requirement: Scout-provided fields survive enrichment
-Applying an `EnrichResult` to a job SHALL NOT overwrite the scout-provided `title`, `company`, or `location` with empty extraction output. A non-empty extracted value MAY replace the scout value; an empty one SHALL be ignored.
+Applying an `EnrichResult` to a job SHALL NOT overwrite the scout-provided `title`, `company`, or `location` with empty or placeholder extraction output (`""`, `unknown`, `<UNKNOWN>`, `n/a`, `none`, `null`, `not specified`/`not stated`, or a "Multiple Open Roles …" board-page title). A genuinely extracted value MAY replace the scout value. A placeholder `company` SHALL be treated as a fetch error (soft 404), not a successful extraction.
 
 #### Scenario: Empty extracted location is ignored
 - **WHEN** the extraction returns `location: ""` for a job whose scout record has `location: "Zurich"`
 - **THEN** the job SHALL keep `location: "Zurich"` after enrichment
+
+#### Scenario: Placeholder title does not corrupt the job
+- **WHEN** the extraction returns `title: "<UNKNOWN>"` or a "Multiple Open Roles" board-page title
+- **THEN** the job SHALL keep its scout-provided title (a corrupted title makes distinct jobs indistinguishable in the UI)
 
 ### Requirement: Failed enrichment attempts are bounded
 Each failed fetch/extract attempt SHALL increment an `enrich_attempts` counter on the job. Jobs with 3 or more failed attempts SHALL be excluded from subsequent enrich runs (dead or expired listings must not consume fetch and LLM cost indefinitely). A successful enrichment SHALL clear the counter, and the repair flow's reset SHALL also clear it so a repaired job becomes eligible again.

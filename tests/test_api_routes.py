@@ -129,3 +129,72 @@ def test_task_events_are_capped() -> None:
     events = registry.get(task_id).events
     assert len(events) == 500
     assert events[0]["i"] == 200 and events[-1]["i"] == 699
+
+
+def test_bulk_reject_stamps_and_saves(client: TestClient, store: ApplicationStore) -> None:
+    for i in range(3):
+        store.save_job({
+            "id": f"j{i}", "company": "Acme", "title": f"Role {i}",
+            "state": "review", "status": "ok", "description": "keep me",
+        })
+
+    response = client.post("/api/jobs/bulk", json={
+        "ids": ["j0", "j1", "ghost"], "action": "set_state",
+        "state": "rejected", "reason": "not a fit",
+    })
+    assert response.status_code == 200
+    body = response.json()
+    assert body["updated"] == 2
+    assert body["missing"] == ["ghost"]
+
+    for jid in ("j0", "j1"):
+        job = store.get_by_id(jid)
+        assert job["state"] == "rejected"
+        assert job["prev_state"] == "review"
+        assert job["rejection_reason"] == "not a fit"
+        assert job["vetted_at"]
+        assert job["description"] == "keep me"
+    assert store.get_by_id("j2")["state"] == "review"
+
+
+def test_bulk_favorite_and_delete(client: TestClient, store: ApplicationStore) -> None:
+    for i in range(2):
+        store.save_job({"id": f"j{i}", "company": "A", "title": f"T{i}",
+                        "state": "discovered", "status": "ok"})
+
+    r = client.post("/api/jobs/bulk", json={"ids": ["j0", "j1"], "action": "favorite"})
+    assert r.json()["updated"] == 2
+    assert store.get_by_id("j0")["favorited"] is True
+
+    r = client.post("/api/jobs/bulk", json={"ids": ["j0"], "action": "delete"})
+    assert r.json()["updated"] == 1
+    assert store.get_by_id("j0") is None
+    assert store.get_by_id("j1") is not None
+
+
+def test_bulk_rejects_invalid_action_and_state(client: TestClient) -> None:
+    assert client.post("/api/jobs/bulk", json={"ids": ["x"], "action": "explode"}).status_code == 400
+    assert client.post("/api/jobs/bulk", json={
+        "ids": ["x"], "action": "set_state", "state": "discovered",
+    }).status_code == 400
+
+
+def test_maintenance_cleanup_endpoint(client: TestClient, store: ApplicationStore, tmp_path: Path) -> None:
+    (tmp_path / "configs" / "settings.yaml").write_text(
+        "archival:\n  rejected_after_days: 30\n  failed_after_days: 60\n"
+    )
+    from datetime import datetime, timedelta, timezone
+    old = (datetime.now(timezone.utc) - timedelta(days=90)).isoformat()
+    store.save_job({"id": "old-rej", "company": "A", "title": "T1",
+                    "state": "rejected", "status": "ok", "vetted_at": old})
+    store.save_job({"id": "old-fail", "company": "A", "title": "T2",
+                    "state": "discovered", "status": "failed", "updated_at": old})
+    store.save_job({"id": "fresh", "company": "A", "title": "T3",
+                    "state": "discovered", "status": "ok"})
+
+    response = client.post("/api/maintenance/cleanup")
+    assert response.status_code == 200
+    assert response.json() == {"ok": True, "archived": 2}
+    assert store.get_by_id("old-rej") is None
+    assert store.get_by_id("old-fail") is None
+    assert store.get_by_id("fresh") is not None

@@ -146,3 +146,24 @@ def test_manual_rejection_age_counts_from_rejection_not_evaluation(tmp_path: Pat
     store = _write_jobs(tmp_path, jobs)
     assert JobArchiver(tmp_path, rejected_after_days=30).run() == 0
     assert len(store.load()) == 1
+
+
+def test_old_failed_job_is_archived_with_failed_threshold(tmp_path: Path) -> None:
+    jobs = [
+        {"id": "1", "state": "discovered", "status": "failed", "updated_at": _iso(70)},
+        {"id": "2", "state": "discovered", "status": "failed", "updated_at": _iso(40)},
+        {"id": "3", "state": "discovered", "status": "ok", "updated_at": _iso(400)},
+    ]
+    store = _write_jobs(tmp_path, jobs)
+    archived = JobArchiver(tmp_path, rejected_after_days=30, failed_after_days=60).run()
+
+    assert archived == 1
+    remaining = {j["id"] for j in store.load()}
+    assert remaining == {"2", "3"}
+
+
+def test_failed_cleanup_disabled_when_threshold_none(tmp_path: Path) -> None:
+    jobs = [{"id": "1", "state": "discovered", "status": "failed", "updated_at": _iso(400)}]
+    store = _write_jobs(tmp_path, jobs)
+    assert JobArchiver(tmp_path, rejected_after_days=30).run() == 0
+    assert len(store.load()) == 1

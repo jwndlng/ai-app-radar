@@ -124,6 +124,12 @@ class ScoutConsumer(BaseConsumer[dict]):
             }
 
             if existing:
+                # Self-heal: if a past enrichment overwrote the title with a
+                # placeholder ('<UNKNOWN>', 'Multiple Open Roles …'), restore
+                # the authoritative title from the ATS source.
+                from enrich.consumer import _is_placeholder
+                if title and _is_placeholder(existing.get("title")):
+                    existing["title"] = title
                 sources = existing.get("sources", [])
                 if not any(s["url"] == url for s in sources):
                     sources.append(discovery_entry)

@@ -275,6 +275,18 @@ class PipelineRunner:
 
         return steps_run
 
+    def run_cleanup(self) -> int:
+        """Archive old rejected/failed jobs out of the active store now."""
+        from core.config import AppConfigLoader
+        from maintenance.archiver import JobArchiver
+
+        archival = AppConfigLoader(self._root).settings().archival
+        return JobArchiver(
+            self._root,
+            rejected_after_days=archival.rejected_after_days,
+            failed_after_days=archival.failed_after_days,
+        ).run()
+
     # ── Settings management ───────────────────────────────────────────────────
 
     def _settings_path(self) -> Path:

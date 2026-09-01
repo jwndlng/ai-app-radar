@@ -432,6 +432,82 @@ async def toggle_favorite(
     return {"ok": True, "id": job_id, "favorited": job["favorited"]}
 
 
+# ── Bulk edit ────────────────────────────────────────────────────────────────
+
+_BULK_ACTIONS = {"set_state", "favorite", "unfavorite", "delete"}
+
+
+class BulkBody(BaseModel):
+    ids: list[str]
+    action: str
+    state: str | None = None
+    reason: str | None = None
+
+
+@router.post("/jobs/bulk")
+async def bulk_edit_jobs(
+    body: BulkBody,
+    runner: PipelineRunner = Depends(get_runner),
+):
+    if body.action not in _BULK_ACTIONS:
+        return JSONResponse(status_code=400, content={"detail": f"Invalid action: {body.action}"})
+    if body.action == "set_state" and body.state not in _ALLOWED_MANUAL_STATES:
+        return JSONResponse(status_code=400, content={"detail": f"Invalid state: {body.state}"})
+
+    store = runner._store()
+    updated = 0
+    missing: list[str] = []
+    to_save: list[dict] = []
+
+    for job_id in body.ids:
+        if body.action == "delete":
+            if store.delete_job(job_id):
+                updated += 1
+            else:
+                missing.append(job_id)
+            continue
+
+        job = store.get_by_id(job_id)
+        if job is None:
+            missing.append(job_id)
+            continue
+
+        if body.action == "set_state":
+            job["prev_state"] = job.get("state")
+            job["state"] = body.state
+            if body.state == "rejected":
+                # Same semantics as the single-job route: stamp the rejection
+                # time so the archiver ages from it.
+                job["vetted_at"] = datetime.now().isoformat()
+                if body.reason:
+                    job["rejection_reason"] = body.reason
+            else:
+                job.pop("rejection_reason", None)
+        elif body.action == "favorite":
+            job["favorited"] = True
+        elif body.action == "unfavorite":
+            job["favorited"] = False
+
+        StateMachine.touch_updated(job)
+        to_save.append(job)
+        updated += 1
+
+    if to_save:
+        store.save(to_save)
+    return {"ok": True, "updated": updated, "missing": missing}
+
+
+# ── Maintenance ──────────────────────────────────────────────────────────────
+
+@router.post("/maintenance/cleanup")
+async def run_cleanup(runner: PipelineRunner = Depends(get_runner)):
+    try:
+        archived = runner.run_cleanup()
+        return {"ok": True, "archived": archived}
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"ok": False, "error": str(e)})
+
+
 # ── Undo ─────────────────────────────────────────────────────────────────────
 
 @router.post("/jobs/undo-by-state")

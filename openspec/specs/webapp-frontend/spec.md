@@ -171,6 +171,17 @@ Since the job list switched to the summary projection (which omits the heavy `re
 - **WHEN** a job card is rendered collapsed from the summary listing
 - **THEN** the fit-score tag, sub-score tags, and salary badge SHALL still be visible without expanding
 
+### Requirement: Bulk selection and editing
+The job list SHALL offer a selection mode (toggled from the list header) that shows checkboxes on job cards and a bulk action bar with the selected count, select-all-shown, clear, favorite, unfavorite, reject (with optional reason), and a two-step-confirmed delete. In selection mode, clicking a card toggles its selection instead of expanding it. Bulk actions call `POST /api/jobs/bulk`, then refresh the list and stats and clear the selection.
+
+#### Scenario: Bulk reject from selection
+- **WHEN** the user selects several jobs, opens Reject, optionally enters a reason, and confirms
+- **THEN** one bulk request rejects all selected jobs and the list and sidebar counts refresh
+
+#### Scenario: Delete requires a second click
+- **WHEN** the user clicks the bulk Delete button once
+- **THEN** nothing is deleted until a confirming second click; clicking elsewhere disarms it
+
 ### Requirement: Job list paginates by scrolling
 The job list SHALL render 30 jobs initially and load 30 more automatically when the user scrolls near the bottom (IntersectionObserver on a sentinel, with a preload margin), with the "Load more" button retained as a manual fallback. Changing the state filter or search SHALL reset the visible count to the first page. The header SHALL show the total filtered count and how many are currently shown.
 

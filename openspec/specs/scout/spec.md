@@ -36,6 +36,10 @@ Discovered roles SHALL be added to `artifacts/applications.json` in a deduplicat
 - **WHEN** a job whose state is beyond `discovered` is rediscovered with a different URL
 - **THEN** the stored canonical `url` SHALL NOT be overwritten; the new URL is recorded only as an additional source.
 
+#### Scenario: Rediscovery heals placeholder titles
+- **WHEN** an existing job's stored title is a placeholder (a past enrichment overwrote it) and scout rediscovers the job with a real title from its ATS source
+- **THEN** the stored title SHALL be restored to the scout-provided one.
+
 #### Scenario: Ingest writes only touched jobs
 - **WHEN** scout finalizes a run
 - **THEN** only jobs that were newly discovered or updated in this run SHALL be persisted; jobs untouched by the run SHALL NOT be rewritten from the run's start-of-run snapshot (protecting concurrent edits made via the API).

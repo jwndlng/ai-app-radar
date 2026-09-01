@@ -87,6 +87,7 @@ class EvaluateSettings:
 @dataclass
 class ArchivalSettings:
     rejected_after_days: int = 30
+    failed_after_days: int = 60
 
 
 @dataclass
@@ -152,6 +153,7 @@ class AppConfigLoader:
             ),
             archival=ArchivalSettings(
                 rejected_after_days=a.get("rejected_after_days", 30),
+                failed_after_days=a.get("failed_after_days", 60),
             ),
         )
 
