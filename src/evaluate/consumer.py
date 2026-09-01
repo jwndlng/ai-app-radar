@@ -71,15 +71,13 @@ class EvaluateConsumer(BaseConsumer[dict]):
         try:
             scored = await self._fit_scorer.score(job, self._profile_input)
         except Exception as e:
-            job["status"] = "failed"
-            job["error_message"] = f"{type(e).__name__}: {e}"
+            self._mark_failed(job, f"{type(e).__name__}: {e}")
             self._log.item_fail(name, label="evaluate", error=e,
                                 elapsed=time.monotonic() - t0)
             return
 
         if scored is None:
-            job["status"] = "failed"
-            job["error_message"] = "fit scoring returned no result"
+            self._mark_failed(job, "fit scoring returned no result")
             self._log.item_fail(name, label="evaluate", error="fit scoring returned no result",
                                 elapsed=time.monotonic() - t0)
             return
@@ -107,6 +105,8 @@ class EvaluateConsumer(BaseConsumer[dict]):
         job["seniority_reason"] = result.seniority_reason
         job["compensation_reason"] = result.compensation_reason
         job["matched_skills"] = matched_skills
+        job.pop("evaluate_attempts", None)
+        job.pop("failed_at", None)
         elapsed = time.monotonic() - t0
 
         # Phase 3: threshold routing on final_score
@@ -150,6 +150,15 @@ class EvaluateConsumer(BaseConsumer[dict]):
         self._store.save(self._touched)
         self._log.finish(f"{self._reviewed} jobs moved to match/review")
         await self._notifier.on_run_summary(self._matched, self._reviewed - self._matched)
+
+    @staticmethod
+    def _mark_failed(job: dict, reason: str) -> None:
+        job["status"] = "failed"
+        job["error_message"] = reason
+        job["evaluate_attempts"] = job.get("evaluate_attempts", 0) + 1
+        # The archiver ages failed jobs from the failure time.
+        job["failed_at"] = datetime.now().isoformat()
+        StateMachine.touch_updated(job)
 
     @staticmethod
     def _archive_job(job: dict, reason: str) -> None:
