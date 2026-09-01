@@ -23,7 +23,8 @@ class PipelineRuntime:
         should_cancel: Callable[[], bool] | None = None,
     ) -> None:
         task = self._task
-        n = concurrency if concurrency is not None else task.concurrency
+        # Zero workers would leave queued sentinels unconsumed and hang join().
+        n = max(1, concurrency if concurrency is not None else task.concurrency)
         producer = task.producer
         consumer = task.consumer
 
@@ -101,7 +102,7 @@ class PipelineRuntime:
                 completed["count"] += 1
                 if on_progress:
                     on_progress(completed["count"], total)
-                if completed["count"] % task.checkpoint_every == 0:
+                if completed["count"] % max(1, task.checkpoint_every) == 0:
                     try:
                         await consumer.checkpoint()
                     except Exception:

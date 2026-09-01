@@ -167,3 +167,19 @@ def test_failed_cleanup_disabled_when_threshold_none(tmp_path: Path) -> None:
     store = _write_jobs(tmp_path, jobs)
     assert JobArchiver(tmp_path, rejected_after_days=30).run() == 0
     assert len(store.load()) == 1
+
+
+def test_failed_job_ages_from_failure_time(tmp_path: Path) -> None:
+    """A job that failed recently must not be archived just because the job
+    record itself is old."""
+    jobs = [
+        {"id": "1", "state": "discovered", "status": "failed",
+         "updated_at": _iso(200), "failed_at": _iso(5)},
+        {"id": "2", "state": "discovered", "status": "failed",
+         "updated_at": _iso(200), "failed_at": _iso(90)},
+    ]
+    store = _write_jobs(tmp_path, jobs)
+    archived = JobArchiver(tmp_path, rejected_after_days=30, failed_after_days=60).run()
+
+    assert archived == 1
+    assert {j["id"] for j in store.load()} == {"1"}

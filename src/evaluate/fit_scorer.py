@@ -25,6 +25,9 @@ class FitScorer:
         return {
             "headline": profile.get("narrative", {}).get("headline"),
             "primary_roles": profile.get("targets", {}).get("primary_roles", []),
+            # Archetypes carry the explicit target seniority level the
+            # scoring agent is instructed to compare against.
+            "archetypes": profile.get("targets", {}).get("archetypes", []),
             "skill_tiers": profile.get("skill_tiers", {}),
             "mission_domains": profile.get("mission_domains", {}),
             "location_preferences": profile.get("location_preferences", {}),
@@ -37,8 +40,9 @@ class FitScorer:
             return None
         all_skills = {
             s.lower()
+            # An empty YAML tier ("low:" with no items) parses to None.
             for tier in profile_input.get("skill_tiers", {}).values()
-            for s in tier
+            for s in (tier or [])
         }
         matched_skills = [
             s for s in job.get("tech_stack", [])

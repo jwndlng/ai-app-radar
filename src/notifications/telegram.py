@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import html
 import sys
 
@@ -31,7 +32,6 @@ class TelegramNotifier(Notifier):
         self._notify_evaluate_summary = notify_evaluate_summary
         self._notify_scout_summary = notify_scout_summary
         self._notify_enrich_summary = notify_enrich_summary
-        self._client = httpx.AsyncClient(timeout=_TIMEOUT)
 
     async def on_match(self, job: dict, score: float, reasons: list[str]) -> None:
         if not self._notify_match:
@@ -83,15 +83,31 @@ class TelegramNotifier(Notifier):
             header = f"<b>{title} @ {company}</b>"
 
         scores = f"{prefix} — {score}/10  (fit {fit} · loc {loc} · sen {sen} · comp {comp})"
+        # Per spec, the reasons list is deliberately not rendered — alerts
+        # stay short; rationale lives in the dashboard.
         return f"{header}\n{scores}"
 
     async def _send(self, text: str) -> None:
+        # A short-lived client per send avoids leaking a never-closed
+        # AsyncClient (a notifier is constructed per pipeline invocation).
         try:
             url = _API.format(token=self._token)
-            resp = await self._client.post(
-                url, json={"chat_id": self._chat_id, "text": text, "parse_mode": "HTML"}
-            )
-            if not resp.is_success:
-                print(f"[telegram] API error {resp.status_code}: {resp.text}", file=sys.stderr)
+            async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
+                resp = await client.post(
+                    url, json={"chat_id": self._chat_id, "text": text, "parse_mode": "HTML"}
+                )
+                if resp.status_code == 429:
+                    # Telegram enforces ~1 msg/sec per chat; honor retry_after
+                    # once instead of dropping the alert.
+                    try:
+                        delay = float(resp.json()["parameters"]["retry_after"])
+                    except Exception:
+                        delay = 1.0
+                    await asyncio.sleep(min(delay, 30.0))
+                    resp = await client.post(
+                        url, json={"chat_id": self._chat_id, "text": text, "parse_mode": "HTML"}
+                    )
+                if not resp.is_success:
+                    print(f"[telegram] API error {resp.status_code}: {resp.text}", file=sys.stderr)
         except Exception as exc:
             print(f"[telegram] notification failed: {exc}", file=sys.stderr)

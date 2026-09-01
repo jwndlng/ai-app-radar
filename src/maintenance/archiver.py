@@ -50,20 +50,23 @@ class JobArchiver:
         return len(archive)
 
     def _should_archive(self, job: dict) -> bool:
-        age_days = self._age_in_days(job)
-        if age_days is None:
-            return False
         if job.get("state") in _ARCHIVABLE_STATES:
-            return age_days > self._rejected_after_days
+            age_days = self._age_in_days(job)
+            return age_days is not None and age_days > self._rejected_after_days
         # Permanently failed jobs (dead listings, repeated fetch errors) are
-        # cleaned up on their own, longer threshold.
+        # cleaned up on their own, longer threshold — aged from the failure
+        # time, so a fresh failure on an old job is not archived prematurely.
         if self._failed_after_days is not None and job.get("status") == "failed":
-            return age_days > self._failed_after_days
+            age_days = self._age_in_days(job, prefer="failed_at")
+            return age_days is not None and age_days > self._failed_after_days
         return False
 
     @staticmethod
-    def _age_in_days(job: dict) -> float | None:
-        timestamp = job.get("archived_at") or job.get("vetted_at") or job.get("updated_at")
+    def _age_in_days(job: dict, prefer: str | None = None) -> float | None:
+        timestamp = (
+            (job.get(prefer) if prefer else None)
+            or job.get("archived_at") or job.get("vetted_at") or job.get("updated_at")
+        )
         if not timestamp:
             return None
         try:

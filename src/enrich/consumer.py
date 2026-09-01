@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import time
 import traceback
+from datetime import datetime
 
 from core.logger import RunLogger
 from core.state_machine import StateMachine
@@ -83,6 +84,7 @@ class EnrichConsumer(BaseConsumer[dict]):
                 job["status"] = "ok"
                 job.pop("error_message", None)
                 job.pop("enrich_attempts", None)
+                job.pop("failed_at", None)
                 StateMachine.touch_updated(job)
                 self._success += 1
                 self._log.item_ok(name, label="enrich", detail="parsed", elapsed=elapsed)
@@ -158,3 +160,7 @@ class EnrichConsumer(BaseConsumer[dict]):
         job["status"] = "failed"
         job["error_message"] = reason
         job["enrich_attempts"] = job.get("enrich_attempts", 0) + 1
+        # The archiver ages failed jobs from the failure time, not from
+        # whenever the job was last otherwise updated.
+        job["failed_at"] = datetime.now().isoformat()
+        StateMachine.touch_updated(job)

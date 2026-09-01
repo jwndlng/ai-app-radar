@@ -30,7 +30,7 @@ class RepairOrchestrator:
         real_errors: dict[str, list[LogError]] = {}
         for flow, errs in errors.items():
             deduped = self._dedupe(errs)
-            real = [e for e in deduped if e.detail.strip().lower() != "no matches"]
+            real = [e for e in deduped if not self._is_benign_warn(e)]
             real_errors[flow] = real
 
         total = sum(len(v) for v in real_errors.values())
@@ -57,6 +57,20 @@ class RepairOrchestrator:
                 f"\n  ℹ  scout: {count} error(s)"
                 " — check company config or careers page availability."
             )
+
+    @staticmethod
+    def _is_benign_warn(err: LogError) -> bool:
+        """Expected item_warn outcomes that are not errors: auto-rejects and
+        the empty-queue placeholders would otherwise be reported as failures."""
+        if err.event != "item_warn":
+            return False
+        detail = (err.detail or "").strip().lower()
+        return (
+            detail == "no matches"
+            or detail.startswith("→ auto-reject")
+            or "run scout first" in detail
+            or "run enrich first" in detail
+        )
 
     @staticmethod
     def _dedupe(errors: list[LogError]) -> list[LogError]:
@@ -93,7 +107,7 @@ class RepairOrchestrator:
         all_apps = store.load()
 
         error_names = {e.name for e in errors}
-        reset_count = 0
+        reset_jobs: list[dict] = []
 
         for job in all_apps:
             if job.get("state") != "discovered" or job.get("status") != "failed":
@@ -103,10 +117,13 @@ class RepairOrchestrator:
                 job["status"] = "ok"
                 job.pop("error_message", None)
                 job.pop("enrich_attempts", None)
-                reset_count += 1
+                reset_jobs.append(job)
 
+        reset_count = len(reset_jobs)
         if reset_count:
-            store.save(all_apps)
+            # Save only the reset jobs — re-saving the full snapshot would
+            # overwrite concurrent edits made via the API.
+            store.save(reset_jobs)
             print(
                 f"\n  {_G}✓{_X} enrich: {reset_count} failed job(s) reset"
                 " — run 'make enrich' to retry."

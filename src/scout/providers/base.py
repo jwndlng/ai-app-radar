@@ -27,19 +27,28 @@ class BaseProvider(ABC):
     async def _request(self, method: str, url: str, **kwargs) -> httpx.Response:
         kwargs.setdefault("timeout", _TIMEOUT)
         last_exc: Exception | None = None
+        retry_after: float | None = None
         for attempt in range(_MAX_RETRIES + 1):
             if attempt > 0:
-                await asyncio.sleep(2 ** (attempt - 1))  # 1s, 2s, 4s
+                await asyncio.sleep(retry_after if retry_after else 2 ** (attempt - 1))
+                retry_after = None
             try:
                 async with self._semaphore:
                     async with httpx.AsyncClient() as client:
                         response = await client.request(method, url, **kwargs)
                 response.raise_for_status()
                 return response
-            except httpx.TimeoutException as e:
+            except httpx.TransportError as e:
+                # Timeouts, connection resets, DNS hiccups — all transient.
                 last_exc = e
             except httpx.HTTPStatusError as e:
-                if e.response.status_code >= 500:
+                if e.response.status_code == 429:
+                    last_exc = e
+                    try:
+                        retry_after = min(float(e.response.headers.get("Retry-After", "")), 30.0)
+                    except ValueError:
+                        retry_after = None
+                elif e.response.status_code >= 500:
                     last_exc = e
                 else:
                     raise

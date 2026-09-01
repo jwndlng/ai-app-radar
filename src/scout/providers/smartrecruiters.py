@@ -45,7 +45,9 @@ class SmartRecruitersProvider(BaseProvider):
 
             total = data.get("totalFound", 0)
             offset += len(data.get("content", []))
-            if offset >= total:
+            # Missing/zero totalFound must not truncate after page one; the
+            # empty-content guard above terminates the loop instead.
+            if total and offset >= total:
                 break
 
         return jobs

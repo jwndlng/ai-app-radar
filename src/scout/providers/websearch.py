@@ -4,10 +4,21 @@ import asyncio
 import urllib.robotparser
 from urllib.parse import urlparse
 
+import httpx
+
 from .base import BaseProvider
 from scout.agent import ScoutAgent
 
-_MAX_BODY_CHARS = 40_000
+# Body text and the appended links block are capped separately: a single
+# trailing truncation would cut off the links section entirely on large
+# pages, leaving the agent without URLs or pagination targets.
+_MAX_BODY_CHARS = 30_000
+_MAX_LINKS_CHARS = 10_000
+
+_BROWSER_UA = (
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+    "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+)
 
 
 class WebsearchProvider(BaseProvider):
@@ -17,6 +28,7 @@ class WebsearchProvider(BaseProvider):
         max_pages: int = 10,
         respect_robots: bool = True,
     ) -> None:
+        super().__init__()
         self._model = model
         self._max_pages = max_pages
         self._respect_robots = respect_robots
@@ -31,12 +43,13 @@ class WebsearchProvider(BaseProvider):
             print(f"  [!] {company_name}: no careers_url configured")
             return []
 
-        if self._respect_robots and not self._robots_allows(careers_url):
-            print(f"  [robots] {company_name}: blocked by robots.txt")
-            return []
-
         agent = ScoutAgent(company_name, model=self._model)
         current_url = company_config.get("scan_method_config", {}).get("search_url") or careers_url
+
+        # Check the URL the crawl actually starts from, not just careers_url.
+        if self._respect_robots and not await self._robots_allows(current_url):
+            print(f"  [robots] {company_name}: blocked by robots.txt")
+            return []
         visited: set[str] = set()
         jobs: list[dict] = []
 
@@ -54,7 +67,7 @@ class WebsearchProvider(BaseProvider):
                     if not content or not content.strip():
                         break
 
-                    response = await agent.extract_jobs(content[:_MAX_BODY_CHARS])
+                    response = await agent.extract_jobs(content)
 
                     for job in response.jobs:
                         if job.title and self.filter_job(job.title, filters):
@@ -82,13 +95,20 @@ class WebsearchProvider(BaseProvider):
         return jobs
 
     @staticmethod
-    def _robots_allows(url: str) -> bool:
+    async def _robots_allows(url: str) -> bool:
+        # Fetch robots.txt with a browser UA: RobotFileParser.read() uses the
+        # default Python-urllib UA, which bot protection commonly 403s, and it
+        # then treats the site as fully disallowed. Any non-200 (no robots.txt,
+        # blocked fetch) is treated as allow.
         try:
             parsed = urlparse(url)
             robots_url = f"{parsed.scheme}://{parsed.netloc}/robots.txt"
+            async with httpx.AsyncClient(timeout=10.0, headers={"User-Agent": _BROWSER_UA}) as client:
+                resp = await client.get(robots_url)
+            if resp.status_code != 200:
+                return True
             rp = urllib.robotparser.RobotFileParser()
-            rp.set_url(robots_url)
-            rp.read()
+            rp.parse(resp.text.splitlines())
             return rp.can_fetch("*", url)
         except Exception:
             return True
@@ -146,9 +166,9 @@ class WebsearchProvider(BaseProvider):
                 )
                 links_block = "\n".join(f"[{l['text']}] {l['href']}" for l in links) if links else ""
 
-                content = body_text
+                content = body_text[:_MAX_BODY_CHARS]
                 if links_block:
-                    content += f"\n\n--- PAGE LINKS ---\n{links_block}"
+                    content += f"\n\n--- PAGE LINKS ---\n{links_block[:_MAX_LINKS_CHARS]}"
 
                 return content
             finally:
