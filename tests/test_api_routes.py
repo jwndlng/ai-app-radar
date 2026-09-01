@@ -110,7 +110,10 @@ def test_tasks_list_is_summary_projection(client: TestClient) -> None:
         registry.add_event(running_id, {"type": "item_ok", "name": f"co {i}"})
 
     tasks = {t["id"]: t for t in client.get("/api/tasks").json()["tasks"]}
-    assert tasks[done_id]["events"] == []
+    # Finished tasks keep a short tail (the UI renders summaries/failures
+    # from the polled list), not the full log.
+    assert len(tasks[done_id]["events"]) == 20
+    assert tasks[done_id]["events"][-1]["name"] == "job 299"
     assert tasks[done_id]["event_count"] == 300
     assert len(tasks[running_id]["events"]) == 100
     assert tasks[running_id]["events"][-1]["name"] == "co 149"
@@ -198,3 +201,74 @@ def test_maintenance_cleanup_endpoint(client: TestClient, store: ApplicationStor
     assert store.get_by_id("old-rej") is None
     assert store.get_by_id("old-fail") is None
     assert store.get_by_id("fresh") is not None
+
+
+def test_bulk_rereject_preserves_prev_state_and_archiver_clock(
+    client: TestClient, store: ApplicationStore
+) -> None:
+    """Re-applying a state must not clobber prev_state, and a manual state
+    change clears a stale archived_at (which would win the archiver's age
+    computation over the fresh rejection stamp)."""
+    store.save_job({
+        "id": "j1", "company": "A", "title": "T", "state": "rejected",
+        "status": "ok", "prev_state": "review",
+        "archived_at": "2020-01-01T00:00:00", "vetted_at": "2026-01-01T00:00:00",
+    })
+
+    client.post("/api/jobs/bulk", json={"ids": ["j1"], "action": "set_state", "state": "rejected"})
+    job = store.get_by_id("j1")
+    assert job["prev_state"] == "review"
+    assert "archived_at" not in job
+
+
+def test_undo_by_state_rejects_wildcards(client: TestClient) -> None:
+    assert client.post("/api/jobs/undo-by-state", json={"state": "all"}).status_code == 400
+    assert client.post("/api/jobs/undo-by-state", json={"state": "bogus"}).status_code == 400
+
+
+def test_whole_store_operations_conflict_when_one_runs(client: TestClient) -> None:
+    from api.app import app
+    from api.tasks import TaskRegistry
+
+    registry = TaskRegistry(None)
+    app.state.registry = registry
+    registry.create("enrich_all")  # stays running
+
+    r = client.post("/api/scout")
+    assert r.status_code == 409
+    assert "already running" in r.json()["detail"]
+
+
+def test_registry_eviction_keeps_running_tasks() -> None:
+    from api.tasks import TaskRegistry
+
+    registry = TaskRegistry(None)
+    running_id = registry.create("pipeline_run_all")
+    for i in range(120):
+        tid = registry.create(f"scout_x{i}")
+        registry.complete(tid, {})
+    assert len(registry.all()) == TaskRegistry._MAX
+    assert registry.get(running_id) is not None
+    assert registry.get(running_id).status == "running"
+
+
+def test_basic_auth_middleware(tmp_path: Path, monkeypatch) -> None:
+    import base64
+    import importlib
+
+    monkeypatch.setenv("RADAR_AUTH_PASSWORD", "hunter2")
+    import api.app as app_module
+    importlib.reload(app_module)
+    try:
+        from api.deps import PipelineRunner
+        (tmp_path / "artifacts").mkdir()
+        (tmp_path / "configs").mkdir()
+        app_module.app.state.runner = PipelineRunner(tmp_path)
+        with TestClient(app_module.app) as c:
+            assert c.get("/api/jobs/stats").status_code == 401
+            token = base64.b64encode(b"radar:hunter2").decode()
+            ok = c.get("/api/jobs/stats", headers={"Authorization": f"Basic {token}"})
+            assert ok.status_code == 200
+    finally:
+        monkeypatch.delenv("RADAR_AUTH_PASSWORD")
+        importlib.reload(app_module)
