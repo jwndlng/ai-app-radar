@@ -7,6 +7,7 @@ services:
     volumes:
       - ./configs:/app/configs
       - ./artifacts:/app/artifacts
+      - ./logs:/app/logs
     environment:
       - ADK_MODEL
       - GEMINI_API_KEY
@@ -19,4 +20,14 @@ services:
       - EVALUATE_MODEL
       - TELEGRAM_BOT_TOKEN
       - TELEGRAM_CHAT_ID
+      - RADAR_AUTH_USER
+      - RADAR_AUTH_PASSWORD
     restart: unless-stopped
+    healthcheck:
+      # A hung event loop keeps the process alive; probe an actual request so
+      # restart: unless-stopped has something to act on.
+      test: ["CMD", "python", "-c", "import urllib.request,base64,os; req=urllib.request.Request('http://127.0.0.1:8000/api/version'); pw=os.environ.get('RADAR_AUTH_PASSWORD'); pw and req.add_header('Authorization','Basic '+base64.b64encode((os.environ.get('RADAR_AUTH_USER','radar')+':'+pw).encode()).decode()); urllib.request.urlopen(req, timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
