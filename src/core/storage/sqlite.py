@@ -83,6 +83,12 @@ class SQLiteStorageProvider(DatabaseProvider):
             check_same_thread=False,
         )
         conn.row_factory = sqlite3.Row
+        # These PRAGMAs are per-connection (unlike WAL, which persists in the
+        # database file); setting them only in initialize() left every working
+        # connection on the defaults.
+        conn.execute("PRAGMA busy_timeout = 5000;")
+        conn.execute("PRAGMA synchronous = NORMAL;")
+        conn.execute("PRAGMA foreign_keys = ON;")
         try:
             yield conn
         finally:

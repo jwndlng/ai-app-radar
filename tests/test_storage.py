@@ -303,3 +303,24 @@ def test_migrator_moves_legacy_file_so_it_cannot_reimport(tmp_path: Path) -> Non
     provider.delete("old-1")
     assert LegacyJsonMigrator(tmp_path).migrate_if_needed(provider) == 0
     assert provider.count_all() == 0
+
+
+def test_migrator_moves_file_even_when_db_already_populated(tmp_path: Path) -> None:
+    """A leftover legacy file (migrated under old copy-based code) must be
+    moved aside on the populated-DB path too, or an emptied table would
+    silently re-import the stale snapshot."""
+    artifacts = tmp_path / "artifacts"
+    artifacts.mkdir()
+    legacy = artifacts / "applications.json"
+    legacy.write_text(json.dumps([{"id": "stale", "company": "A", "title": "T",
+                                   "state": "rejected", "status": "ok"}]))
+
+    provider = SQLiteStorageProvider(artifacts / "radar.db")
+    provider.upsert({"id": "live", "company": "B", "title": "U", "state": "review", "status": "ok"})
+
+    assert LegacyJsonMigrator(tmp_path).migrate_if_needed(provider) == 0
+    assert not legacy.exists()
+
+    provider.delete("live")
+    assert LegacyJsonMigrator(tmp_path).migrate_if_needed(provider) == 0
+    assert provider.count_all() == 0

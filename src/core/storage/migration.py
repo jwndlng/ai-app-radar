@@ -24,8 +24,15 @@ class LegacyJsonMigrator:
         if not json_path.exists():
             return 0
 
+        backup_path = self._root / "artifacts" / "applications.json.migrated.bak"
+
         existing_count = provider.count_all()
         if existing_count > 0:
+            # The database is already populated (migrated under older code
+            # that only copied the file): still move the legacy file out of
+            # the way, or a later legitimately-emptied table would silently
+            # re-import this stale snapshot.
+            json_path.replace(backup_path)
             return 0
 
         try:
@@ -61,7 +68,6 @@ class LegacyJsonMigrator:
             # place, any later moment where the table legitimately empties
             # (archiver, manual deletes) would silently re-import this stale
             # snapshot and resurrect deleted jobs.
-            backup_path = self._root / "artifacts" / "applications.json.migrated.bak"
             json_path.replace(backup_path)
 
             logger.info("Migrated %d legacy job records from %s into database", len(jobs), json_path)
