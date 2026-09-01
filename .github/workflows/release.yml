@@ -12,6 +12,10 @@ permissions:
 
 jobs:
   attest-and-annotate:
+    # Guard against release events carrying a draft or a placeholder tag
+    # (an "untagged-…" tag_name has no git tag and no Docker image, so the
+    # image wait can only time out).
+    if: ${{ !github.event.release.draft && startsWith(github.event.release.tag_name, 'v') }}
     runs-on: ubuntu-latest
     steps:
       - name: Log in to GHCR
@@ -27,16 +31,17 @@ jobs:
           OWNER: ${{ github.repository_owner }}
         run: |
           IMAGE="ghcr.io/${OWNER}/ai-app-radar:${TAG}"
-          for i in $(seq 1 18); do
+          # 36 x 10s = 6 minutes, enough headroom for an uncached image build.
+          for i in $(seq 1 36); do
             if docker pull "$IMAGE" 2>/dev/null; then
               echo "Image available: $IMAGE"
               break
             fi
-            if [ "$i" -eq 18 ]; then
+            if [ "$i" -eq 36 ]; then
               echo "Timed out waiting for image: $IMAGE"
               exit 1
             fi
-            echo "Attempt $i/18: image not yet available, waiting 10s..."
+            echo "Attempt $i/36: image not yet available, waiting 10s..."
             sleep 10
           done
 
