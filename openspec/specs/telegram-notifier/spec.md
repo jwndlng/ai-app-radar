@@ -11,7 +11,7 @@ TBD — implements the `Notifier` interface using the Telegram Bot API to delive
 1. A bold hyperlink line: `<b><a href="{url}">{title}</a> @ {company}</b>`. If `url` is absent, the title SHALL be rendered as plain bold text without an `<a>` tag.
 2. A scores line: `Match — {final}/10  (fit {score} · loc {loc} · sen {sen} · comp {comp})`, using `👀 Review —` prefix for review messages.
 
-Title and company SHALL be HTML-escaped before embedding. The reasons list SHALL NOT be included. Notification delivery SHALL remain best-effort — any HTTP or network error SHALL be caught, printed to stderr, and silently ignored.
+Title and company SHALL be HTML-escaped before embedding. The reasons list SHALL NOT be included. Notification delivery SHALL remain best-effort — any HTTP or network error SHALL be caught, printed to stderr, and silently ignored — except an HTTP 429, which SHALL be retried once after honoring Telegram's `retry_after` (capped at 30s) before giving up.
 
 #### Scenario: Match message format with URL
 - **WHEN** `on_match` is called with a job with `url="https://example.com/job"`, title `"Senior Backend Engineer"`, company `"Stripe"`, `final_score=8.9`, `score=9.1`, `location_score=8.0`, `seniority_score=9.0`, `compensation_score=8.5`

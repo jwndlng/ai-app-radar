@@ -94,6 +94,13 @@ Roles SHALL be transitioned in status based on the thresholds in `configs/settin
 - **WHEN** the LLM fit score meets or exceeds the `auto_match` threshold
 - **THEN** the job SHALL be set to `status: in_progress` and `vetted_at` SHALL be recorded
 
+### Requirement: Failed evaluations are retried a bounded number of times
+Each failed scoring attempt SHALL increment an `evaluate_attempts` counter and stamp `failed_at`; jobs with 3 or more failed attempts SHALL be excluded from subsequent evaluate runs (the archiver cleans them up after `failed_after_days`). A successful evaluation SHALL clear the counter.
+
+#### Scenario: Permanently failing job stops consuming LLM budget
+- **WHEN** a job's scoring has failed 3 times
+- **THEN** the evaluate producer SHALL skip it on subsequent runs
+
 ### Requirement: Evaluate processes jobs concurrently in random order
 The evaluate flow SHALL process enriched jobs using N concurrent workers and SHALL randomize item order before processing begins, consistent with the `PipelineRuntime` contract.
 

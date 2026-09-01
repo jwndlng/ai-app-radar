@@ -172,7 +172,7 @@ Since the job list switched to the summary projection (which omits the heavy `re
 - **THEN** the fit-score tag, sub-score tags, and salary badge SHALL still be visible without expanding
 
 ### Requirement: Bulk selection and editing
-The job list SHALL offer a selection mode (toggled from the list header) that shows checkboxes on job cards and a bulk action bar with the selected count, select-all-shown, clear, favorite, unfavorite, reject (with optional reason), and a two-step-confirmed delete. In selection mode, clicking a card toggles its selection instead of expanding it. Bulk actions call `POST /api/jobs/bulk`, then refresh the list and stats and clear the selection.
+The job list SHALL offer a selection mode (toggled from the list header) that shows checkboxes on job cards and a bulk action bar with the selected count, select-all-shown, clear, favorite, unfavorite, reject (with optional reason), and a two-step-confirmed delete. In selection mode, clicking a card toggles its selection instead of expanding it. Bulk actions call `POST /api/jobs/bulk`, then refresh the list and stats and clear the selection. Changing the state filter, search, or favorites toggle SHALL clear the selection (bulk actions must only ever hit visibly selected jobs), and selections referencing jobs that no longer exist SHALL be pruned on refresh; skipped/missing IDs reported by the API SHALL be surfaced to the user.
 
 #### Scenario: Bulk reject from selection
 - **WHEN** the user selects several jobs, opens Reject, optionally enters a reason, and confirms
@@ -194,11 +194,15 @@ The job list SHALL render 30 jobs initially and load 30 more automatically when 
 - **THEN** the list SHALL show the first 30 matching jobs again
 
 ### Requirement: Job list state survives background refreshes
-Refreshing the job list (initial load, post-task refresh, post-mutation refresh) SHALL merge fresh summary records into the existing job objects by `id`, preserving any detail fields already loaded for an expanded card. The empty list SHALL distinguish "still loading" from "no jobs exist".
+Refreshing the job list (initial load, post-task refresh, post-mutation refresh) SHALL merge fresh summary records into the existing job objects by `id`, preserving any detail fields already loaded for an expanded card. Summary-projected fields the server cleared (absent from the fresh record) SHALL be deleted from the merged object rather than left stale, and cached detail data SHALL be invalidated when an operation changes the record server-side (undo, re-enrich, re-evaluate). The empty list SHALL distinguish "still loading" from "no jobs exist".
 
 #### Scenario: Expanded card details survive a background refresh
 - **WHEN** a job card is expanded (details loaded) and a background task completion triggers a job list refresh
 - **THEN** the expanded card SHALL keep showing its detail sections without requiring re-expansion
+
+#### Scenario: Mutation failures are surfaced
+- **WHEN** a mutation request (save settings, save profile, bulk action, pipeline trigger) returns a non-2xx response
+- **THEN** the UI SHALL show a visible error message instead of silently pretending success
 
 #### Scenario: Empty store shows an empty state, not a spinner
 - **WHEN** the job list has loaded and contains zero jobs

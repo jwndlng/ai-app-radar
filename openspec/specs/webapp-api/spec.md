@@ -37,8 +37,22 @@ The system SHALL expose `GET /api/jobs/stats` returning per-state job counts (`t
 - **WHEN** `GET /api/jobs/stats` is called
 - **THEN** the request SHALL NOT be routed to the job-detail handler with `job_id="stats"`
 
+### Requirement: Whole-store pipeline operations are mutually exclusive
+The endpoints that process the whole store (`POST /api/scout`, `/api/enrich/all`, `/api/evaluate/all`, `/api/pipeline/all`) SHALL return 409 when another whole-store pipeline operation is still running — two concurrent runs would double-process jobs from stale start-of-run snapshots and double LLM spend.
+
+#### Scenario: Second concurrent run is rejected
+- **WHEN** `POST /api/pipeline/all` is called while an `enrich_all` task is running
+- **THEN** the response has status 409 naming the running operation, and no task is created
+
+### Requirement: Optional HTTP Basic authentication
+When the `RADAR_AUTH_PASSWORD` environment variable is set, the application SHALL require HTTP Basic authentication (username from `RADAR_AUTH_USER`, default `radar`) on every request — API and static UI alike, with no exemptions. When unset, behavior is unchanged (no auth), suiting LAN-only deployments.
+
+#### Scenario: Auth enabled
+- **WHEN** `RADAR_AUTH_PASSWORD` is set and a request arrives without valid credentials
+- **THEN** the response is 401 with a `WWW-Authenticate: Basic` challenge
+
 ### Requirement: Bulk job editing
-The system SHALL expose `POST /api/jobs/bulk` accepting `{"ids": [...], "action": "set_state"|"favorite"|"unfavorite"|"delete", "state"?: str, "reason"?: str}` and applying the action to every listed job in one request. `set_state` follows the single-job route's semantics (records `prev_state`; a rejection stamps `vetted_at` and stores the optional reason). Unknown IDs are reported in a `missing` list without failing the request; invalid actions or states return 400.
+The system SHALL expose `POST /api/jobs/bulk` accepting `{"ids": [...], "action": "set_state"|"favorite"|"unfavorite"|"delete", "state"?: str, "reason"?: str}` and applying the action to every listed job in one request. `set_state` follows the single-job route's semantics via a shared helper: `prev_state` is recorded only on an actual transition (re-applying the current state must not clobber the true origin state), a stale `archived_at` is cleared, and a rejection stamps `vetted_at` and stores the optional reason. Unknown IDs are reported in a `missing` list without failing the request; invalid actions or states return 400.
 
 #### Scenario: Bulk rejection
 - **WHEN** `POST /api/jobs/bulk` is called with `action: "set_state"`, `state: "rejected"`, and three IDs of which one does not exist
@@ -52,7 +66,7 @@ The system SHALL expose `POST /api/maintenance/cleanup` that runs the job archiv
 - **THEN** those jobs are moved to the archive file and removed from the active store, and the count is returned
 
 ### Requirement: Bulk undo by state preserves job data
-The system SHALL expose `POST /api/jobs/undo-by-state` accepting `{"state": "<state>"}` that reverts every job in that state to its previous state. The operation SHALL load jobs with the full projection before saving them back, so no extended fields (description, sources, scores metadata, `prev_state`) are lost.
+The system SHALL expose `POST /api/jobs/undo-by-state` accepting `{"state": "<state>"}` that reverts every job in that state to its previous state. The state SHALL be validated against the known state set; unknown values and the `"all"` wildcard (which the query layer would treat as no filter) SHALL be rejected with 400. The operation SHALL load jobs with the full projection before saving them back, so no extended fields (description, sources, scores metadata, `prev_state`) are lost.
 
 #### Scenario: Bulk undo keeps extended fields
 - **WHEN** `POST /api/jobs/undo-by-state` is called for a state containing jobs with extended data fields
@@ -86,15 +100,15 @@ The system SHALL maintain a `TaskRegistry` that records all pipeline operations 
 - **THEN** the registry starts empty and a warning is logged; the server starts successfully
 
 ### Requirement: Task listing endpoint
-The system SHALL expose `GET /api/tasks` returning all task records ordered by `started_at` descending, as summary records: full event logs SHALL NOT be included (the endpoint is polled every 5 seconds). Running/cancelling tasks include at most their last 100 events; finished tasks include an empty `events` list. Every summary record carries an `event_count`. Stored events per task are capped at 500 (oldest dropped) to bound the record and the persisted `tasks.json`.
+The system SHALL expose `GET /api/tasks` returning all task records ordered by `started_at` descending, as summary records: full event logs SHALL NOT be included (the endpoint is polled every 5 seconds). Running/cancelling tasks include at most their last 100 events; finished tasks keep a short tail of at most 20 events (the UI renders summaries and failures from the polled list). Every summary record carries an `event_count`. Stored events per task are capped at 500 (oldest dropped) to bound the record and the persisted `tasks.json`. Record eviction beyond the 100-record cap SHALL never drop a still-running task.
 
 #### Scenario: Tasks returned
 - **WHEN** `GET /api/tasks` is called
 - **THEN** the response has status 200 and body `{"tasks": [...], "total": N}`
 
-#### Scenario: Finished tasks ship no event log
-- **WHEN** `GET /api/tasks` is called and a finished task has recorded events
-- **THEN** its summary record has `events: []` and the full log remains available via `GET /api/tasks/{task_id}`
+#### Scenario: Finished tasks ship only an event tail
+- **WHEN** `GET /api/tasks` is called and a finished task has recorded more than 20 events
+- **THEN** its summary record contains only the last 20 events and the full log remains available via `GET /api/tasks/{task_id}`
 
 #### Scenario: Empty task list
 - **WHEN** no operations have been run since server start
