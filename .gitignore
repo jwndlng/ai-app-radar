@@ -59,8 +59,5 @@ applications/
 # Local configuration files
 .envrc
 
-# Openspec
-openspec/changes/
-
 # User-specific config (use configs/profile.example.yaml as template)
 configs/profile.yaml
