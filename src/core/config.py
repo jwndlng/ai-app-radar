@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import json
 import os
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -111,6 +112,65 @@ class AppSettings:
 
 
 # ---------------------------------------------------------------------------
+# Settings file location
+# ---------------------------------------------------------------------------
+
+class SettingsLocation:
+    """Resolves where settings.yaml is read from and written to.
+
+    RADAR_SETTINGS_PATH lets a deployment keep configs/ read-only (e.g. a
+    ConfigMap) and persist UI edits on a writable volume. Until the override
+    file exists, reads fall back to the bundled configs/settings.yaml so the
+    first save carries its values forward.
+    """
+
+    ENV_VAR = "RADAR_SETTINGS_PATH"
+    DEFAULT_RELATIVE = Path("configs") / "settings.yaml"
+
+    def __init__(self, root_dir: Path, environ: Mapping[str, str] | None = None) -> None:
+        self._root = root_dir
+        self._environ = os.environ if environ is None else environ
+
+    @property
+    def default_path(self) -> Path:
+        return self._root / self.DEFAULT_RELATIVE
+
+    @property
+    def is_overridden(self) -> bool:
+        return bool(self._environ.get(self.ENV_VAR, "").strip())
+
+    @property
+    def write_path(self) -> Path:
+        if not self.is_overridden:
+            return self.default_path
+        override = Path(self._environ[self.ENV_VAR].strip()).expanduser()
+        return override if override.is_absolute() else self._root / override
+
+    @property
+    def read_path(self) -> Path:
+        write_path = self.write_path
+        return write_path if write_path.exists() else self.default_path
+
+    @property
+    def writable(self) -> bool:
+        """Advisory check: would a save to write_path likely succeed?"""
+        path = self.write_path
+        if path.exists():
+            return os.access(path, os.W_OK)
+        ancestor = path.parent
+        while not ancestor.exists() and ancestor != ancestor.parent:
+            ancestor = ancestor.parent
+        return os.access(ancestor, os.W_OK | os.X_OK)
+
+    def load(self) -> dict:
+        path = self.read_path
+        if not path.exists():
+            return {}
+        with path.open() as f:
+            return yaml.safe_load(f) or {}
+
+
+# ---------------------------------------------------------------------------
 # Loader
 # ---------------------------------------------------------------------------
 
@@ -121,7 +181,7 @@ class AppConfigLoader:
         self._root = root_dir
 
     def settings(self) -> AppSettings:
-        raw = self._yaml("configs/settings.yaml")
+        raw = SettingsLocation(self._root).load()
         s = raw.get("scout", {})
         e = raw.get("enrich", {})
         v = raw.get("evaluate", {})
@@ -189,7 +249,7 @@ class AppConfigLoader:
         )
 
     def notifications(self) -> NotificationSettings:
-        raw = self._yaml("configs/settings.yaml")
+        raw = SettingsLocation(self._root).load()
         t = raw.get("notifications", {}).get("telegram", {})
         return NotificationSettings(
             bot_token=t.get("bot_token") or os.environ.get("TELEGRAM_BOT_TOKEN") or None,

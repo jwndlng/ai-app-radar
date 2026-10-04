@@ -1757,6 +1757,17 @@
     .weights-sum { font-size: 0.78rem; font-weight: 400; margin-left: 8px; }
     .weights-ok { color: var(--accent-secondary, #4caf50); }
     .weights-warn { color: #e57373; }
+    .settings-readonly-banner {
+      background: var(--status-review-bg);
+      color: var(--status-review-text);
+      border-radius: 8px;
+      padding: 10px 14px;
+      margin-bottom: var(--padding-lg);
+      font-size: 0.88rem;
+      line-height: 1.45;
+      overflow-wrap: anywhere;
+    }
+    .settings-readonly-banner code { font-size: 0.85em; }
     .settings-presets {
       display: flex;
       align-items: center;
@@ -3171,6 +3182,12 @@
         <p style="color:var(--text-secondary); font-size:0.88rem;">Pipeline configuration</p>
       </header>
 
+      <div class="settings-readonly-banner" x-show="!settingsMeta.writable" role="alert">
+        <strong>Settings can't be saved</strong> — <code x-text="settingsMeta.path"></code> is not
+        writable by the server. Set <code>RADAR_SETTINGS_PATH</code> to a writable location
+        (e.g. <code>/app/artifacts/settings.yaml</code>) and restart.
+      </div>
+
       <!-- Presets -->
       <div class="settings-presets">
         <span class="settings-presets-label">Presets</span>
@@ -3338,6 +3355,7 @@
             model: null },
           archival: { rejected_after_days: 30, failed_after_days: 60 }
         },
+        settingsMeta: { path: '', writable: true },
         cleanupResult: '',
         uiError: '',
         selectMode: false,
@@ -3609,6 +3627,8 @@
           try {
             const r = await fetch('/api/settings')
             const d = await r.json()
+            if (d.meta) this.settingsMeta = d.meta
+            delete d.meta
             // Selects use '' as the "default model" sentinel (binding null
             // would DOM-coerce to the string "null").
             for (const section of ['scout', 'enrich', 'evaluate']) {
@@ -3629,12 +3649,19 @@
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(payload)
             })
-            if (!r.ok) throw new Error('HTTP ' + r.status)
+            if (!r.ok) {
+              let reason = 'HTTP ' + r.status
+              try {
+                const d = await r.json()
+                if (d && d.error) reason = d.error
+              } catch(_) { /* non-JSON body, e.g. a reverse-proxy error page */ }
+              throw new Error(reason)
+            }
             this.settingsSaved = true
             setTimeout(() => { this.settingsSaved = false }, 2000)
           } catch(e) {
             console.error('saveSettings failed', e)
-            this.showError('Saving settings failed — changes are NOT persisted')
+            this.showError('Saving settings failed — changes are NOT persisted: ' + e.message)
           }
         },
 

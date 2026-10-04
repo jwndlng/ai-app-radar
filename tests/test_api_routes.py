@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import errno
+import os
 from pathlib import Path
 
 import pytest
+import yaml
 from fastapi.testclient import TestClient
 
 from api.app import app
@@ -13,7 +16,8 @@ from core.store import ApplicationStore
 
 
 @pytest.fixture
-def client(tmp_path: Path) -> TestClient:
+def client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> TestClient:
+    monkeypatch.delenv("RADAR_SETTINGS_PATH", raising=False)
     (tmp_path / "artifacts").mkdir()
     (tmp_path / "configs").mkdir()
     (tmp_path / "configs" / "settings.yaml").write_text(
@@ -272,3 +276,67 @@ def test_basic_auth_middleware(tmp_path: Path, monkeypatch) -> None:
     finally:
         monkeypatch.delenv("RADAR_AUTH_PASSWORD")
         importlib.reload(app_module)
+
+
+def test_settings_get_reports_meta(client: TestClient, tmp_path: Path) -> None:
+    meta = client.get("/api/settings").json()["meta"]
+    assert meta == {"path": str(tmp_path / "configs" / "settings.yaml"), "writable": True}
+
+
+def test_settings_put_ignores_meta(client: TestClient, tmp_path: Path) -> None:
+    settings = client.get("/api/settings").json()
+    assert client.put("/api/settings", json=settings).status_code == 200
+    saved = yaml.safe_load((tmp_path / "configs" / "settings.yaml").read_text())
+    assert "meta" not in saved
+
+
+def test_settings_save_to_override_seeds_from_bundled(
+    client: TestClient, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    bundled = tmp_path / "configs" / "settings.yaml"
+    bundled_before = bundled.read_bytes()
+    override = tmp_path / "data" / "nested" / "settings.yaml"
+    monkeypatch.setenv("RADAR_SETTINGS_PATH", str(override))
+
+    settings = client.get("/api/settings").json()
+    assert settings["meta"]["path"] == str(override)
+    settings["scout"]["max_pages"] = 15
+    assert client.put("/api/settings", json=settings).status_code == 200
+
+    saved = yaml.safe_load(override.read_text())
+    assert saved["scout"]["max_pages"] == 15
+    assert saved["notifications"]["telegram"]["bot_token"] == "SECRET"
+    assert bundled.read_bytes() == bundled_before
+    assert client.get("/api/settings").json()["scout"]["max_pages"] == 15
+
+
+def test_settings_write_failure_returns_descriptive_error(
+    client: TestClient, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def read_only(self: Path, *args: object, **kwargs: object) -> int:
+        raise OSError(errno.EROFS, "Read-only file system", str(self))
+
+    monkeypatch.setattr(Path, "write_text", read_only)
+    response = client.put("/api/settings", json={"scout": {"max_pages": 3}})
+    assert response.status_code == 500
+    body = response.json()
+    path = str(tmp_path / "configs" / "settings.yaml")
+    assert body["ok"] is False
+    assert body["path"] == path
+    assert path in body["error"]
+    assert "Read-only file system" in body["error"]
+
+
+@pytest.mark.skipif(os.geteuid() == 0, reason="root bypasses permission bits")
+def test_settings_read_only_dir_reported_and_rejected(client: TestClient, tmp_path: Path) -> None:
+    configs = tmp_path / "configs"
+    (configs / "settings.yaml").chmod(0o444)
+    configs.chmod(0o555)
+    try:
+        assert client.get("/api/settings").json()["meta"]["writable"] is False
+        response = client.put("/api/settings", json={"scout": {"max_pages": 3}})
+        assert response.status_code == 500
+        assert "Permission denied" in response.json()["error"]
+    finally:
+        configs.chmod(0o755)
+        (configs / "settings.yaml").chmod(0o644)

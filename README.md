@@ -220,6 +220,14 @@ notifications:
 
 **Telegram setup:** create a bot via [@BotFather](https://t.me/BotFather), get your `chat_id` from [@userinfobot](https://t.me/userinfobot), then add both to `.envrc` or `settings.yaml`. Credentials in `settings.yaml` take precedence over environment variables. Send `/start` to your bot at least once before the first run.
 
+**Read-only configs (Kubernetes / NAS):** the Settings page saves to `configs/settings.yaml`. If `configs/` is mounted read-only (e.g. from a ConfigMap) or isn't writable by the container user, set `RADAR_SETTINGS_PATH` to a writable file, ideally on the persistent artifacts volume:
+
+```bash
+RADAR_SETTINGS_PATH=/app/artifacts/settings.yaml
+```
+
+Until that file exists, settings are read from the bundled `configs/settings.yaml`, and the first save copies its values (including `notifications`) into the new file. From then on, the new file is the only source. Relative paths are resolved against the project root. The Settings page shows a warning when the active settings file can't be written.
+
 ### Directory layout
 
 ```

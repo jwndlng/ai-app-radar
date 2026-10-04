@@ -22,6 +22,7 @@ services:
       - TELEGRAM_CHAT_ID
       - RADAR_AUTH_USER
       - RADAR_AUTH_PASSWORD
+      - RADAR_SETTINGS_PATH
     restart: unless-stopped
     healthcheck:
       # A hung event loop keeps the process alive; probe an actual request so
