@@ -6,11 +6,14 @@ import dataclasses
 import json
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Callable
+from typing import TYPE_CHECKING, Callable
 
 import yaml
 
 from fastapi import Request
+
+if TYPE_CHECKING:
+    from core.config import SettingsLocation
 
 
 def get_runner(request: Request):
@@ -293,13 +296,20 @@ class PipelineRunner:
 
     # ── Settings management ───────────────────────────────────────────────────
 
-    def _settings_path(self) -> Path:
-        return self._root / "configs" / "settings.yaml"
+    def _settings_location(self) -> SettingsLocation:
+        from core.config import SettingsLocation
+        return SettingsLocation(self._root)
 
     def load_settings(self) -> dict:
-        import dataclasses
         from core.config import AppConfigLoader
-        return dataclasses.asdict(AppConfigLoader(self._root).settings())
+        location = self._settings_location()
+        data = dataclasses.asdict(AppConfigLoader(self._root).settings())
+        data["meta"] = {"path": str(location.write_path), "writable": location.writable}
+        return data
+
+    @property
+    def settings_path(self) -> Path:
+        return self._settings_location().write_path
 
     # Sections the settings UI actually edits. Anything else in settings.yaml
     # (notably notifications.telegram, whose nested shape the flat AppSettings
@@ -307,13 +317,16 @@ class PipelineRunner:
     _EDITABLE_SETTINGS_SECTIONS = ("scout", "enrich", "evaluate", "archival")
 
     def save_settings(self, data: dict) -> None:
-        path = self._settings_path()
-        existing: dict = {}
-        if path.exists():
-            existing = yaml.safe_load(path.read_text()) or {}
+        """Write the editable sections; raises OSError if the file isn't writable."""
+        location = self._settings_location()
+        # load() falls back to the bundled file until an override exists, so
+        # the first override write carries notifications etc. forward.
+        existing = location.load()
         for section in self._EDITABLE_SETTINGS_SECTIONS:
             if section in data:
                 existing[section] = data[section]
+        path = location.write_path
+        path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(
             yaml.dump(existing, allow_unicode=True, sort_keys=False, default_flow_style=False)
         )

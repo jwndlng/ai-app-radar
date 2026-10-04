@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import os
 from datetime import datetime
 
@@ -13,6 +14,8 @@ from pydantic import BaseModel
 from api.deps import PipelineRunner, get_registry, get_runner
 from api.tasks import TaskRegistry, make_event_callback, make_progress_callback, run_with_tracking
 from core.state_machine import StateMachine
+
+logger = logging.getLogger(__name__)
 
 _ALLOWED_MANUAL_STATES = {"rejected", "applied", "match"}
 _KNOWN_STATES = {"discovered", "parsed", "match", "review", "applied", "rejected", "archived"}
@@ -94,6 +97,14 @@ async def save_settings(
     try:
         runner.save_settings(body)
         return {"ok": True}
+    except OSError as e:
+        path = runner.settings_path
+        logger.exception("Saving settings to %s failed", path)
+        return JSONResponse(status_code=500, content={
+            "ok": False,
+            "error": f"Cannot write settings to {path}: {e.strerror or e}",
+            "path": str(path),
+        })
     except Exception as e:
         return JSONResponse(status_code=500, content={"ok": False, "error": str(e)})
 
