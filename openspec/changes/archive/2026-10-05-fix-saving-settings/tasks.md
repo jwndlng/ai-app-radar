@@ -13,8 +13,8 @@
 
 ## 3. Frontend
 
-- [~] 3.1 In `static/index.html`, change `saveSettings()` so that on a non-2xx response it parses JSON when possible and shows `'Saving settings failed — ' + (d.error || 'HTTP ' + r.status)`. Verify manually: make the settings file read-only, click Save, and confirm the toast shows the path and OS error. With a non-JSON body the toast shows the HTTP status.
-- [~] 3.2 Add a `settingsMeta` state (default `{ path: '', writable: true }`). Fill it in `loadSettings()` and strip `meta` before merging into `settings`. Add a warning banner at the top of the settings view (`x-show="!settingsMeta.writable"`) using the existing `--status-review-*` tokens, showing the path and the `RADAR_SETTINGS_PATH` hint. Verify manually in light and dark mode: the banner appears when the file is read-only and is hidden when it's writable, and the Save buttons stay enabled.
+- [x] 3.1 In `static/index.html`, change `saveSettings()` so that on a non-2xx response it parses JSON when possible and shows `'Saving settings failed — ' + (d.error || 'HTTP ' + r.status)`. Verify manually: make the settings file read-only, click Save, and confirm the toast shows the path and OS error. With a non-JSON body the toast shows the HTTP status.
+- [x] 3.2 Add a `settingsMeta` state (default `{ path: '', writable: true }`). Fill it in `loadSettings()` and strip `meta` before merging into `settings`. Add a warning banner at the top of the settings view (`x-show="!settingsMeta.writable"`) using the existing `--status-review-*` tokens, showing the path and the `RADAR_SETTINGS_PATH` hint. Verify manually in light and dark mode: the banner appears when the file is read-only and is hidden when it's writable, and the Save buttons stay enabled.
 
 ## 4. Docs & deployment
 
@@ -24,4 +24,4 @@
 ## 5. Verification
 
 - [x] 5.1 Run the full test suite (`uv run pytest`) and confirm it is green. Run `openspec validate fix-saving-settings --strict` and confirm it passes.
-- [~] 5.2 End-to-end local check: start `python -m main serve` with `configs/` made read-only (`chmod 555`) and confirm the UI banner and the descriptive save error. Restart with `RADAR_SETTINGS_PATH=artifacts/settings.yaml`, save from the UI, and confirm the new file exists with the edits plus `notifications`, and that a reload shows the saved values. Restore the permissions afterwards.
+- [x] 5.2 End-to-end local check: start `python -m main serve` with `configs/` made read-only (`chmod 555`) and confirm the UI banner and the descriptive save error. Restart with `RADAR_SETTINGS_PATH=artifacts/settings.yaml`, save from the UI, and confirm the new file exists with the edits plus `notifications`, and that a reload shows the saved values. Restore the permissions afterwards.
